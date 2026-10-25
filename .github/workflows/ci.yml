@@ -1,0 +1,115 @@
+# CI Pipeline for QingShan Toolbox / 青衫工具箱持续集成流水线
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Lint job - Run golangci-lint / 代码检查
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code / 检出代码
+        uses: actions/checkout@v4
+
+      - name: Set up Go / 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Run golangci-lint / 运行代码检查
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
+  # Test job - Run unit tests / 运行单元测试
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code / 检出代码
+        uses: actions/checkout@v4
+
+      - name: Set up Go / 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Download dependencies / 下载依赖
+        run: go mod download
+
+      - name: Run tests / 运行测试
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage report / 上传覆盖率报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+          retention-days: 7
+
+  # Build job - Build for Windows and Linux / 构建 Windows 和 Linux 版本
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: windows-amd64
+            runner: windows-latest
+            goos: windows
+            goarch: amd64
+            ext: .exe
+          - os: windows-arm64
+            runner: windows-latest
+            goos: windows
+            goarch: arm64
+            ext: .exe
+          - os: linux-amd64
+            runner: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            ext: ""
+
+    steps:
+      - name: Checkout code / 检出代码
+        uses: actions/checkout@v4
+
+      - name: Set up Go / 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Download dependencies / 下载依赖
+        run: go mod download
+
+      - name: Build binary / 构建二进制文件
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: >
+          go build
+          -ldflags="-s -w -X github.com/qingshan/toolbox/internal/config.Version=ci-${{ github.sha }}"
+          -o qstoolbox-${{ matrix.os }}${{ matrix.ext }}
+          ./cmd/qstoolbox
+
+      - name: Upload build artifact / 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: qstoolbox-${{ matrix.os }}
+          path: qstoolbox-${{ matrix.os }}${{ matrix.ext }}
+          retention-days: 14

@@ -1,0 +1,100 @@
+# ============================================
+# 青衫工具箱 配置文件 / QingShan Toolbox Config
+# ============================================
+
+# 通用设置 / General Settings
+general:
+  # 默认输出格式: text, json, table
+  # Default output format: text, json, table
+  output_format: text
+  # 是否启用颜色输出 / Enable colored output
+  color: true
+  # 详细日志 / Verbose logging
+  verbose: false
+
+# 健康检查阈值 / Health Check Thresholds
+thresholds:
+  cpu:
+    warning: 80    # CPU 使用率警告阈值(%) / CPU warning threshold (%)
+    critical: 95   # CPU 使用率严重阈值(%) / CPU critical threshold (%)
+  memory:
+    warning: 80    # 内存使用率警告阈值(%) / Memory warning threshold (%)
+    critical: 95   # 内存使用率严重阈值(%) / Memory critical threshold (%)
+  disk:
+    warning: 85    # 磁盘使用率警告阈值(%) / Disk warning threshold (%)
+    critical: 95   # 磁盘使用率严重阈值(%) / Disk critical threshold (%)
+
+# 主机清单 / Host Inventory
+# 用于远程管理和批量操作 / For remote management and batch operations
+hosts:
+  - name: web-server-01
+    host: 192.168.1.10
+    port: 22
+    user: admin
+    tags:
+      - web
+      - production
+  - name: db-server-01
+    host: 192.168.1.20
+    port: 22
+    user: admin
+    tags:
+      - database
+      - production
+  # - name: dev-server
+  #   host: 192.168.1.100
+  #   port: 22
+  #   user: developer
+  #   tags:
+  #     - development
+
+# 通知设置 / Notification Settings
+notifications:
+  # 是否启用通知 / Enable notifications
+  enabled: false
+  # 邮件通知 / Email notifications
+  email:
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    from: toolbox@example.com
+    to:
+      - admin@example.com
+    username: ""
+    password: ""
+  # Webhook 通知 (如钉钉、企业微信) / Webhook notifications (DingTalk, WeCom, etc.)
+  webhook:
+    url: ""
+    # 类型: dingtalk, wecom, slack, custom
+    # Type: dingtalk, wecom, slack, custom
+    type: custom
+
+# 磁盘监控设置 / Disk Monitoring Settings
+disk_watch:
+  # 检查间隔(秒) / Check interval (seconds)
+  interval: 60
+  # 需要监控的路径 / Paths to monitor
+  paths:
+    - "C:\\"
+    - "D:\\"
+  # 使用率阈值(%) / Usage threshold (%)
+  threshold: 90
+
+# 日志设置 / Logging Settings
+logging:
+  # 日志文件路径 / Log file path
+  file: ~/.qstoolbox/toolbox.log
+  # 日志级别: debug, info, warn, error / Log level
+  level: info
+  # 最大文件大小(MB) / Max file size (MB)
+  max_size: 50
+  # 保留文件数量 / Max number of backups
+  max_backups: 3
+
+# 备份设置 / Backup Settings
+backup:
+  # 默认备份目录 / Default backup directory
+  destination: ~/.qstoolbox/backups
+  # 压缩格式: zip, tar.gz / Compression format
+  format: zip
+  # 保留份数 / Number of backups to keep
+  keep: 5

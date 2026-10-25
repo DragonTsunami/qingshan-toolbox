@@ -1,0 +1,1870 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>青衫工具箱 · QingShan Toolbox</title>
+<style>
+  :root{
+    --gold:#c9a86a; --gold-dim:#a98f62; --gold-line:#d8c39a;
+    --ink:#3b4355;
+    --cream:#f5efe0; --panel-deep:#e9e0c9;
+    --navy1:#26365a; --navy0:#16213c;
+    --theme-glass: rgba(210,232,220,.10);
+    --theme-border: rgba(210,232,220,.24);
+    --theme-glow: rgba(210,232,220,.35);
+    --theme-text: #eef7f2;
+    --theme-sub: rgba(210,232,220,.78);
+    --theme-dim: rgba(210,232,220,.45);
+  }
+  html,body{margin:0;height:100%;overflow:hidden;background:#060a14;
+    font-family:'Microsoft YaHei','Segoe UI',-apple-system,sans-serif;
+    display:flex;align-items:center;justify-content:center}
+  
+  /* 背景：深邃极光光斑 + 纹理 */
+  .backdrop{position:fixed;inset:0;background:radial-gradient(1000px 700px at 50% 40%, #111a30 0%, #080d1a 60%, #04070d 100%);overflow:hidden;z-index:0}
+  .backdrop::after{content:'';position:absolute;inset:0;
+    background:repeating-linear-gradient(115deg, transparent 0 110px, rgba(210,232,220,.025) 110px 112px, transparent 112px 260px)}
+  .blob{position:absolute;border-radius:50%;filter:blur(95px);opacity:.48}
+  .blob.b1{width:580px;height:580px;left:6%;top:10%;background:#2e4c7a;animation:drift 18s ease-in-out infinite alternate}
+  .blob.b2{width:500px;height:500px;right:6%;top:10%;background:#3d7a5a;animation:drift 22s ease-in-out infinite alternate-reverse}
+  .blob.b3{width:540px;height:540px;left:34%;bottom:-12%;background:#235848;animation:drift 24s ease-in-out infinite alternate}
+  .blob.b4{width:400px;height:400px;right:20%;bottom:5%;background:#8b995e;opacity:.25;animation:drift 19s ease-in-out infinite alternate-reverse}
+  @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(65px,-45px) scale(1.12)}}
+
+  /* 主舞台容器 */
+  #stage{position:relative;width:1220px;height:820px;flex:none;z-index:10;transform-origin:center center}
+  .win{position:absolute;inset:0;border-radius:24px;
+    background:linear-gradient(160deg, rgba(210,232,220,.11), rgba(210,232,220,.03) 42%, rgba(210,232,220,.08));
+    border:1.5px solid var(--theme-border);
+    backdrop-filter:blur(28px) saturate(1.25);
+    -webkit-backdrop-filter:blur(28px) saturate(1.25);
+    box-shadow:0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(210,232,220,.35), inset 0 -1px 0 rgba(210,232,220,.08);
+    transition:opacity .28s ease, transform .28s ease}
+  .win.hide{opacity:0;transform:scale(.965);pointer-events:none}
+  .win::before{content:'';position:absolute;inset:0;border-radius:24px;pointer-events:none;z-index:1;
+    background:linear-gradient(165deg, rgba(210,232,220,.16) 0%, transparent 28%, transparent 72%, rgba(210,232,220,.07) 100%)}
+  
+  /* 顶部快捷操作 */
+  .win-actions{position:absolute;right:18px;top:10px;z-index:20;display:flex;gap:8px}
+  .xbtn{width:34px;height:34px;border:1.5px solid rgba(210,232,220,.4);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    color:rgba(210,232,220,.85);font-size:16px;transition:.15s;user-select:none;
+    background:rgba(210,232,220,.10);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .xbtn:hover{background:rgba(210,232,220,.24);color:#eef7f2}
+
+  /* 顶部古韵标题栏 */
+  .win-top{position:absolute;left:0;right:0;top:0;height:48px;padding-top:6px;display:flex;align-items:center;z-index:8}
+  .win-top .wt{flex:1;text-align:center;color:#eef7f2;font-size:25px;font-weight:700;letter-spacing:12px;
+    padding-left:12px;
+    text-shadow:0 1px 12px rgba(210,232,220,.4), 0 2px 8px rgba(0,0,0,.6)}
+  .win-top .wln{width:160px;height:1.5px;background:linear-gradient(90deg,transparent,rgba(210,232,220,.65))}
+  .win-top .wln.r{background:linear-gradient(270deg,transparent,rgba(210,232,220,.65))}
+  .cld{width:30px;height:17px;flex:none;margin:0 12px;opacity:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.45)) drop-shadow(0 0 7px rgba(210,232,220,.35))}
+
+  /* 主体区 */
+  .win-body{position:absolute;left:0;right:0;top:48px;bottom:0;display:flex}
+  
+  /* 左侧菜单导航 */
+  .side{width:290px;flex:none;padding:10px 14px 14px;box-sizing:border-box;position:relative;display:flex;flex-direction:column}
+  .side .cap{display:flex;align-items:center;gap:10px;color:rgba(210,232,220,.7);font-size:13px;letter-spacing:4px;margin:0 4px 6px}
+  .side .cap::before,.side .cap::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(210,232,220,.35))}
+  .side .cap::after{background:linear-gradient(270deg,transparent,rgba(210,232,220,.35))}
+
+  /* 侧栏工作区下拉选择器 (Codex 侧栏集成形态 · 工作区显示与模式居中) */
+  .workspace-selector{position:relative;margin:0 2px 12px;z-index:35}
+  .ws-btn{width:100%;height:48px;padding:0 28px 0 28px;border-radius:12px;border:1.2px solid rgba(210,232,220,.30);
+    background:linear-gradient(135deg, rgba(210,232,220,.18), rgba(210,232,220,.06));
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 4px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(210,232,220,.35);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#eef7f2;
+    transition:all .18s ease;user-select:none;outline:none;box-sizing:border-box;position:relative}
+  .ws-btn:hover{background:linear-gradient(135deg, rgba(210,232,220,.26), rgba(210,232,220,.10));
+    border-color:rgba(210,232,220,.55);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  .ws-btn-center{display:flex;align-items:center;justify-content:center;width:100%;text-align:center}
+  .ws-info{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;text-align:center}
+  .ws-badge{font-size:10.5px;color:rgba(210,232,220,.68);letter-spacing:2px;line-height:1;text-align:center}
+  .ws-title{font-size:14px;font-weight:700;letter-spacing:1px;color:#eef7f2;margin-top:3px;white-space:nowrap;text-align:center}
+  .ws-arrow{position:absolute;right:12px;top:50%;margin-top:-8px;width:16px;height:16px;color:rgba(210,232,220,.8);transition:transform .2s ease;flex:none}
+  .workspace-selector.open .ws-arrow{transform:rotate(180deg)}
+  .workspace-selector.open .ws-btn{border-color:rgba(210,232,220,.65);box-shadow:0 0 16px rgba(210,232,220,.3)}
+
+  /* Codex 弹出下拉菜单面板 */
+  .ws-dropdown{position:absolute;left:0;right:0;top:52px;border-radius:14px;
+    background:rgba(12,22,34,.96);border:1.5px solid rgba(210,232,220,.35);
+    backdrop-filter:blur(24px) saturate(1.3);-webkit-backdrop-filter:blur(24px) saturate(1.3);
+    box-shadow:0 14px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(210,232,220,.45);
+    padding:8px;box-sizing:border-box;display:flex;flex-direction:column;gap:5px;
+    opacity:0;transform:translateY(-8px) scale(.97);pointer-events:none;
+    transition:opacity .2s cubic-bezier(.22,.61,.36,1), transform .2s cubic-bezier(.22,.61,.36,1);z-index:40}
+  .workspace-selector.open .ws-dropdown{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  
+  .ws-dropdown-header{font-size:11px;color:rgba(210,232,220,.65);letter-spacing:2px;padding:5px 8px;
+    border-bottom:1px solid rgba(210,232,220,.15);margin-bottom:3px;text-align:center}
+  .ws-item{display:flex;align-items:center;justify-content:center;padding:9px 12px;border-radius:10px;cursor:pointer;
+    border:1px solid transparent;transition:all .15s ease}
+  .ws-item:hover{background:rgba(210,232,220,.12);border-color:rgba(210,232,220,.28)}
+  .ws-item.active{background:linear-gradient(135deg, rgba(210,232,220,.22), rgba(210,232,220,.08));
+    border-color:rgba(210,232,220,.5);box-shadow:inset 0 1px 0 rgba(210,232,220,.4)}
+  .ws-item-body{flex:1;min-width:0;text-align:center}
+  .ws-item-title{color:#eef7f2;font-size:13.5px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .ws-check{color:#67d995;font-weight:800;font-size:13px;opacity:0}
+  .ws-item.active .ws-check{opacity:1}
+  .ws-item-desc{color:rgba(210,232,220,.68);font-size:11px;letter-spacing:.5px;line-height:1.35;margin-top:3px;text-align:center}
+
+  .codex-badge{display:inline-block;padding:3px 9px;border-radius:6px;
+    background:rgba(210,232,220,.14);border:1px solid rgba(210,232,220,.35);
+    font-size:11.5px;color:#c9e8d5;letter-spacing:1px;margin-left:8px;
+    transition:all .25s ease;vertical-align:middle}
+  
+  .side-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding-right:2px}
+  .side-scroll::-webkit-scrollbar{width:4px}
+  .side-scroll::-webkit-scrollbar-thumb{background:rgba(210,232,220,.2);border-radius:2px}
+
+  .sitem{position:relative;height:46px;margin:4px 0;cursor:pointer;user-select:none;
+    display:flex;align-items:center;padding-left:14px;box-sizing:border-box;border-radius:10px;
+    color:rgba(210,232,220,.9);transition:transform .16s,color .15s,background .15s,box-shadow .15s,opacity .25s}
+  .sitem.mode-hidden{display:none !important}
+  .sitem .ic{width:24px;height:24px;flex:none;margin-right:12px;opacity:.9;position:relative;z-index:1}
+  .sitem .ic svg{display:block;width:24px;height:24px}
+  .sitem .tx{font-size:16px;font-weight:700;letter-spacing:2px;white-space:nowrap;text-shadow:0 2px 4px rgba(0,0,0,.5);position:relative;z-index:1}
+  .sitem::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .15s;z-index:0;border-radius:10px;
+    background:linear-gradient(120deg, rgba(210,232,220,.28), rgba(210,232,220,.12));
+    box-shadow:0 5px 18px rgba(0,0,0,.3), inset 0 1px 0 rgba(210,232,220,.5), inset 0 0 0 1px rgba(210,232,220,.25)}
+  .sitem::after{content:'';position:absolute;right:14px;top:50%;width:7px;height:7px;margin-top:-3.5px;
+    background:rgba(210,232,220,.85);transform:rotate(45deg) scale(0);transition:transform .16s;z-index:1}
+  .sitem:hover,.sitem.sel{color:#eef7f2;transform:translateX(6px)}
+  .sitem:hover::before,.sitem.sel::before{opacity:1}
+  .sitem.sel::before{background:linear-gradient(120deg, rgba(210,232,220,.22), rgba(210,232,220,.08));
+    box-shadow:0 5px 18px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(210,232,220,.6), inset 0 1px 0 rgba(210,232,220,.5)}
+  .sitem:hover::after,.sitem.sel::after{transform:rotate(45deg) scale(1)}
+
+  .side-foot-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(210,232,220,.3),transparent);margin:6px 0}
+
+  /* 竹节纹隔离分界线 */
+  .divider{width:4px;flex:none;position:relative;border-radius:2px;
+    background:repeating-linear-gradient(180deg, rgba(210,232,220,.5) 0 14px, transparent 14px 22px, rgba(210,232,220,.28) 22px 26px, transparent 26px 38px)}
+  .divider i{position:absolute;left:50%;width:10px;height:10px;background:rgba(210,232,220,.85);transform:translateX(-50%) rotate(45deg);box-shadow:0 0 8px rgba(210,232,220,.35)}
+  .divider i.t{top:24px}.divider i.b{bottom:24px}
+
+  /* 右侧详情面板 */
+  .detail{flex:1;position:relative;padding:16px 20px 18px;box-sizing:border-box}
+  .dpanel{position:absolute;inset:16px 20px 18px;
+    background:linear-gradient(160deg, rgba(210,232,220,.15), rgba(210,232,220,.05) 45%, rgba(210,232,220,.09));
+    border:1.5px solid rgba(210,232,220,.30);border-radius:18px;
+    backdrop-filter:blur(24px) saturate(1.2);
+    -webkit-backdrop-filter:blur(24px) saturate(1.2);
+    box-shadow:0 12px 34px rgba(0,0,0,.4), inset 0 1px 0 rgba(210,232,220,.45), inset 0 0 40px rgba(210,232,220,.05);
+    overflow:hidden}
+  
+  .dhead{position:absolute;left:26px;right:26px;top:16px;height:42px;display:flex;align-items:center;z-index:7}
+  .dhead .dm{width:8px;height:8px;background:rgba(210,232,220,.85);transform:rotate(45deg)}
+  .dhead .dt{margin:0 14px;color:#eef7f2;font-size:21px;font-weight:700;letter-spacing:3px;white-space:nowrap;text-shadow:0 1px 10px rgba(210,232,220,.35);transition:opacity .2s ease}
+  .dhead .ln{flex:1;height:1.5px;background:linear-gradient(90deg,rgba(210,232,220,.5),rgba(210,232,220,.06))}
+  .dhead .hint{color:rgba(210,232,220,.8);font-size:12px;letter-spacing:1px;margin-left:14px;white-space:nowrap}
+  .dhead .cli-tag{background:rgba(210,232,220,.12);border:1px solid rgba(210,232,220,.3);padding:3px 10px;border-radius:6px;font-family:monospace;font-size:12px;color:#c9e8d5;margin-left:8px;transition:opacity .2s ease}
+
+  /* 页面切换动效 */
+  .dview{position:absolute;left:24px;right:24px;top:68px;bottom:16px;z-index:5;overflow-y:auto;overflow-x:hidden;padding-right:6px}
+  .dview::-webkit-scrollbar{width:5px}
+  .dview::-webkit-scrollbar-thumb{background:rgba(210,232,220,.25);border-radius:3px}
+  
+  .page{position:absolute;inset:0;opacity:0;pointer-events:none;display:none;
+    transform:translateX(150px) scale(.97);
+    transition:opacity .42s cubic-bezier(.22,.61,.36,1), transform .42s cubic-bezier(.22,.61,.36,1), filter .42s}
+  .page.active{display:block;opacity:1;transform:none;pointer-events:auto;position:relative}
+  .page.leaving{display:block;opacity:0;transform:translateX(-150px) scale(.97);filter:blur(3px)}
+
+  /* 瀑布入场 */
+  @keyframes popIn{
+    from{opacity:0;transform:translateY(20px) scale(.96)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .page.active .grid-3>*, .page.active .grid-2>*, .page.active .rows>*, .page.active .hw-spec-card, .page.active .cli-console{
+    animation:popIn .42s cubic-bezier(.22,.61,.36,1) both;
+  }
+  .page.active .grid-3>:nth-child(2), .page.active .grid-2>:nth-child(2){animation-delay:.06s}
+  .page.active .grid-3>:nth-child(3){animation-delay:.12s}
+  .page.active .hw-spec-card{animation-delay:.18s}
+  .page.active .rows>:nth-child(1){animation-delay:.22s}
+  .page.active .rows>:nth-child(2){animation-delay:.28s}
+  .page.active .cli-console{animation-delay:.34s}
+
+  /* 仪表盘卡片与网格 (三大核心指标) */
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px}
+  
+  .card{position:relative;border-radius:14px;cursor:pointer;user-select:none;
+    background:linear-gradient(160deg, rgba(210,232,220,.20), rgba(210,232,220,.07) 50%, rgba(210,232,220,.12));
+    border:1.5px solid rgba(210,232,220,.28);
+    backdrop-filter:blur(14px) saturate(1.15);
+    -webkit-backdrop-filter:blur(14px) saturate(1.15);
+    box-shadow:0 6px 16px rgba(0,0,0,.22), inset 0 1px 0 rgba(210,232,220,.35);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:18px 14px;box-sizing:border-box;text-align:center;
+    transition:transform .16s,box-shadow .16s,border-color .16s,background .16s}
+  .card:hover{transform:translateY(-4px);border-color:rgba(210,232,220,.55);
+    background:linear-gradient(160deg, rgba(210,232,220,.28), rgba(210,232,220,.10) 50%, rgba(210,232,220,.16));
+    box-shadow:0 14px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(210,232,220,.5)}
+  .card:active{transform:translateY(-1px)}
+  .card .tag{position:absolute;top:9px;right:11px;color:rgba(210,232,220,.85);font-size:11px;letter-spacing:1px;display:flex;align-items:center;gap:4px}
+  .card .tag::before{content:'';width:5px;height:5px;background:rgba(210,232,220,.8);transform:rotate(45deg)}
+
+  /* 璃月风格灵石勋章徽记 (Chip) */
+  .chip{width:62px;height:62px;border-radius:50%;position:relative;
+    display:flex;align-items:center;justify-content:center;margin-bottom:8px;
+    background:radial-gradient(circle at 34% 28%, var(--c1, #a9c4cf), var(--c2, #5f8496) 72%);
+    border:2px solid rgba(210,232,220,.45);
+    box-shadow:inset 0 0 0 2px rgba(210,232,220,.25), 0 4px 10px rgba(0,0,0,.28);
+    transition:transform .15s}
+  .chip::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1.2px solid rgba(210,232,220,.25)}
+  .card:hover .chip{transform:scale(1.06)}
+  .chip svg{width:32px;height:32px}
+  .card .nm{color:#eef7f2;font-size:17.5px;font-weight:700;letter-spacing:1px;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .card .sb{color:rgba(210,232,220,.82);font-size:12px;letter-spacing:1px;margin-top:3px}
+  .card .val{font-size:24px;font-weight:800;color:#f0faf4;margin-top:3px;font-family:'Segoe UI',sans-serif;text-shadow:0 0 12px rgba(180,240,210,.4)}
+  .card-progress{width:100%;height:5px;background:rgba(210,232,220,.15);border-radius:3px;margin-top:8px;overflow:hidden}
+  .card-progress i{display:block;height:100%;background:linear-gradient(90deg,rgba(210,232,220,.9),rgba(210,232,220,.55));border-radius:3px}
+
+  /* 插件中心专属样式 (无中心化/仅展示本机已装) */
+  .plugin-install-box{border-radius:12px;border:1.2px solid rgba(210,232,220,.28);
+    background:rgba(8,16,25,.55);padding:14px 16px;margin-bottom:12px;
+    box-shadow:inset 0 1px 0 rgba(210,232,220,.2)}
+  .plugin-tip{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:rgba(210,232,220,.75);margin-top:9px;line-height:1.45}
+  .plugin-stats{display:flex;gap:10px;margin-bottom:12px}
+  .p-stat{flex:1;background:rgba(210,232,220,.08);border:1px solid rgba(210,232,220,.2);border-radius:10px;padding:8px 14px;display:flex;align-items:center;justify-content:space-between}
+  .p-stat .ps-k{font-size:12px;color:rgba(210,232,220,.7)}
+  .p-stat .ps-v{font-size:14px;font-weight:700;color:#eef7f2;font-family:'Segoe UI',sans-serif}
+  .src-tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:4px;letter-spacing:1px;font-family:Consolas,monospace;font-weight:600}
+  .src-tag.git{background:rgba(240,80,51,.16);border:1px solid rgba(240,80,51,.4);color:#ff9e8a}
+  .src-tag.npm{background:rgba(203,56,55,.16);border:1px solid rgba(203,56,55,.4);color:#ff9999}
+  .src-tag.local{background:rgba(82,180,126,.16);border:1px solid rgba(82,180,126,.4);color:#a7f3d0}
+
+  /* 磁盘容量预警红点与呼吸动效 */
+  .alarm-dot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;display:inline-block;
+    box-shadow:0 0 0 0 rgba(255,77,79,.8);flex:none;
+    animation:pulseRed 1.8s infinite}
+  @keyframes pulseRed{
+    0%{box-shadow:0 0 0 0 rgba(255,77,79,.8)}
+    70%{box-shadow:0 0 0 8px rgba(255,77,79,0)}
+    100%{box-shadow:0 0 0 0 rgba(255,77,79,0)}
+  }
+  .side-alarm{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+
+  .alarm-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;
+    background:rgba(255,77,79,.20);border:1px solid rgba(255,77,79,.6);
+    color:#ffa39e;font-size:11px;font-weight:700;letter-spacing:.5px}
+  .safe-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;
+    background:rgba(82,196,26,.18);border:1px solid rgba(82,196,26,.45);
+    color:#b7eb8f;font-size:11px;font-weight:600}
+
+  /* 日常安全无感清理保障条 */
+  .safe-guarantee-box{border-radius:12px;border:1.2px solid rgba(103,217,149,.35);
+    background:linear-gradient(135deg, rgba(30,65,50,.50), rgba(10,25,20,.70));
+    padding:12px 16px;margin-bottom:12px;
+    box-shadow:0 4px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(103,217,149,.3);
+    display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .safe-guarantee-box .sg-left{display:flex;align-items:flex-start;gap:10px;min-width:0}
+  .safe-guarantee-box .sg-icon{font-size:22px;line-height:1;flex:none}
+  .safe-guarantee-box .sg-title{font-size:13.5px;font-weight:700;color:#67d995;display:flex;align-items:center;gap:6px}
+  .safe-guarantee-box .sg-sub{font-size:12px;color:rgba(210,232,220,.78);margin-top:3px;line-height:1.4}
+
+  /* 软件使用频率与闲置横幅 (置于一键日常瘦身下方额外添加的新项) */
+  .app-usage-banner{border-radius:12px;border:1.2px solid rgba(210,232,220,.28);
+    background:linear-gradient(135deg, rgba(20,38,58,.55), rgba(10,20,32,.75));
+    padding:11px 16px;margin-bottom:12px;cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,.22), inset 0 1px 0 rgba(210,232,220,.25);
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    transition:all .18s ease}
+  .app-usage-banner:hover{border-color:rgba(210,232,220,.55);
+    background:linear-gradient(135deg, rgba(26,50,76,.65), rgba(14,28,44,.85));
+    transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+  .app-usage-banner .aub-left{display:flex;align-items:center;gap:12px;min-width:0}
+  .app-usage-banner .aub-icon{font-size:22px;line-height:1;flex:none}
+  .app-usage-banner .aub-title{font-size:13.5px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:8px}
+  .app-usage-banner .aub-sub{font-size:12px;color:rgba(210,232,220,.75);margin-top:2px}
+  .app-usage-banner .aub-btn{white-space:nowrap;padding:7px 16px;font-size:12px;
+    background:linear-gradient(160deg,rgba(210,232,220,.92),rgba(210,232,220,.72));color:#08101a;
+    display:flex;align-items:center;gap:6px;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+
+  /* 单硬盘容量监控卡片 (整体一排二列双盘并排) */
+  .drive-monitor-box{border-radius:14px;border:1.5px solid rgba(210,232,220,.28);
+    background:rgba(8,16,25,.55);padding:14px 16px;margin-bottom:12px;
+    box-shadow:inset 0 1px 0 rgba(210,232,220,.2)}
+  .drive-monitor-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .drive-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .drive-card{border-radius:12px;border:1.2px solid rgba(210,232,220,.25);
+    background:linear-gradient(160deg, rgba(210,232,220,.14), rgba(210,232,220,.05));
+    padding:14px 16px;display:flex;flex-direction:column;gap:8px;position:relative;transition:all .18s ease}
+  .drive-card.warn{border-color:rgba(255,77,79,.65);
+    background:linear-gradient(160deg, rgba(255,77,79,.16), rgba(210,232,220,.05));
+    box-shadow:0 0 16px rgba(255,77,79,.2)}
+  .drive-card .dc-top{display:flex;align-items:center;justify-content:space-between}
+  .drive-card .dc-name{font-size:14.5px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:6px}
+  .drive-card .dc-model{font-size:11.5px;color:rgba(210,232,220,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .drive-card .dc-metric{display:flex;align-items:baseline;justify-content:space-between}
+  .drive-card .dc-pct{font-size:22px;font-weight:800;font-family:'Segoe UI',sans-serif}
+  .drive-card.warn .dc-pct{color:#ff7875}
+  .drive-card:not(.warn) .dc-pct{color:#67d995}
+  .drive-card .dc-space{font-size:12px;color:rgba(210,232,220,.75)}
+  .drive-card .dc-bar{height:7px;border-radius:4px;background:rgba(210,232,220,.15);overflow:hidden}
+  .drive-card.warn .dc-bar i{background:linear-gradient(90deg, #ff7875, #ff4d4f)}
+  .drive-card:not(.warn) .dc-bar i{background:linear-gradient(90deg, #67d995, #49aa70)}
+  
+  /* 检测位置：仅保留一键释放单按钮 */
+  .drive-card .dc-foot{margin-top:6px}
+  .drive-card .dc-clean-btn{width:100%;box-sizing:border-box;padding:9px 14px;font-size:12.5px;font-weight:700;border-radius:8px;
+    color:#eef7f2;cursor:pointer;transition:.15s;text-align:center;white-space:nowrap;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .drive-card .dc-clean-btn:hover{filter:brightness(1.15)}
+  
+  /* 释放按钮 & 频次按钮特色定制 */
+  .drive-card .btn-release{background:linear-gradient(135deg, rgba(103,217,149,.85), rgba(56,158,104,.85));
+    border-color:#67d995;color:#07160c;box-shadow:0 2px 8px rgba(103,217,149,.25)}
+  .drive-card .btn-release:hover{filter:brightness(1.15)}
+  .drive-card.warn .btn-release{background:linear-gradient(135deg, rgba(255,77,79,.88), rgba(200,40,40,.88));
+    border-color:#ff7875;color:#fff;box-shadow:0 2px 8px rgba(255,77,79,.3)}
+  .drive-card.warn .btn-release:hover{filter:brightness(1.15)}
+  .drive-card .btn-freq{background:rgba(210,232,220,.14);border-color:rgba(210,232,220,.4);color:#eef7f2}
+  .drive-card .btn-freq:hover{background:rgba(210,232,220,.26);border-color:rgba(210,232,220,.7)}
+
+  /* 桌面排障分类区块规范 (一排三列分类卡片网格) */
+  .fix-section{margin-bottom:18px}
+  .fix-cat-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px 6px;border-bottom:1px solid rgba(210,232,220,.18)}
+  .fix-cat-title{font-size:14px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:8px;letter-spacing:1px}
+  .fix-cat-sub{font-size:11.5px;color:rgba(210,232,220,.65);letter-spacing:.5px}
+
+  /* 软件使用频率与闲置分析弹窗 */
+  .app-modal-overlay{position:fixed;inset:0;background:rgba(4,8,16,.75);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    z-index:120;display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .25s ease}
+  .app-modal-overlay.open{opacity:1;pointer-events:auto}
+  .app-modal-win{width:880px;max-height:680px;border-radius:20px;
+    background:linear-gradient(160deg, rgba(16,28,44,.96), rgba(8,16,26,.98));
+    border:1.5px solid rgba(210,232,220,.35);
+    box-shadow:0 24px 60px rgba(0,0,0,.75), inset 0 1px 0 rgba(210,232,220,.45);
+    display:flex;flex-direction:column;overflow:hidden;
+    transform:scale(.95);transition:transform .25s cubic-bezier(.22,.61,.36,1)}
+  .app-modal-overlay.open .app-modal-win{transform:scale(1)}
+  .app-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(210,232,220,.18)}
+  .app-modal-title{color:#eef7f2;font-size:18px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+  .app-modal-close{width:32px;height:32px;border-radius:50%;border:1px solid rgba(210,232,220,.3);background:rgba(210,232,220,.1);color:#eef7f2;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
+  .app-modal-close:hover{background:rgba(255,100,100,.3);border-color:#ff7875}
+  .app-modal-body{padding:18px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+  .app-modal-body::-webkit-scrollbar{width:5px}
+  .app-modal-body::-webkit-scrollbar-thumb{background:rgba(210,232,220,.25);border-radius:3px}
+
+  .app-tab-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.5px;
+    border:1px solid rgba(210,232,220,.25);background:rgba(210,232,220,.08);color:rgba(210,232,220,.8);
+    cursor:pointer;transition:.15s}
+  .app-tab-btn:hover{background:rgba(210,232,220,.16);color:#eef7f2}
+  .app-tab-btn.active{background:linear-gradient(135deg, rgba(210,232,220,.26), rgba(210,232,220,.12));
+    border-color:rgba(210,232,220,.6);color:#eef7f2;box-shadow:inset 0 1px 0 rgba(210,232,220,.4)}
+
+  .app-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;
+    border-radius:10px;border:1px solid rgba(210,232,220,.18);background:rgba(210,232,220,.06);
+    transition:all .15s ease}
+  .app-item:hover{background:rgba(210,232,220,.12);border-color:rgba(210,232,220,.35);transform:translateX(3px)}
+  .app-item.dormant{border-left:3.5px solid #ff7875}
+  .app-item.frequent{border-left:3.5px solid #67d995}
+  .app-left{display:flex;align-items:center;gap:12px;min-width:0}
+  .app-icon{width:36px;height:36px;border-radius:8px;background:rgba(210,232,220,.14);
+    display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+  .app-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .app-name{font-size:13.5px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:8px}
+  .app-sub{font-size:11.5px;color:rgba(210,232,220,.7);display:flex;align-items:center;gap:10px}
+  .app-right{display:flex;align-items:center;gap:12px}
+  .app-size{font-size:12.5px;font-family:'Segoe UI',monospace;font-weight:700;color:#eef7f2}
+  .app-act-btn{padding:5px 12px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;
+    border:1px solid rgba(255,100,100,.4);background:rgba(255,100,100,.16);color:#ff9e8a;transition:.15s}
+  .app-act-btn:hover{background:rgba(255,100,100,.3);color:#fff}
+
+  /* 硬件详细规格专用卡片 (Hardware Spec Sheet) */
+  .hw-spec-card{border-radius:14px;border:1.5px solid rgba(210,232,220,.28);
+    background:linear-gradient(160deg, rgba(210,232,220,.20), rgba(210,232,220,.06) 50%, rgba(210,232,220,.12));
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    padding:18px 22px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+  .hw-spec-card .hw-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(210,232,220,.18)}
+  .hw-spec-card .hw-title{color:#eef7f2;font-size:18px;font-weight:700;letter-spacing:2px;display:flex;align-items:center;gap:8px}
+  .hw-spec-table{display:flex;flex-direction:column;gap:10px}
+  .hw-row{display:flex;align-items:flex-start;font-size:13.5px;line-height:1.5}
+  .hw-row .hw-k{width:90px;flex:none;color:rgba(210,232,220,.7);letter-spacing:1px;font-weight:600}
+  .hw-row .hw-v{flex:1;color:#eef7f2;font-family:'Segoe UI',-apple-system,sans-serif}
+  .hw-row .hw-subline{margin-top:2px;color:rgba(210,232,220,.9);display:flex;align-items:center;gap:6px}
+  .hw-tag{display:inline-block;padding:2px 7px;border-radius:4px;background:rgba(210,232,220,.14);border:1px solid rgba(210,232,220,.3);font-size:11px;color:#c9e8d5;margin-left:6px}
+
+  /* 条形行卡片 (Rows) */
+  .rows{display:flex;flex-direction:column;gap:10px}
+  .row{border-radius:12px;border:1.5px solid rgba(210,232,220,.26);
+    background:linear-gradient(160deg, rgba(210,232,220,.18), rgba(210,232,220,.06) 50%, rgba(210,232,220,.10));
+    backdrop-filter:blur(14px) saturate(1.15);
+    -webkit-backdrop-filter:blur(14px) saturate(1.15);
+    box-shadow:0 4px 14px rgba(0,0,0,.2), inset 0 1px 0 rgba(210,232,220,.35);
+    display:flex;align-items:center;gap:14px;padding:12px 18px;box-sizing:border-box;
+    transition:transform .15s,border-color .15s,background .15s}
+  .row:hover{transform:translateX(5px);border-color:rgba(210,232,220,.5)}
+  .row .chip{width:44px;height:44px;margin-bottom:0}
+  .row .chip svg{width:24px;height:24px}
+  .row .rmain{flex:1;min-width:0}
+  .row .rnm{color:#eef7f2;font-size:16px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+  .row .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .row .status-dot.ok{background:#67d995;box-shadow:0 0 8px #67d995}
+  .row .status-dot.warn{background:#f5a623;box-shadow:0 0 8px #f5a623}
+  .row .status-dot.err{background:#ff6b6b;box-shadow:0 0 8px #ff6b6b}
+  .row .rsub{font-size:12px;color:rgba(210,232,220,.7);margin-top:3px}
+  .row .rbar{height:7px;border-radius:4px;background:rgba(210,232,220,.15);margin-top:6px;overflow:hidden;width:100%}
+  .row .rbar i{display:block;height:100%;width:var(--p,50%);border-radius:4px;
+    background:linear-gradient(90deg,rgba(210,232,220,.9),rgba(210,232,220,.55))}
+  .row .ract{flex:none;color:#0b1320;font-size:13px;font-weight:700;letter-spacing:1px;
+    background:linear-gradient(160deg,rgba(210,232,220,.92),rgba(210,232,220,.72));border-radius:8px;
+    padding:7px 12px;min-width:104px;box-sizing:border-box;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;text-align:center;
+    box-shadow:0 3px 10px rgba(0,0,0,.25), inset 0 1px 0 rgba(210,232,220,.9);transition:all .15s}
+  .row .ract:hover{filter:brightness(1.1);transform:scale(1.03)}
+  .row .rv{color:rgba(210,232,220,.75);font-size:13px;letter-spacing:1px;font-family:monospace;flex:none;min-width:68px;text-align:right}
+
+  /* 命令行控制台终端框 */
+  .cli-console{background:rgba(10,17,29,.75);border:1px solid rgba(210,232,220,.25);border-radius:10px;padding:12px;font-family:'Cascadia Code',Consolas,monospace;font-size:12px;color:#d3edd9;margin-top:12px;max-height:140px;overflow-y:auto}
+  .cli-console .line{margin:3px 0;line-height:1.4}
+  .cli-console .prompt{color:#a9dfbf;font-weight:bold}
+  .cli-console .out-ok{color:#6fe3a1}
+
+  .qin-group{display:flex;gap:8px;margin-bottom:12px}
+  .qin{flex:1;background:rgba(210,232,220,.10);border:1.2px solid rgba(210,232,220,.3);border-radius:8px;padding:8px 12px;color:#eef7f2;font-size:14px;outline:none}
+  .qin:focus{border-color:rgba(210,232,220,.7);background:rgba(210,232,220,.16)}
+  .qbtn{padding:8px 18px;border-radius:8px;background:linear-gradient(160deg,rgba(210,232,220,.88),rgba(210,232,220,.68));color:#08101a;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:.15s}
+  .qbtn:hover{filter:brightness(1.1)}
+
+  .switch{position:relative;display:inline-block;width:44px;height:24px}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;cursor:pointer;inset:0;background-color:rgba(210,232,220,.2);transition:.3s;border-radius:24px;border:1px solid rgba(210,232,220,.35)}
+  .slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background-color:#eef7f2;transition:.3s;border-radius:50%}
+  input:checked + .slider{background-color:#67d995}
+  input:checked + .slider:before{transform:translateX(20px)}
+
+  #toast{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:30;
+    background:linear-gradient(160deg,rgba(210,232,220,.32),rgba(210,232,220,.14));
+    border:1.5px solid rgba(210,232,220,.5);border-radius:12px;color:#eef7f2;
+    font-size:15px;letter-spacing:1px;padding:8px 22px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(210,232,220,.5);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;white-space:nowrap}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(-5px)}
+</style>
+</head>
+<body>
+<div class="backdrop">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+</div>
+
+<div id="stage">
+  <div class="win" id="win">
+
+    <!-- 顶部祥云居中标题 -->
+    <div class="win-top">
+      <span class="wln"></span>
+      <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.75)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
+      <span class="wt">青 衫 工 具 箱</span>
+      <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.75)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
+      <span class="wln r"></span>
+    </div>
+
+    <!-- 右上快捷动作 -->
+    <div class="win-actions">
+      <div class="xbtn" title="导出硬件报告" onclick="triggerOp('asset export hardware_report.json', '导出硬件资产清单')">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </div>
+      <div class="xbtn" id="xbtn" title="关闭/最小化">✕</div>
+    </div>
+
+    <div class="win-body">
+      <!-- 左侧菜单导航 -->
+      <aside class="side">
+        <!-- 侧栏顶部工作区切换选择器 (Codex 侧栏集成形态 · 纯净居中无多余图标) -->
+        <div class="workspace-selector" id="workspace-selector">
+          <button class="ws-btn" id="ws-btn" onclick="toggleWorkspaceDropdown(event)">
+            <div class="ws-btn-center">
+              <div class="ws-info">
+                <span class="ws-badge">当前工作区</span>
+                <span class="ws-title" id="ws-title">桌面运维模式</span>
+              </div>
+            </div>
+            <svg class="ws-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
+          </button>
+
+          <!-- 下拉弹出面板 -->
+          <div class="ws-dropdown" id="ws-dropdown">
+            <div class="ws-dropdown-header">切换工作区模式</div>
+            
+            <div class="ws-item active" id="ws-item-desktop" onclick="selectWorkspace('desktop')">
+              <div class="ws-item-body">
+                <div class="ws-item-title">桌面运维模式 <span class="ws-check">✓</span></div>
+                <div class="ws-item-desc">IT 桌面支持 · 硬件资产 · 磁盘清理与网络急救</div>
+              </div>
+            </div>
+
+            <div class="ws-item" id="ws-item-devops" onclick="selectWorkspace('devops')">
+              <div class="ws-item-body">
+                <div class="ws-item-title">DevOps 运维模式 <span class="ws-check">✓</span></div>
+                <div class="ws-item-desc">系统巡检 · 进程与服务守护 · 批量远程与日志监控</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cap">功 能 目 录</div>
+        
+        <!-- 基础功能滚动区 -->
+        <div class="side-scroll">
+          <!-- 桌面模式专属条目 -->
+          <div class="sitem sel" data-page="asset" data-mode="desktop">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="24" height="18" rx="2"/><path d="M14 28v4h12v-4"/></svg></span>
+            <span class="tx">硬件信息</span>
+          </div>
+
+          <div class="sitem" data-page="disk" data-mode="desktop" style="position:relative">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12c0-3 5-5 12-5s12 2 12 5v16c0 3-5 5-12 5s-12-2-12-5V12z"/><path d="M8 20c0 3 5 5 12 5s12-2 12-5"/></svg></span>
+            <span class="tx">磁盘清理</span>
+            <span class="alarm-dot side-alarm" id="disk-side-dot" title="单盘容量告警 (C: 已占用 87.2% 超过预警线)"></span>
+          </div>
+
+          <div class="sitem" data-page="net" data-mode="desktop">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="13"/><path d="M7 20h26M20 7c-4 3.5-6 8-6 13s2 9.5 6 13c4-3.5 6-8 6-13s-2-9.5-6-13z"/></svg></span>
+            <span class="tx">网络排障</span>
+          </div>
+
+          <div class="sitem" data-page="print-fix" data-mode="desktop">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="14" width="20" height="15" rx="2"/><path d="M14 14V9h12v5M14 24h12v7H14z"/></svg></span>
+            <span class="tx">打印排障</span>
+          </div>
+
+          <div class="sitem" data-page="sys-fix" data-mode="desktop">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10l12 12M26 10l-12 12M6 34l8-8M30 6l4 4"/></svg></span>
+            <span class="tx">系统修护</span>
+          </div>
+
+          <div class="sitem" data-page="meeting-fix" data-mode="desktop">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="11" width="24" height="16" rx="2"/><path d="M15 27v4h10v-4M12 31h16"/></svg></span>
+            <span class="tx">会议急救</span>
+          </div>
+
+          <!-- DevOps 模式专属条目 (初始在桌面模式下隐藏) -->
+          <div class="sitem mode-hidden" data-page="check" data-mode="devops">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h6l4-10 6 20 4-10h6"/></svg></span>
+            <span class="tx">系统巡检</span>
+          </div>
+
+          <div class="sitem mode-hidden" data-page="service" data-mode="devops">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="10" width="26" height="20" rx="3"/><path d="M14 20h12M14 25h7"/></svg></span>
+            <span class="tx">服务管理</span>
+          </div>
+
+          <div class="sitem mode-hidden" data-page="remote" data-mode="devops">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="28" height="18" rx="2"/><path d="M12 32h16M20 26v6M11 16l4 3-4 3M19 22h5"/></svg></span>
+            <span class="tx">远程执行</span>
+          </div>
+
+          <div class="sitem mode-hidden" data-page="logs" data-mode="devops">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h20v24H10z"/><path d="M15 14h10M15 19h10M15 24h6"/></svg></span>
+            <span class="tx">日志分析</span>
+          </div>
+
+          <div class="sitem mode-hidden" data-page="backup" data-mode="devops">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 26v4h20v-4M20 10v12M14 16l6 6 6-6"/></svg></span>
+            <span class="tx">备份恢复</span>
+          </div>
+        </div>
+
+        <div class="side-foot-divider"></div>
+
+        <!-- 底部拓展区 -->
+        <div class="side-foot">
+          <div class="sitem" data-page="plugins">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8h8v6a4 4 0 0 0 8 0v-2h4v8a4 4 0 0 0 0 8h-4v6h-8a4 4 0 0 0 0 8h-2v-4a4 4 0 0 0-8 0v4H8v-8a4 4 0 0 0 0-8h4V14a4 4 0 0 0 0-8H8V4h8v4z"/></svg></span>
+            <span class="tx">插件中心</span>
+          </div>
+
+          <div class="sitem" data-page="settings">
+            <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="20" cy="20" r="8"/><path d="M20 6v5M20 29v5M6 20h5M29 20h5M10.5 10.5l3.4 3.4M29.5 10.5l-3.4 3.4M10.5 29.5l3.4-3.4M29.5 29.5l-3.4-3.4"/></svg></span>
+            <span class="tx">系统设置</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 璃月竹节分隔线 -->
+      <div class="divider"><i class="t"></i><i class="b"></i></div>
+
+      <!-- 右侧详情视窗 -->
+      <div class="detail">
+        <div class="dpanel">
+          <div class="dhead">
+            <span class="dm"></span>
+            <span class="dt" id="dtitle">硬件信息</span>
+            <span class="dm"></span>
+            <span class="codex-badge" id="codex-badge">桌面支持卷</span>
+            <span class="cli-tag" id="dcmd">qstoolbox asset hardware</span>
+            <div class="ln"></div>
+            <div class="hint">第一排实时负载：CPU使用率 · 内存使用率 · 运行时间</div>
+          </div>
+
+          <div class="dview">
+
+            <!-- 1. 硬件信息 (放置最上方，默认激活呈现) -->
+            <section class="page active" data-page="asset">
+              <!-- ① 第一排：CPU使用率、内存使用率、运行时间 -->
+              <div class="grid-3">
+                <div class="card" onclick="toast('处理器: AMD Ryzen 7 9700X · 当前占用率: 18.4%')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">正常 · 16线程</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="8"/><circle cx="50" cy="50" r="10"/><path d="M50 15v10M50 75v10M15 50h10M75 50h10"/></svg></div>
+                  <div class="nm">CPU使用率</div>
+                  <div class="val" style="font-size:24px;font-weight:800;margin-top:6px">18.4%</div>
+                  <div class="sb" style="margin-top:4px">AMD Ryzen 7 9700X (8核16线程)</div>
+                  <div class="card-progress"><i style="width:18.4%"></i></div>
+                </div>
+
+                <div class="card" onclick="toast('物理内存: 16GB DDR5 6000MHz · 当前已用: 6.8 GB (42.5%)')" style="--c1:#b8d4c4;--c2:#6f9c7d">
+                  <span class="tag">良好 · DDR5</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="32" width="60" height="36" rx="6"/><path d="M30 46v8M42 46v8M54 46v8M66 46v8"/></svg></div>
+                  <div class="nm">内存使用率</div>
+                  <div class="val" style="font-size:24px;font-weight:800;margin-top:6px">42.5%</div>
+                  <div class="sb" style="margin-top:4px">已用 6.8 GB / 16.0 GB (6000MHz)</div>
+                  <div class="card-progress"><i style="width:42.5%"></i></div>
+                </div>
+
+                <div class="card" onclick="toast('开机运行时间: 0天23小时13分钟58秒')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">持续运行</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M20 50h14l8-22 14 44 10-22h14"/></svg></div>
+                  <div class="nm">运行时间</div>
+                  <div class="val" style="font-size:20px;font-weight:800;margin-top:6px">0天23小时13分钟58秒</div>
+                  <div class="sb" style="margin-top:4px">系统内核健康 · 无崩溃异常</div>
+                </div>
+              </div>
+
+              <!-- ② 下方呈现所有详细信息 -->
+              <div class="hw-spec-card">
+                <div class="hw-head">
+                  <div class="hw-title">
+                    <span>📋 详细信息</span>
+                    <span class="hw-tag">WMI / DirectX 实时盘点</span>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button class="qbtn" onclick="openFingerprintModal()">防调包核验</button>
+                    <button class="qbtn" onclick="openHandoverModal()">交接单生成</button>
+                    <button class="qbtn" onclick="triggerOp('asset export hardware_report.json', '导出硬件资产清单')">导出报告</button>
+                    <button class="qbtn" onclick="toast('正在重新枚举设备管理器硬件清单...')">重新探测</button>
+                  </div>
+                </div>
+
+                <div class="hw-spec-table">
+                  <div class="hw-row">
+                    <div class="hw-k">操作系统:</div>
+                    <div class="hw-v">Windows 11 IoT Enterprise LTSC 2024 Evaluation <span class="hw-tag">64 位 · Build 26100</span></div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">处理器:</div>
+                    <div class="hw-v">AMD Ryzen 7 9700X 8-Core Processor 八核 <span class="hw-tag">16 线程</span></div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">主板:</div>
+                    <div class="hw-v">七彩虹 BATTLE-AX B650M-E PRO</div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">内存:</div>
+                    <div class="hw-v">16GB DDR5 6000MHz</div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">显卡:</div>
+                    <div class="hw-v">
+                      <div class="hw-subline">AMD Radeon(TM) Graphics ( 486MB / AMD )</div>
+                      <div class="hw-subline">Intel(R) Arc(TM) A770 Graphics ( 16GB / 蓝戟 )</div>
+                    </div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">显示器:</div>
+                    <div class="hw-v">H27T22S-3 Pro [SKG27AA] ( 27英寸 )</div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">磁盘:</div>
+                    <div class="hw-v">
+                      <div class="hw-subline">Samsung SSD 750 EVO 250GB ( 250GB )</div>
+                      <div class="hw-subline">Acer SSD N5000S 1TB ( 1000GB )</div>
+                      <div class="hw-subline">ST500DM002-1BD142 ( 500GB )</div>
+                    </div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">声卡:</div>
+                    <div class="hw-v">
+                      <div class="hw-subline">HD Audio Driver for Display Audio</div>
+                      <div class="hw-subline">USB Audio Device</div>
+                      <div class="hw-subline">High Definition Audio 设备</div>
+                    </div>
+                  </div>
+                  <div class="hw-row">
+                    <div class="hw-k">网卡:</div>
+                    <div class="hw-v">Realtek PCIe GbE Family Controller</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cli-console">
+                <div class="line"><span class="prompt">PS C:\&gt;</span> qstoolbox.exe asset hardware</div>
+                <div class="line out-ok">[Asset] CPU: AMD Ryzen 7 9700X (8C/16T) | 主板: 七彩虹 B650M-E PRO</div>
+                <div class="line out-ok">[Asset] GPU: AMD Radeon Graphics + 蓝戟 Intel Arc A770 16GB</div>
+                <div class="line out-ok">[Asset] 磁盘: 三盘挂载 Samsung 250GB + Acer 1TB + Seagate 500GB</div>
+              </div>
+            </section>
+
+            <!-- 2. 系统巡检 -->
+            <section class="page" data-page="check">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('check cpu', '刷新 CPU 状态')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">健康</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="8"/><circle cx="50" cy="50" r="12"/><path d="M25 40H12M25 60H12M75 40H88M75 60H88M40 25V12M60 25V12M40 75V88M60 75V88"/></svg></div>
+                  <div class="nm">中央处理器 CPU</div>
+                  <div class="val" id="cpu-val">18.4%</div>
+                  <div class="sb">AMD Ryzen 7 9700X · 16 线程</div>
+                  <div class="card-progress"><i style="width:18.4%"></i></div>
+                </div>
+
+                <div class="card" onclick="triggerOp('check memory', '检测内存占用')" style="--c1:#b8d4c4;--c2:#6f9c7d">
+                  <span class="tag">正常</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="32" width="60" height="36" rx="6"/><path d="M30 46v8M42 46v8M54 46v8M66 46v8"/></svg></div>
+                  <div class="nm">物理内存 RAM</div>
+                  <div class="val" id="mem-val">42.5%</div>
+                  <div class="sb">已用 6.8 GB / 总计 16GB DDR5 6000MHz</div>
+                  <div class="card-progress"><i style="width:42.5%"></i></div>
+                </div>
+
+                <div class="card" onclick="triggerOp('check disk', '盘点磁盘总容量')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">良好</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M20 28h60v44H20z"/><circle cx="70" cy="50" r="4" fill="#eef7f2"/><path d="M30 44h24M30 56h14"/></svg></div>
+                  <div class="nm">存储硬盘 Disk</div>
+                  <div class="val" id="disk-val">48.2%</div>
+                  <div class="sb">已用 843 GB / 总计 1750 GB (3 块物理磁盘)</div>
+                  <div class="card-progress"><i style="width:48.2%"></i></div>
+                </div>
+              </div>
+
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="7"><path d="M20 30h60v40H20z"/><circle cx="70" cy="50" r="4" fill="#eef7f2"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>系统固态 · Samsung SSD 750 EVO 250GB (250GB)</div>
+                    <div class="rsub">已用 92 GB · 剩余 158 GB (占用 36.8%) · SATA 6Gb/s · 健康度 99%</div>
+                    <div class="rbar"><i style="--p:37%"></i></div>
+                  </div>
+                  <div class="ract" onclick="triggerOp('disk usage C:', '分析 Samsung 固态')">分析</div>
+                </div>
+
+                <div class="row">
+                  <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="7"><path d="M20 30h60v40H20z"/><circle cx="70" cy="50" r="4" fill="#eef7f2"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>主力数据盘 · Acer SSD N5000S 1TB (1000GB)</div>
+                    <div class="rsub">已用 520 GB · 剩余 480 GB (占用 52.0%) · NVMe M.2 高速存储</div>
+                    <div class="rbar"><i style="--p:52%"></i></div>
+                  </div>
+                  <div class="ract" onclick="triggerOp('disk usage D:', '分析 Acer 固态')">分析</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 2. 服务管理 -->
+            <section class="page" data-page="service">
+              <div class="qin-group">
+                <input class="qin" id="srv-input" placeholder="输入 Windows 服务名称 (例如: wuauserv, spooler, docker)..." value="wuauserv">
+                <button class="qbtn" onclick="searchService()">查询服务</button>
+                <button class="qbtn" onclick="triggerOp('service restart', '批量重启关键运维服务')">重启关联项</button>
+              </div>
+
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="24" width="60" height="52" rx="8"/><path d="M35 50h30M50 35v30"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>wuauserv (Windows Update)</div>
+                    <div class="rsub">状态: 正在运行 (Running) · 启动类型: 自动 (手动触发)</div>
+                  </div>
+                  <div class="rv">PID: 4920</div>
+                  <div class="ract" onclick="triggerOp('service restart wuauserv', '重启 Windows Update 服务')">重启</div>
+                  <div class="ract" style="background:rgba(255,100,100,.8);color:#fff" onclick="triggerOp('service stop wuauserv', '停止服务')">停止</div>
+                </div>
+
+                <div class="row">
+                  <div class="chip" style="--c1:#cfd8cc;--c2:#8e9c8a"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="6"/><circle cx="50" cy="50" r="10"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>Spooler (Print Spooler)</div>
+                    <div class="rsub">状态: 正在运行 (Running) · 桌面支持常见卡单恢复</div>
+                  </div>
+                  <div class="rv">PID: 2316</div>
+                  <div class="ract" onclick="triggerOp('service restart spooler', '重置打印机假脱机后台')">修复卡单</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3. 磁盘清理 (单硬盘容量监控 + 红点预警 + 相对安全缓存清理) -->
+            <section class="page" data-page="disk">
+              <!-- ① 日常工作无感清理保障机制 -->
+              <div class="safe-guarantee-box">
+                <div class="sg-left">
+                  <div>
+                    <div class="sg-title">
+                      <span>日常工作无感清理保障机制</span>
+                      <span class="safe-badge">已启用日常防护</span>
+                    </div>
+                    <div class="sg-sub">严格保护浏览器登录账号与Cookies（无需重新登录）、微信与办公文档、桌面文件；自动跳过加锁运行中的应用文件，仅释放无害死数据。</div>
+                  </div>
+                </div>
+                <button class="qbtn" onclick="triggerOp('disk clean --safe', '一键日常无感安全瘦身 (全盘相对缓存)')" style="white-space:nowrap;padding:8px 16px;background:linear-gradient(160deg,#67d995,#389e68);color:#06140b">一键日常无害瘦身 (~21.6 GB)</button>
+              </div>
+
+              <!-- ② 软件使用频率与长期闲置分析 (置于一键日常瘦身下方额外添加的新项) -->
+              <div class="app-usage-banner" onclick="openAppUsageModal()">
+                <div class="aub-left">
+                  <div>
+                    <div class="aub-title">
+                      <span>软件使用频率与长期闲置分析</span>
+                      <span class="alarm-badge">5 款应用超过 90 天未用 · 建议卸载释放 ~7.75 GB</span>
+                    </div>
+                    <div class="aub-sub">盘点已安装 42 款应用的使用频率与闲置状态，快速识别长期吃灰未用软件并推荐卸载腾出空间</div>
+                  </div>
+                </div>
+                <button class="aub-btn" onclick="openAppUsageModal(); event.stopPropagation();">
+                  <span>打开分析面板</span>
+                  <span style="font-size:11px;opacity:.85">➔</span>
+                </button>
+              </div>
+
+              <!-- ③ 单硬盘容量检测与红点预警区 (检测仅保留一键释放) -->
+              <div class="drive-monitor-box">
+                <div class="drive-monitor-head">
+                  <div style="font-size:14px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:8px">
+                    <span>单硬盘容量检测与预警</span>
+                    <span class="hw-tag">预警红线: 85% 阈值</span>
+                  </div>
+                  <div style="font-size:11.5px;color:rgba(210,232,220,.7)">
+                    <span>红点规则：单盘空间占用 ≥ 85% 触发红点警报 · 无论是否触发均提供相对缓存清理</span>
+                  </div>
+                </div>
+
+                <div class="drive-card-grid">
+                  <!-- 单盘 1: C: 系统盘 (整体：一排二列 · 检测仅保留一键释放) -->
+                  <div class="drive-card warn" id="dcard-c">
+                    <div class="dc-top">
+                      <div class="dc-name">
+                        <span>C: 系统固态盘</span>
+                      </div>
+                      <span class="alarm-badge"><span class="alarm-dot"></span> 87.2% 预警红线</span>
+                    </div>
+                    <div class="dc-model">Samsung SSD 750 EVO (250GB 系统盘)</div>
+                    <div class="dc-metric">
+                      <span class="dc-space">已用 218 GB · 剩余 32 GB</span>
+                      <span class="dc-pct">87.2%</span>
+                    </div>
+                    <div class="dc-bar"><i style="width:87.2%"></i></div>
+                    <!-- 检测仅保留一键释放 -->
+                    <div class="dc-foot">
+                      <div class="dc-clean-btn btn-release" onclick="releaseMemoryAndCache('C')">一键释放 C 盘内存与相对缓存 (18.2G)</div>
+                    </div>
+                  </div>
+
+                  <!-- 单盘 2: D: 主力数据盘 (整体：一排二列 · 检测仅保留一键释放) -->
+                  <div class="drive-card" id="dcard-d">
+                    <div class="dc-top">
+                      <div class="dc-name">
+                        <span>D: 主力数据盘</span>
+                      </div>
+                      <span class="safe-badge">52.0% 容量充裕</span>
+                    </div>
+                    <div class="dc-model">Acer SSD N5000S NVMe (1000GB 数据盘)</div>
+                    <div class="dc-metric">
+                      <span class="dc-space">已用 520 GB · 剩余 480 GB</span>
+                      <span class="dc-pct">52.0%</span>
+                    </div>
+                    <div class="dc-bar"><i style="width:52%"></i></div>
+                    <!-- 检测仅保留一键释放 -->
+                    <div class="dc-foot">
+                      <div class="dc-clean-btn btn-release" onclick="releaseMemoryAndCache('D')">一键释放 D 盘相对缓存 (3.4G)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ③ 相对缓存细分清理项 (无感安全矩阵，独立精准操作) -->
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#b8d4c4;--c2:#6f9c7d"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 30l40 40M70 30L30 70"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>系统与用户 Temp 临时文件<span class="hw-tag">14.8 GB</span></div>
+                    <div class="rsub">路径: %TEMP% · 自动跳过正在读写文件，仅清除 24 小时前创建的孤立临时死文件，完全不影响正在运行的日常软件</div>
+                  </div>
+                  <div class="rv">14.8 GB</div>
+                  <div class="ract" onclick="triggerOp('disk clean --temp', '清理系统与用户 Temp 临时文件 (安全跳过被锁定项)')">安全清理</div>
+                </div>
+
+                <div class="row">
+                  <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="24" width="60" height="52" rx="8"/><path d="M35 50l10 10 20-20"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>Windows Update 补丁下载残留缓存<span class="hw-tag">4.2 GB</span></div>
+                    <div class="rsub">路径: C:\Windows\SoftwareDistribution\Download · 已成功安装完成的补丁安装包残余，官方支持安全清空，随时自动重建</div>
+                  </div>
+                  <div class="rv">4.2 GB</div>
+                  <div class="ract" onclick="triggerOp('disk clean --update-cache', '清理 Windows Update 补丁下载残余')">安全清理</div>
+                </div>
+
+                <div class="row">
+                  <div class="chip" style="--c1:#cfd8cc;--c2:#8e9c8a"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="14"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>浏览器网页静态资源缓存 (Edge / Chrome)<span class="hw-tag">2.6 GB</span><span class="safe-badge">保护登录态</span></div>
+                    <div class="rsub">【日常无影响保障】仅清理网页图片与脚本离线副本，<b>绝不清除 Cookies、账号密码与书签</b>，清理后依然保持各大网站登录状态！</div>
+                  </div>
+                  <div class="rv">2.6 GB</div>
+                  <div class="ract" onclick="triggerOp('disk clean --browser-cache', '清理浏览器离线资源缓存 (保留所有 Cookies/登录态)')">清理资源</div>
+                </div>
+
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="6"/><circle cx="45" cy="45" r="8"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>资源管理器缩略图快照与图标缓存<span class="hw-tag">850 MB</span></div>
+                    <div class="rsub">路径: %LOCALAPPDATA%\Microsoft\Windows\Explorer · 仅清理已废弃缩略图快照，日常打开照片文件夹时系统将按需自动无感重新生成</div>
+                  </div>
+                  <div class="rv">850 MB</div>
+                  <div class="ract" onclick="triggerOp('disk clean --thumbnails', '重置并清理资源管理器缩略图缓存')">清理快照</div>
+                </div>
+
+                <div class="row">
+                  <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 35h40v45H30zM25 35h50M42 22h16v13H42z"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>全盘驱动器回收站 (各盘废纸篓)<span class="hw-tag">3.2 GB</span></div>
+                    <div class="rsub">包含 C:、D:、E: 等各驱动器内已被用户删除并放置于回收站中的弃用垃圾，彻底释放底层物理扇区空间</div>
+                  </div>
+                  <div class="rv">3.2 GB</div>
+                  <div class="ract" onclick="triggerOp('disk clean --recycle-bin', '清空所有驱动器回收站')">清空回收站</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3. 网络排障 (网络连通与代理急救 · 一排三列) -->
+            <section class="page" data-page="net">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('desktop fix --dns', '重置并刷新 DNS 解析缓存')" style="--c1:#b8d4c4;--c2:#6f9c7d">
+                  <span class="tag">解析排障</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M35 50h30M50 35v30"/></svg></div>
+                  <div class="nm">刷新 DNS 缓存</div>
+                  <div class="val" style="font-size:18px">flushdns</div>
+                  <div class="sb">解决网站打不开/内网解析失败</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --winsock', '重置网络协议栈 Winsock')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">协议重置</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40l25-15 25 15v30l-25 15-25-15z"/></svg></div>
+                  <div class="nm">重置网络协议栈</div>
+                  <div class="val" style="font-size:18px">netsh winsock</div>
+                  <div class="sb">修复受限或无Internet连接</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --proxy', '重置系统网络代理为直连模式')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">代理清理</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M20 50h60M50 20c-8 10-12 20-12 30s4 20 12 30c8-10 12-20 12-30s-4-20-12-30z"/></svg></div>
+                  <div class="nm">清理系统代理残留</div>
+                  <div class="val" style="font-size:18px">重置直连</div>
+                  <div class="sb">急救微信正常但网页全打不开</div>
+                </div>
+              </div>
+
+              <!-- 下方网络探测与网关诊断 -->
+              <div class="qin-group">
+                <input class="qin" id="net-target" placeholder="输入目标主机 IP 或域名..." value="1.1.1.1">
+                <button class="qbtn" onclick="runPing()">Ping 测试</button>
+                <button class="qbtn" onclick="runPortScan()">端口探测</button>
+                <button class="qbtn" onclick="runDns()">DNS 解析</button>
+              </div>
+
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="12"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>局域网网关 (192.168.1.1)</div>
+                    <div class="rsub">网卡: Realtek PCIe GbE Family Controller · 往返延迟: 0.8ms</div>
+                  </div>
+                  <div class="rv">良好</div>
+                  <div class="ract" onclick="triggerOp('net trace 192.168.1.1', '追踪路由')">Traceroute</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 4. 打印排障 (外设与打印急救 · 一排三列) -->
+            <section class="page" data-page="print-fix">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('desktop fix --spooler', '修复打印机假脱机卡单')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">打印急救</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="30" width="50" height="40" rx="6"/><path d="M35 30V18h30v12M35 55h30v25H35z"/></svg></div>
+                  <div class="nm">打印卡单清理</div>
+                  <div class="val" style="font-size:18px">一键重置</div>
+                  <div class="sb">清空 Spool 队列并重启服务</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --print709', '修复局域网共享打印机 0x709 / 0x11b 报错并重启服务')" style="--c1:#8fb3a5;--c2:#4f7d6b">
+                  <span class="tag">共享修复</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="30" width="50" height="40" rx="6"/><path d="M35 30V18h30v12M35 55h30v25H35z"/><circle cx="65" cy="45" r="4" fill="#eef7f2"/></svg></div>
+                  <div class="nm">共享打印机 709 修复</div>
+                  <div class="val" style="font-size:18px">RPC 管道授权</div>
+                  <div class="sb">解决更新后 0x709/0x11b 报错</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('net renew', '重新请求网关 DHCP IP 分配')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">租期刷新</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="12"/></svg></div>
+                  <div class="nm">重新获取内网 IP</div>
+                  <div class="val" style="font-size:18px">DHCP Renew</div>
+                  <div class="sb">释放冲突地址并重新向网关申领</div>
+                </div>
+              </div>
+
+              <!-- 打印服务运行状态卡片 -->
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="30" width="50" height="40" rx="6"/><path d="M35 30V18h30v12M35 55h30v25H35z"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>Windows Print Spooler 后台打印服务</div>
+                    <div class="rsub">状态: 正在运行 · 启动类型: 自动 · 监控打印任务队列与共享打印机通信</div>
+                  </div>
+                  <div class="rv">Running</div>
+                  <div class="ract" onclick="triggerOp('service restart spooler', '平滑重启 Spooler 打印服务')">重启服务</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 5. 系统修护 (系统环境与桌面急救 · 一排三列) -->
+            <section class="page" data-page="sys-fix">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('desktop fix --icon-cache', '清理图标缓存数据库并重启 Explorer')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">图标修复</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="22" y="22" width="24" height="24" rx="4"/><rect x="54" y="22" width="24" height="24" rx="4"/><rect x="22" y="54" width="24" height="24" rx="4"/><path d="M56 66l10-10 12 12M78 66l-6-6"/></svg></div>
+                  <div class="nm">桌面图标白块修复</div>
+                  <div class="val" style="font-size:18px">重建缓存</div>
+                  <div class="sb">清理损坏缓存数据库并重启桌面</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --wuauserv', '清空补丁下载缓存并重置更新服务')" style="--c1:#b8d4c4;--c2:#6f9c7d">
+                  <span class="tag">更新急救</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="24" width="60" height="52" rx="8"/><path d="M35 50l10 10 20-20"/></svg></div>
+                  <div class="nm">补丁更新卡死急救</div>
+                  <div class="val" style="font-size:18px">清空临时块</div>
+                  <div class="sb">清空损坏补丁缓存并重置服务</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --hibernate', '关闭系统休眠并释放 C 盘 hiberfil.sys 占用')" style="--c1:#8fb3a5;--c2:#4f7d6b">
+                  <span class="tag">空间扩容</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="30" width="60" height="40" rx="8"/><circle cx="35" cy="50" r="5" fill="#eef7f2"/><path d="M50 50h25M50 40l10 10-10 10"/></svg></div>
+                  <div class="nm">C 盘休眠空间释放</div>
+                  <div class="val" style="font-size:18px">powercfg -h</div>
+                  <div class="sb">关闭休眠腾出 16GB~32GB 空间</div>
+                </div>
+              </div>
+
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="24" width="60" height="52" rx="8"/><path d="M35 50l10 10 20-20"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>Windows Update 自动更新服务 (wuauserv)</div>
+                    <div class="rsub">状态: 正在运行 · 路径: %windir%\system32\svchost.exe -k netsvcs -p</div>
+                  </div>
+                  <div class="rv">Running</div>
+                  <div class="ract" onclick="triggerOp('service restart wuauserv', '重启 Windows Update 服务')">重启服务</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 6. 会议急救 (音视频与多屏演示急救 · 一排三列) -->
+            <section class="page" data-page="meeting-fix">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('desktop fix --display-reset', '重置多屏投影输出管道并刷新显卡驱动')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">多屏纠偏</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="25" width="60" height="42" rx="6"/><path d="M35 67v12h30V67M25 79h50"/></svg></div>
+                  <div class="nm">投影与外接屏纠偏</div>
+                  <div class="val" style="font-size:18px">Win+P 重置</div>
+                  <div class="sb">刷新显卡渲染管道，重置外接输出</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --audio-reset', '强制纠偏系统音频输出设备至会议大屏')" style="--c1:#b8d4c4;--c2:#6f9c7d">
+                  <span class="tag">音频路由</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40h15l18-15v50l-18-15H25zM68 35c4 4 6 9 6 15s-2 11-6 15M78 25c7 7 11 15 11 25s-4 18-11 25"/></svg></div>
+                  <div class="nm">会议音频输出纠偏</div>
+                  <div class="val" style="font-size:18px">重置音响通道</div>
+                  <div class="sb">急救大屏无声音，修正主播放设备</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('desktop fix --presentation', '启用高优先级会议演示防息屏保活')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">演示保活</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M50 32v18l14 8"/></svg></div>
+                  <div class="nm">演示防息屏保活</div>
+                  <div class="val" style="font-size:18px">阻止休眠锁屏</div>
+                  <div class="sb">保持屏幕常亮，杜绝高管开会黑屏</div>
+                </div>
+              </div>
+
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#b8d4c4;--c2:#6f9c7d"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40h15l18-15v50l-18-15H25zM68 35c4 4 6 9 6 15s-2 11-6 15"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>Windows Audio 核心音频服务 (audiosrv)</div>
+                    <div class="rsub">状态: 正在运行 · 管理企业会议麦克风与外接 HDMI 大屏音频路由</div>
+                  </div>
+                  <div class="rv">Running</div>
+                  <div class="ract" onclick="triggerOp('service restart audiosrv', '平滑重启 Windows Audio 音频服务')">重启服务</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 5. 日志分析 -->
+            <section class="page" data-page="logs">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('logs events --source System --level Error', '查看系统错误事件')" style="--c1:#cfd8cc;--c2:#8e9c8a">
+                  <span class="tag">近 24 小时</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 20h40v60H30z"/><path d="M40 35h20M40 50h20M40 65h12"/></svg></div>
+                  <div class="nm">Windows 系统事件</div>
+                  <div class="val">2 条异常</div>
+                  <div class="sb">Event Log: System Error</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('logs events --source Application', '查看应用程序崩溃')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">App Crash</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M50 35v18M50 62v4"/></svg></div>
+                  <div class="nm">应用异常日志</div>
+                  <div class="val">0 条严重崩溃</div>
+                  <div class="sb">Application Events</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('logs tail C:\\app\\logs\\sys.log', '实时 tail 日志流')" style="--c1:#b8d4c4;--c2:#6f9c7d">
+                  <span class="tag">实时流</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40l20 20 30-30"/></svg></div>
+                  <div class="nm">实时日志跟随 (Tail)</div>
+                  <div class="val">Listening</div>
+                  <div class="sb">内置关键词高亮过滤</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 7. 远程执行 -->
+            <section class="page" data-page="remote">
+              <div class="qin-group">
+                <input class="qin" id="remote-host" placeholder="目标主机组或 IP..." value="192.168.1.50">
+                <input class="qin" id="remote-cmd" placeholder="执行命令..." value="Get-Service spooler | Select Status">
+                <button class="qbtn" onclick="execRemote()">SSH 批量并发执行</button>
+              </div>
+
+              <div class="rows">
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm"><span class="status-dot ok"></span>主机: 192.168.1.50 (财务部打印服务器)</div>
+                    <div class="rsub">响应: ExitCode 0 · 耗时 120ms</div>
+                  </div>
+                  <div class="rv">已完成</div>
+                  <div class="ract" onclick="triggerOp('remote copy file.txt 192.168.1.50:/tmp', '推送维护脚本')">下发配置</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 8. 备份恢复 -->
+            <section class="page" data-page="backup">
+              <div class="grid-3">
+                <div class="card" onclick="triggerOp('backup create C:\\Config D:\\Backup --compress', '创建压缩快照备份')" style="--c1:#8fb3a5;--c2:#4f7d6b">
+                  <span class="tag">一键备份</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 45l20-20 20 20M50 25v45M25 75h50"/></svg></div>
+                  <div class="nm">新建备份任务</div>
+                  <div class="sb">自动生成 JSON 清单及 ZIP 归档</div>
+                </div>
+
+                <div class="card" onclick="triggerOp('backup list D:\\Backup', '查阅现有备份文件历史')" style="--c1:#a9c4cf;--c2:#5f8496">
+                  <span class="tag">归档库</span>
+                  <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="6"/><path d="M35 45h30M35 55h20"/></svg></div>
+                  <div class="nm">备份快照库</div>
+                  <div class="sb">历史备份存档列表</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- 9. 插件中心 (无中心化/仅罗列本机已安装插件，支持 npm 或 git 直链安装) -->
+            <section class="page" data-page="plugins">
+              <!-- 快捷安装面板：支持 Git / NPM -->
+              <div class="plugin-install-box">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <div style="font-size:14px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:6px">
+                    <span>插件安装 (Git 仓库克隆 / NPM 包安装)</span>
+                    <span class="hw-tag">免中心化审核 · 零服务器开销</span>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button class="qbtn" onclick="triggerOp('plugin dir', '打开本机插件存储目录')" style="padding:4px 10px;font-size:11px">插件目录</button>
+                    <button class="qbtn" onclick="toast('正在重新枚举扫描本地已安装扩展...')" style="padding:4px 10px;font-size:11px">重新扫描</button>
+                  </div>
+                </div>
+
+                <div class="qin-group" style="margin-bottom:0">
+                  <input class="qin" id="plugin-input" placeholder="输入 Git 仓库链接 (https://github.com/...) 或 NPM 包名 (@qstoolbox/plugin-xxx)..." value="https://github.com/qingshan-plugins/active-directory-kit.git">
+                  <button class="qbtn" onclick="installViaGit()">Git 克隆安装</button>
+                  <button class="qbtn" onclick="installViaNpm()">NPM 安装</button>
+                </div>
+
+                <div class="plugin-tip">
+                  <span><b>去中心化架构说明</b>：插件中心仅用于罗列展示<b>本机已安装</b>的扩展。安装插件直接通过 Git 仓库克隆或 NPM 安装包获取，个人本地离线或自建插件均可无缝加载，无需依赖任何第三方应用市场审核或服务器托管开销。</span>
+                </div>
+              </div>
+
+              <!-- 本地插件统计卡 -->
+              <div class="plugin-stats">
+                <div class="p-stat">
+                  <span class="ps-k">本机已安装扩展</span>
+                  <span class="ps-v" id="plugin-count">4 个已加载</span>
+                </div>
+                <div class="p-stat">
+                  <span class="ps-k">服务启用状态</span>
+                  <span class="ps-v" style="color:#67d995">3 启用 · 1 禁用</span>
+                </div>
+                <div class="p-stat">
+                  <span class="ps-k">本地插件存储根目录</span>
+                  <span class="ps-v" style="font-family:monospace;font-size:12px;color:#c9e8d5">~/.qstoolbox/plugins/</span>
+                </div>
+              </div>
+
+              <!-- 已安装插件列表 -->
+              <div class="rows">
+                <!-- 插件 1: NPM 来源 -->
+                <div class="row">
+                  <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="24" y="24" width="52" height="52" rx="8"/><path d="M35 50l10 10 20-20"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm">
+                      <span class="status-dot ok"></span>企业微信 / 钉钉 Webhook 告警集成
+                      <span class="hw-tag">v2.1.0</span>
+                      <span class="src-tag npm">npm: @qstoolbox/notify-webhook</span>
+                    </div>
+                    <div class="rsub">触发 CPU/内存爆满、磁盘不足或停机故障时，自动下发富文本卡片告警至运维群机器人</div>
+                  </div>
+                  <div class="ract" onclick="triggerOp('plugin update @qstoolbox/notify-webhook', '通过 NPM 更新通知插件')">更新 (npm)</div>
+                  <div class="ract" style="background:rgba(255,100,100,.18);color:#ff9e8a;border:1px solid rgba(255,100,100,.35)" onclick="triggerOp('plugin uninstall @qstoolbox/notify-webhook', '卸载 NPM 插件')">卸载</div>
+                  <label class="switch" title="启用/停用"><input type="checkbox" checked onchange="toast('企业群通知状态已更新')"><span class="slider"></span></label>
+                </div>
+
+                <!-- 插件 2: Git 来源 -->
+                <div class="row">
+                  <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M35 50h30M50 35v30"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm">
+                      <span class="status-dot ok"></span>AD 域控管理助手 (Active Directory Kit)
+                      <span class="hw-tag">v1.3.2</span>
+                      <span class="src-tag git">git: github.com/qingshan-plugins/active-directory-kit</span>
+                    </div>
+                    <div class="rsub">桌面运维利器：支持一键批量重置员工过期密码、解锁域账户、同步并盘点内网加域计算机</div>
+                  </div>
+                  <div class="ract" onclick="triggerOp('plugin update active-directory-kit', '执行 git pull 同步最新仓库代码')">更新 (git pull)</div>
+                  <div class="ract" style="background:rgba(255,100,100,.18);color:#ff9e8a;border:1px solid rgba(255,100,100,.35)" onclick="triggerOp('plugin uninstall active-directory-kit', '移除 Git 插件')">卸载</div>
+                  <label class="switch" title="启用/停用"><input type="checkbox" checked onchange="toast('AD 域助手状态已更新')"><span class="slider"></span></label>
+                </div>
+
+                <!-- 插件 3: Git 来源 -->
+                <div class="row">
+                  <div class="chip" style="--c1:#cfd8cc;--c2:#8e9c8a"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="6"/><circle cx="50" cy="50" r="10"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm">
+                      <span class="status-dot ok"></span>Docker 容器管理与监控扩展
+                      <span class="hw-tag">v1.0.5</span>
+                      <span class="src-tag git">git: github.com/devops/qstoolbox-docker-panel</span>
+                    </div>
+                    <div class="rsub">DevOps 运维助手：通过本地 socket 监听 Docker 守护进程，支持快速容器启停与运行日志跟随</div>
+                  </div>
+                  <div class="ract" onclick="triggerOp('plugin update qstoolbox-docker-panel', '执行 git pull 升级容器扩展')">更新 (git pull)</div>
+                  <div class="ract" style="background:rgba(255,100,100,.18);color:#ff9e8a;border:1px solid rgba(255,100,100,.35)" onclick="triggerOp('plugin uninstall qstoolbox-docker-panel', '移除 Docker 扩展')">卸载</div>
+                  <label class="switch" title="启用/停用"><input type="checkbox" checked onchange="toast('Docker 容器管理扩展已更新')"><span class="slider"></span></label>
+                </div>
+
+                <!-- 插件 4: 本地离线加载 -->
+                <div class="row">
+                  <div class="chip" style="--c1:#b8d4c4;--c2:#6f9c7d"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40l25-15 25 15v30l-25 15-25-15z"/></svg></div>
+                  <div class="rmain">
+                    <div class="rnm">
+                      <span class="status-dot warn"></span>Office / Windows 激活状态自检与 KMS 助手
+                      <span class="hw-tag">v0.8.2</span>
+                      <span class="src-tag local">local: C:\Tools\qstoolbox-kms</span>
+                    </div>
+                    <div class="rsub">本地开发扩展：检测 Windows 企业版与 Office 批量许可证到期日及 KMS 服务器连通性</div>
+                  </div>
+                  <div class="ract" onclick="triggerOp('plugin reload qstoolbox-kms', '重新加载本地扩展代码')">重载 (local)</div>
+                  <div class="ract" style="background:rgba(255,100,100,.18);color:#ff9e8a;border:1px solid rgba(255,100,100,.35)" onclick="triggerOp('plugin uninstall qstoolbox-kms', '解绑本地插件')">移除</div>
+                  <label class="switch" title="启用/停用"><input type="checkbox" onchange="toast('KMS 助手已停用')"><span class="slider"></span></label>
+                </div>
+              </div>
+            </section>
+
+            <!-- 10. 系统设置 -->
+            <section class="page" data-page="settings">
+              <div class="grid-2">
+                <div class="card" style="--c1:#a9c4cf;--c2:#5f8496;align-items:flex-start;text-align:left;padding:20px">
+                  <div class="nm" style="font-size:18px">监控报警阈值设置</div>
+                  <div class="sb" style="margin:6px 0 14px">配置本地守护进程与巡检预警基线</div>
+                  <div style="font-size:13px;color:#eef7f2;display:flex;flex-direction:column;gap:10px;width:100%">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span>CPU 告警阈值:</span>
+                      <input class="qin" style="width:70px;padding:4px 8px;font-size:12px;text-align:center" value="85%">
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span>内存告警阈值:</span>
+                      <input class="qin" style="width:70px;padding:4px 8px;font-size:12px;text-align:center" value="90%">
+                    </div>
+                  </div>
+                  <button class="qbtn" style="margin-top:14px;width:100%" onclick="toast('告警配置已保存至 config.yaml')">保存配置</button>
+                </div>
+
+                <div class="card" style="--c1:#b8d4c4;--c2:#6f9c7d;align-items:flex-start;text-align:left;padding:20px">
+                  <div class="nm" style="font-size:18px">交互与主题偏好</div>
+                  <div class="sb" style="margin:6px 0 14px">自定义视觉风格与声音反馈</div>
+                  <div style="font-size:13px;color:#eef7f2;display:flex;flex-direction:column;gap:12px;width:100%">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span>璃月毛玻璃特效:</span>
+                      <label class="switch"><input type="checkbox" checked onchange="toast('毛玻璃着色器已更新')"><span class="slider"></span></label>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span>系统音效与提示音:</span>
+                      <label class="switch"><input type="checkbox" checked onchange="toast('音效反馈已开启')"><span class="slider"></span></label>
+                    </div>
+                  </div>
+                  <button class="qbtn" style="margin-top:14px;width:100%" onclick="toast('偏好设置已更新')">应用设置</button>
+                </div>
+              </div>
+            </section>
+
+          </div>
+          <!-- 底部交互反馈 toast -->
+          <div id="toast"></div>
+
+          <!-- 软件使用频率与长期闲置分析弹窗 (Genshin 琉璃霜月质感) -->
+          <div class="app-modal-overlay" id="app-modal-overlay" onclick="closeAppUsageModal(event)">
+            <div class="app-modal-win" onclick="event.stopPropagation()">
+              <div class="app-modal-head">
+                <div class="app-modal-title">
+                  <span>软件使用频率与长期闲置统计</span>
+                  <span class="hw-tag">已扫描 42 款已安装程序</span>
+                </div>
+                <div class="app-modal-close" onclick="closeAppUsageModal()" title="关闭">✕</div>
+              </div>
+
+              <div class="app-modal-body">
+                <!-- 概览看板 -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                  <div style="background:rgba(210,232,220,.08);border:1px solid rgba(210,232,220,.2);border-radius:10px;padding:12px 14px">
+                    <div style="font-size:11px;color:rgba(210,232,220,.7);letter-spacing:1px">已安装软件总数</div>
+                    <div style="font-size:22px;font-weight:800;color:#eef7f2;margin-top:2px">42 <span style="font-size:12px;font-weight:normal">款应用</span></div>
+                    <div style="font-size:11px;color:rgba(210,232,220,.55);margin-top:2px">注册表与当前用户目录盘点</div>
+                  </div>
+                  <div style="background:rgba(255,77,79,.14);border:1px solid rgba(255,77,79,.4);border-radius:10px;padding:12px 14px">
+                    <div style="font-size:11px;color:#ffa39e;letter-spacing:1px;font-weight:700">长期闲置未用 (>90天)</div>
+                    <div style="font-size:22px;font-weight:800;color:#ff7875;margin-top:2px">5 <span style="font-size:12px;font-weight:normal">款软件</span></div>
+                    <div style="font-size:11px;color:#ffa39e;margin-top:2px">占用 7.75 GB · 建议卸载释放</div>
+                  </div>
+                  <div style="background:rgba(103,217,149,.14);border:1px solid rgba(103,217,149,.4);border-radius:10px;padding:12px 14px">
+                    <div style="font-size:11px;color:#a7f3d0;letter-spacing:1px;font-weight:700">高频活跃使用</div>
+                    <div style="font-size:22px;font-weight:800;color:#67d995;margin-top:2px">8 <span style="font-size:12px;font-weight:normal">款软件</span></div>
+                    <div style="font-size:11px;color:#a7f3d0;margin-top:2px">近 7 天每日或工作日频繁使用</div>
+                  </div>
+                </div>
+
+                <!-- 标签筛选条 -->
+                <div style="display:flex;gap:10px;align-items:center;border-bottom:1px solid rgba(210,232,220,.18);padding-bottom:10px;margin-top:2px">
+                  <button class="app-tab-btn active" id="tab-dormant" onclick="filterAppList('dormant')">长期闲置未用 (>90天) (5款可卸载)</button>
+                  <button class="app-tab-btn" id="tab-frequent" onclick="filterAppList('frequent')">高频活跃软件 (8款)</button>
+                  <button class="app-tab-btn" id="tab-all" onclick="filterAppList('all')">全部应用 (42款)</button>
+                </div>
+
+                <!-- 动态软件列表 -->
+                <div class="rows" id="app-list-container" style="gap:8px"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 硬件防调包防拆核验弹窗 (Fingerprint Audit Modal) -->
+          <div class="app-modal-overlay" id="fingerprint-modal-overlay" onclick="closeFingerprintModal(event)">
+            <div class="app-modal-win" onclick="event.stopPropagation()" style="width:840px">
+              <div class="app-modal-head">
+                <div class="app-modal-title">
+                  <span>硬件资产防调包防拆核验</span>
+                  <span class="safe-badge" style="font-size:11px">100% 账实相符 · 未检测到硬件篡改</span>
+                </div>
+                <div class="app-modal-close" onclick="closeFingerprintModal()" title="关闭">✕</div>
+              </div>
+
+              <div class="app-modal-body">
+                <div style="background:rgba(103,217,149,.12);border:1px solid rgba(103,217,149,.4);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:#67d995">初始交付指纹校验通过 (Baseline Verified)</div>
+                    <div style="font-size:11.5px;color:rgba(210,232,220,.75);margin-top:2px">已自动与初始资产入库建档指纹深度比对，当前主机主板 UUID、CPU、内存槽位及硬盘 SN 完全一致。</div>
+                  </div>
+                  <button class="qbtn" onclick="toast('硬件基准指纹已重新固化更新！')" style="padding:6px 14px;font-size:12px;white-space:nowrap">更新基线指纹</button>
+                </div>
+
+                <div class="hw-spec-card" style="margin-bottom:0;background:rgba(210,232,220,.04)">
+                  <div class="hw-spec-table">
+                    <div class="hw-row">
+                      <div class="hw-k">主板 UUID:</div>
+                      <div class="hw-v" style="display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-family:monospace">4C4C4544-004A-5710-8032-C7C04F473232</span>
+                        <span class="safe-badge">一致 · 无更换</span>
+                      </div>
+                    </div>
+                    <div class="hw-row">
+                      <div class="hw-k">中央处理器:</div>
+                      <div class="hw-v" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>AMD Ryzen 7 9700X 8-Core (16 线程 · 原装封装)</span>
+                        <span class="safe-badge">一致 · 原装未拆</span>
+                      </div>
+                    </div>
+                    <div class="hw-row">
+                      <div class="hw-k">内存模组 1:</div>
+                      <div class="hw-v" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>16GB Micron DDR5 6000MHz <span class="hw-tag">SN: 2439180A</span></span>
+                        <span class="safe-badge">一致 · 无拔除</span>
+                      </div>
+                    </div>
+                    <div class="hw-row">
+                      <div class="hw-k">系统固态盘:</div>
+                      <div class="hw-v" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Samsung SSD 750 EVO 250GB <span class="hw-tag">SN: S2RBNX0H108291F</span></span>
+                        <span class="safe-badge">一致 · 无调包</span>
+                      </div>
+                    </div>
+                    <div class="hw-row">
+                      <div class="hw-k">主力数据盘:</div>
+                      <div class="hw-v" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Acer SSD N5000S NVMe 1TB <span class="hw-tag">SN: M2NVME891720</span></span>
+                        <span class="safe-badge">一致 · 无调包</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+                  <button class="qbtn" onclick="triggerOp('asset fingerprint', '比对硬件防拆防调包指纹'); toast('硬件指纹再次核验完成：各项指标均吻合！');">重新核验比对</button>
+                  <button class="qbtn" onclick="closeFingerprintModal()">完成并关闭</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 企业IT设备领用/归还交接签署单弹窗 (Handover Sheet Modal) -->
+          <div class="app-modal-overlay" id="handover-modal-overlay" onclick="closeHandoverModal(event)">
+            <div class="app-modal-win" onclick="event.stopPropagation()" style="width:860px;max-height:720px">
+              <div class="app-modal-head">
+                <div class="app-modal-title">
+                  <span>企业 IT 设备领用与归还交接单</span>
+                  <span class="hw-tag">防扯皮标准签署模板</span>
+                </div>
+                <div class="app-modal-close" onclick="closeHandoverModal()" title="关闭">✕</div>
+              </div>
+
+              <div class="app-modal-body" style="padding:16px 22px">
+                <!-- 打印用交接单票据视图 -->
+                <div id="handover-printable-area" style="background:#fff;color:#1a202c;padding:22px 26px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.35);font-family:'Segoe UI',system-ui,sans-serif">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2d3748;padding-bottom:12px;margin-bottom:14px">
+                    <div>
+                      <div style="font-size:19px;font-weight:800;color:#1a202c;letter-spacing:1px">企业 IT 设备领用 / 归还交接确认单</div>
+                      <div style="font-size:11px;color:#718096;margin-top:2px">IT Equipment Receipt & Return Handover Verification Form</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-size:12px;font-weight:700;color:#2b6cb0">单号: IT-20261025-0812</div>
+                      <div style="font-size:11px;color:#718096;margin-top:2px">打印日期: 2026-10-25</div>
+                    </div>
+                  </div>
+
+                  <!-- 责任人信息条 -->
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#f7fafc;padding:8px 12px;border:1px solid #e2e8f0;border-radius:6px;font-size:11.5px;margin-bottom:12px">
+                    <div><span style="color:#718096">员工姓名:</span> <b>青衫</b></div>
+                    <div><span style="color:#718096">员工工号:</span> <b>QS-0812</b></div>
+                    <div><span style="color:#718096">所属部门:</span> <b>技术研发中心</b></div>
+                    <div><span style="color:#718096">交接类型:</span> <b style="color:#2b6cb0">离职设备归还核验</b></div>
+                  </div>
+
+                  <!-- 资产核心信息表 -->
+                  <div style="font-size:12.5px;font-weight:700;color:#2d3748;margin-bottom:6px">一、主机设备与主要硬件配置清单</div>
+                  <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px">
+                    <thead>
+                      <tr style="background:#edf2f7;color:#4a5568">
+                        <th style="padding:5px 8px;text-align:left;border:1px solid #cbd5e0">部件类别</th>
+                        <th style="padding:5px 8px;text-align:left;border:1px solid #cbd5e0">品牌规格 / 型号参数</th>
+                        <th style="padding:5px 8px;text-align:left;border:1px solid #cbd5e0">序列号 (SN / UUID)</th>
+                        <th style="padding:5px 8px;text-align:center;border:1px solid #cbd5e0;width:80px">实物状态</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">主机及主板</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">七彩虹 BATTLE-AX B650M-E PRO</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;font-family:monospace">4C4C4544-004A-5710-8032</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;text-align:center;color:#38a169;font-weight:700">完好正品</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">中央处理器</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">AMD Ryzen 7 9700X 8-Core (16线程)</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">WMI-CPU-09700X-AMD</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;text-align:center;color:#38a169;font-weight:700">完好正品</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">物理内存</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">16GB Micron DDR5 6000MHz</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;font-family:monospace">SN: 2439180A</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;text-align:center;color:#38a169;font-weight:700">完好正品</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">存储硬盘</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0">Samsung SSD 750 EVO 250G + Acer 1TB</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;font-family:monospace">SN: S2RBNX0H108291F</td>
+                        <td style="padding:5px 8px;border:1px solid #cbd5e0;text-align:center;color:#38a169;font-weight:700">完好正品</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <!-- 外设清点 -->
+                  <div style="font-size:12.5px;font-weight:700;color:#2d3748;margin-bottom:6px">二、外设配件清点（签字确认）</div>
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px;margin-bottom:14px">
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 电源适配器及线缆</label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 视频线 (HDMI/DP)</label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 外接显示器 (27寸)</label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 键鼠套装及拓展坞</label>
+                  </div>
+
+                  <!-- 签署责任区域 -->
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;border-top:1px dashed #a0aec0;padding-top:12px;font-size:11.5px">
+                    <div style="line-height:1.9">
+                      <div><b>IT 资产交付/验收人签字:</b> ___________________</div>
+                      <div style="color:#718096">签署日期: 2026 年 _____ 月 _____ 日</div>
+                    </div>
+                    <div style="line-height:1.9">
+                      <div><b>员工本人确认签字:</b> ___________________</div>
+                      <div style="color:#718096">签署日期: 2026 年 _____ 月 _____ 日</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 底部操作按钮条 -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+                  <div style="font-size:12px;color:rgba(210,232,220,.7)">
+                    <span>凭证已固化硬件防伪指纹，打印后签署具有企业资产审计法律效力</span>
+                  </div>
+                  <div style="display:flex;gap:10px">
+                    <button class="qbtn" onclick="printHandoverSheet()">打印交接签署单</button>
+                    <button class="qbtn" onclick="copyHandoverText()">复制文本清单</button>
+                    <button class="qbtn" onclick="closeHandoverModal()">关闭</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PAGE_CONFIG = {
+  check:        { name: '系统巡检', cmd: 'qstoolbox check all' },
+  service:      { name: '服务管理', cmd: 'qstoolbox service list' },
+  disk:         { name: '磁盘清理', cmd: 'qstoolbox disk clean --safe' },
+  net:          { name: '网络排障', cmd: 'qstoolbox desktop fix --dns' },
+  'print-fix':  { name: '打印排障', cmd: 'qstoolbox desktop fix --spooler' },
+  'sys-fix':    { name: '系统修护', cmd: 'qstoolbox desktop fix --icon-cache' },
+  'meeting-fix':{ name: '会议急救', cmd: 'qstoolbox desktop fix --display-reset' },
+  logs:         { name: '日志分析', cmd: 'qstoolbox logs events --level Error' },
+  asset:        { name: '硬件信息', cmd: 'qstoolbox asset hardware' },
+  remote:       { name: '远程执行', cmd: 'qstoolbox remote exec <cmd>' },
+  backup:       { name: '备份恢复', cmd: 'qstoolbox backup list' },
+  plugins:      { name: '插件中心', cmd: 'qstoolbox plugin list' },
+  settings:     { name: '系统设置', cmd: 'qstoolbox config show' }
+};
+
+let curPage = 'asset';
+let currentWorkspace = 'desktop';
+
+function toggleWorkspaceDropdown(e){
+  if (e) e.stopPropagation();
+  const sel = document.getElementById('workspace-selector');
+  if (sel) sel.classList.toggle('open');
+}
+
+function closeWorkspaceDropdown(){
+  const sel = document.getElementById('workspace-selector');
+  if (sel) sel.classList.remove('open');
+}
+
+function selectWorkspace(mode, silent){
+  currentWorkspace = mode;
+  
+  const titleEl = document.getElementById('ws-title');
+  const badgeEl = document.getElementById('codex-badge');
+  const itemDesk = document.getElementById('ws-item-desktop');
+  const itemDev = document.getElementById('ws-item-devops');
+
+  if (titleEl) titleEl.textContent = mode === 'desktop' ? '桌面运维模式' : 'DevOps 运维模式';
+  if (badgeEl) badgeEl.textContent = mode === 'desktop' ? '桌面支持卷' : 'DevOps 运维卷';
+
+  if (itemDesk) itemDesk.classList.toggle('active', mode === 'desktop');
+  if (itemDev) itemDev.classList.toggle('active', mode === 'devops');
+
+  // 过滤左侧滚动列表项
+  const items = document.querySelectorAll('.side-scroll .sitem[data-mode]');
+  items.forEach(item => {
+    const itemMode = item.getAttribute('data-mode');
+    if (itemMode === mode) {
+      item.classList.remove('mode-hidden');
+    } else {
+      item.classList.add('mode-hidden');
+    }
+  });
+
+  // 校验当前页是否属于新选中的模式，如不属于则自动跳转到该模式首项
+  const activeSitem = document.querySelector(`.side-scroll .sitem[data-page="${curPage}"]`);
+  if (!activeSitem || activeSitem.classList.contains('mode-hidden')) {
+    const firstVisible = document.querySelector(`.side-scroll .sitem:not(.mode-hidden)`);
+    if (firstVisible) {
+      document.querySelectorAll('.sitem.sel').forEach(x => x.classList.remove('sel'));
+      firstVisible.classList.add('sel');
+      showPage(firstVisible.dataset.page);
+    }
+  }
+
+  closeWorkspaceDropdown();
+
+  if (!silent) {
+    toast(`已切换至【${mode === 'desktop' ? '桌面运维工作区' : 'DevOps 运维工作区'}】`);
+  }
+}
+
+// 点击空白区域自动收起下拉选择器
+document.addEventListener('click', (e) => {
+  const sel = document.getElementById('workspace-selector');
+  if (sel && !sel.contains(e.target)) {
+    closeWorkspaceDropdown();
+  }
+});
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function triggerOp(cmd, desc){
+  toast(`『${desc}』已触发 ➜ qstoolbox ${cmd}`);
+  console.log(`[QingShan Toolbox] qstoolbox ${cmd}`);
+}
+
+function showPage(id){
+  if (id === curPage) return;
+  const oldP = document.querySelector('.page.active');
+  const newP = document.querySelector(`.page[data-page="${id}"]`);
+  if (!newP) return;
+
+  if (oldP){
+    oldP.classList.remove('active');
+    oldP.classList.add('leaving');
+    setTimeout(() => {
+      oldP.classList.remove('leaving');
+    }, 420);
+  }
+  newP.classList.add('active');
+
+  const dt = document.getElementById('dtitle');
+  const dcmd = document.getElementById('dcmd');
+  dt.style.opacity = '0';
+  dcmd.style.opacity = '0';
+  setTimeout(() => {
+    dt.textContent = PAGE_CONFIG[id].name;
+    dcmd.textContent = PAGE_CONFIG[id].cmd;
+    dt.style.opacity = '1';
+    dcmd.style.opacity = '1';
+  }, 160);
+  curPage = id;
+}
+
+document.querySelectorAll('.sitem').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.sitem.sel').forEach(x => x.classList.remove('sel'));
+    el.classList.add('sel');
+    showPage(el.dataset.page);
+  });
+});
+
+function searchService(){
+  const name = document.getElementById('srv-input').value.trim();
+  triggerOp(`service status ${name}`, `查询服务 ${name}`);
+}
+
+function runPing(){
+  const target = document.getElementById('net-target').value.trim();
+  triggerOp(`net ping ${target}`, `探测目标 ${target}`);
+}
+
+function runPortScan(){
+  const target = document.getElementById('net-target').value.trim();
+  triggerOp(`net scan ${target} 20-1000`, `扫描 ${target} 常用端口`);
+}
+
+function runDns(){
+  const target = document.getElementById('net-target').value.trim();
+  triggerOp(`net dns ${target}`, `DNS 查询`);
+}
+
+function installViaGit(){
+  const input = document.getElementById('plugin-input');
+  const val = input ? input.value.trim() : '';
+  if (!val) {
+    toast('请输入 Git 仓库地址 (如 https://github.com/.../repo.git)');
+    return;
+  }
+  triggerOp(`plugin install ${val}`, `从 Git 仓库克隆扩展`);
+}
+
+function installViaNpm(){
+  const input = document.getElementById('plugin-input');
+  const val = input ? input.value.trim() : '';
+  if (!val) {
+    toast('请输入 NPM 包名 (如 @qstoolbox/xxx)');
+    return;
+  }
+  triggerOp(`plugin install ${val}`, `通过 NPM 安装扩展`);
+}
+
+// 释放内存与相对安全缓存
+function releaseMemoryAndCache(drive) {
+  triggerOp(`disk clean --drive ${drive}: --safe`, `释放系统工作集/待机内存与 ${drive} 盘相对安全缓存`);
+  setTimeout(() => {
+    toast(`已成功完成 ${drive} 盘相对缓存与系统内存释放，已保留所有日常登录态！`);
+  }, 200);
+}
+
+// 软件使用频率与闲置数据源
+const APP_DATA = [
+  { id: 1, name: 'VMware Workstation Pro 17', type: 'dormant', lastUsed: '210 天未运行 (上次: 2025/08/12)', path: 'C:\\Program Files (x86)\\VMware', size: '4.5 GB', freq: '长期闲置' },
+  { id: 2, name: '百度网盘客户端 (BaiduNetdisk)', type: 'dormant', lastUsed: '180 天未运行 (上次: 2025/09/15)', path: 'C:\\Users\\青衫\\AppData\\Roaming\\BaiduNetdisk', size: '1.2 GB', freq: '长期闲置' },
+  { id: 3, name: '迅雷 11 (Thunder)', type: 'dormant', lastUsed: '120 天未运行 (上次: 2025/11/20)', path: 'C:\\Program Files (x86)\\Thunder Network', size: '980 MB', freq: '长期闲置' },
+  { id: 4, name: '格式工厂 (FormatFactory)', type: 'dormant', lastUsed: '95 天未运行 (上次: 2025/12/18)', path: 'C:\\Program Files\\FormatFactory', size: '650 MB', freq: '长期闲置' },
+  { id: 5, name: '多屏投屏与设备互联助手', type: 'dormant', lastUsed: '320 天未运行 (上次: 2025/04/02)', path: 'C:\\Program Files\\ScreenShare', size: '420 MB', freq: '长期闲置' },
+  { id: 6, name: '微信 / 企业微信 (WeChat)', type: 'frequent', lastUsed: '10 分钟前活跃', path: 'C:\\Program Files\\Tencent\\WeChat', size: '8.5 GB', freq: '每日极高频' },
+  { id: 7, name: 'Google Chrome 浏览器', type: 'frequent', lastUsed: '刚刚 (正在运行)', path: 'C:\\Program Files\\Google\\Chrome\\Application', size: '2.4 GB', freq: '每日极高频' },
+  { id: 8, name: 'Visual Studio Code', type: 'frequent', lastUsed: '1 小时前', path: 'C:\\Users\\青衫\\AppData\\Local\\Programs\\Microsoft VS Code', size: '1.8 GB', freq: '工作日高频' },
+  { id: 9, name: '飞书 / 钉钉客户端', type: 'frequent', lastUsed: '3 小时前', path: 'C:\\Users\\青衫\\AppData\\Local\\Feishu', size: '1.2 GB', freq: '工作日高频' },
+  { id: 10, name: '剪映 专业版 (CapCut)', type: 'frequent', lastUsed: '2 天前', path: 'C:\\Users\\青衫\\AppData\\Local\\CapCut', size: '3.2 GB', freq: '每周活跃' },
+  { id: 11, name: 'Git / GitHub Desktop', type: 'frequent', lastUsed: '4 小时前', path: 'C:\\Program Files\\Git', size: '580 MB', freq: '经常使用' },
+  { id: 12, name: '7-Zip 压缩文件管理器', type: 'frequent', lastUsed: '昨天', path: 'C:\\Program Files\\7-Zip', size: '35 MB', freq: '经常使用' },
+  { id: 13, name: 'Windows 终端 (Windows Terminal)', type: 'frequent', lastUsed: '20 分钟前', path: 'C:\\Users\\青衫\\AppData\\Local\\Microsoft\\WindowsApps', size: '120 MB', freq: '每日高频' }
+];
+
+function openAppUsageModal() {
+  triggerOp('asset usage --frequency', '分析本地软件使用频率与长期闲置状态');
+  const modal = document.getElementById('app-modal-overlay');
+  if (modal) {
+    modal.classList.add('open');
+    filterAppList('dormant');
+  }
+}
+
+function closeAppUsageModal(e) {
+  if (e && e.target && !e.target.classList.contains('app-modal-overlay') && !e.target.classList.contains('app-modal-close')) {
+    return;
+  }
+  const modal = document.getElementById('app-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function filterAppList(type) {
+  document.querySelectorAll('.app-tab-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById(`tab-${type}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const listContainer = document.getElementById('app-list-container');
+  if (!listContainer) return;
+
+  const filtered = type === 'all' ? APP_DATA : APP_DATA.filter(a => a.type === type);
+
+  listContainer.innerHTML = filtered.map(app => `
+    <div class="app-item ${app.type}">
+      <div class="app-left">
+        <div class="app-info">
+          <div class="app-name">
+            <span>${app.name}</span>
+            ${app.type === 'dormant' 
+              ? `<span class="alarm-badge" style="font-size:10.5px">${app.freq} · ${app.lastUsed}</span>` 
+              : `<span class="safe-badge" style="font-size:10.5px">${app.freq} · 上次使用: ${app.lastUsed}</span>`}
+          </div>
+          <div class="app-sub">
+            <span>路径: ${app.path}</span>
+          </div>
+        </div>
+      </div>
+      <div class="app-right">
+        <span class="app-size">${app.size}</span>
+        ${app.type === 'dormant'
+          ? `<button class="app-act-btn" onclick="uninstallApp('${app.name}')">一键卸载</button>`
+          : `<button class="app-act-btn" style="border-color:rgba(210,232,220,.35);background:rgba(210,232,220,.12);color:#c9e8d5" onclick="triggerOp('asset locate ${app.name}', '打开软件安装路径')">定位</button>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+function uninstallApp(appName) {
+  triggerOp(`asset uninstall "${appName}"`, `调用卸载程序清理长期闲置软件: ${appName}`);
+  toast(`已发起【${appName}】卸载向导，完成后将释放磁盘空间`);
+}
+
+// 硬件防调包与交接单弹窗管理
+function openFingerprintModal() {
+  triggerOp('asset fingerprint', '比对硬件防拆防调包指纹');
+  const modal = document.getElementById('fingerprint-modal-overlay');
+  if (modal) modal.classList.add('open');
+}
+
+function closeFingerprintModal(e) {
+  if (e && e.target && !e.target.classList.contains('app-modal-overlay') && !e.target.classList.contains('app-modal-close')) return;
+  const modal = document.getElementById('fingerprint-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function openHandoverModal() {
+  triggerOp('asset handover --type 离职归还', '生成企业IT设备领用/归还交接签署单');
+  const modal = document.getElementById('handover-modal-overlay');
+  if (modal) modal.classList.add('open');
+}
+
+function closeHandoverModal(e) {
+  if (e && e.target && !e.target.classList.contains('app-modal-overlay') && !e.target.classList.contains('app-modal-close')) return;
+  const modal = document.getElementById('handover-modal-overlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function printHandoverSheet() {
+  window.print();
+}
+
+function copyHandoverText() {
+  const text = `【企业 IT 设备领用/归还交接单】\n单号: IT-20261025-0812\n员工: 青衫 (工号: QS-0812) · 技术研发中心\n主机: 七彩虹 B650M-E PRO (UUID: 4C4C4544-004A-5710-8032)\nCPU: AMD Ryzen 7 9700X (8C/16T)\n内存: 16GB Micron DDR5 6000MHz (SN: 2439180A)\n硬盘: Samsung 750 EVO 250G (SN: S2RBNX0H108291F) + Acer 1TB\n配件: 原装电源线、适配器、视频线均已清点齐全\n核验结果: 100% 账实相符 · 双方已签字确认`;
+  navigator.clipboard.writeText(text).then(() => {
+    toast('交接凭证纯文本已复制到剪贴板，可直接粘贴发至沟通群！');
+  }).catch(() => {
+    toast('交接单已生成！');
+  });
+}
+
+const win = document.getElementById('win');
+document.getElementById('xbtn').addEventListener('click', () => win.classList.add('hide'));
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') win.classList.toggle('hide');
+});
+
+function fitScreen(){
+  const zoom = Math.min(window.innerWidth / 1300, window.innerHeight / 880, 1);
+  document.getElementById('stage').style.transform = `scale(${zoom})`;
+}
+window.addEventListener('resize', fitScreen);
+fitScreen();
+selectWorkspace('desktop', true);
+</script>
+</body>
+</html>

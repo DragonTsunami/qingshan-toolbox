@@ -1,0 +1,117 @@
+# Release Pipeline for QingShan Toolbox / 青衫工具箱发布流水线
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code / 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go / 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Download dependencies / 下载依赖
+        run: go mod download
+
+      - name: Get version from tag / 从 tag 获取版本号
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build - Windows amd64 / 构建 Windows amd64
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags="-s -w -X github.com/qingshan/toolbox/internal/config.Version=${{ steps.version.outputs.VERSION }}" \
+            -o dist/qstoolbox-windows-amd64.exe \
+            ./cmd/qstoolbox
+
+      - name: Build - Windows arm64 / 构建 Windows arm64
+        env:
+          GOOS: windows
+          GOARCH: arm64
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags="-s -w -X github.com/qingshan/toolbox/internal/config.Version=${{ steps.version.outputs.VERSION }}" \
+            -o dist/qstoolbox-windows-arm64.exe \
+            ./cmd/qstoolbox
+
+      - name: Build - Linux amd64 / 构建 Linux amd64
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          CGO_ENABLED: "0"
+        run: |
+          go build \
+            -ldflags="-s -w -X github.com/qingshan/toolbox/internal/config.Version=${{ steps.version.outputs.VERSION }}" \
+            -o dist/qstoolbox-linux-amd64 \
+            ./cmd/qstoolbox
+
+      - name: Create checksums / 生成校验和
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+
+      - name: Generate changelog / 生成变更日志
+        id: changelog
+        run: |
+          # Get commits since last tag / 获取上一个 tag 以来的提交
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" ${PREV_TAG}..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)")
+          fi
+
+          # Write to file / 写入文件
+          cat << EOF > CHANGELOG.md
+          ## What's Changed / 更新内容
+
+          ${CHANGELOG}
+
+          ## Downloads / 下载
+
+          | Platform / 平台 | Architecture / 架构 | File / 文件 |
+          |---------|--------------|------|
+          | Windows | amd64 | \`qstoolbox-windows-amd64.exe\` |
+          | Windows | arm64 | \`qstoolbox-windows-arm64.exe\` |
+          | Linux   | amd64 | \`qstoolbox-linux-amd64\` |
+
+          ## Verify / 校验
+
+          \`\`\`bash
+          sha256sum -c checksums.txt
+          \`\`\`
+          EOF
+
+      - name: Create GitHub Release / 创建 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
+          files: |
+            dist/qstoolbox-windows-amd64.exe
+            dist/qstoolbox-windows-arm64.exe
+            dist/qstoolbox-linux-amd64
+            dist/checksums.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
