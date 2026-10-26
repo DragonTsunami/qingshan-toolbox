@@ -2304,11 +2304,43 @@ function toast(msg){
   t._timer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-function triggerOp(cmd, desc){
+async function triggerOp(cmd, desc){
   const prefix = currentLang === 'zh' ? '『' : '"';
-  const suffix = currentLang === 'zh' ? '』已触发 ➜ qstoolbox ' : '" triggered ➜ qstoolbox ';
-  toast(`${prefix}${desc}${suffix}${cmd}`);
-  console.log(`[QingShan Toolbox] qstoolbox ${cmd}`);
+  const triggerMsg = currentLang === 'zh' ? '』正在执行...' : '" executing...';
+  toast(`${prefix}${desc}${triggerMsg}`);
+  console.log(`[QingShan Toolbox] Executing: ${cmd}`);
+
+  try {
+    // 1. Electron IPC execution
+    if (window.electronAPI && window.electronAPI.exec) {
+      const res = await window.electronAPI.exec(cmd);
+      if (res && res.output) {
+        toast(`${prefix}${desc}${currentLang === 'zh' ? '』执行成功' : '" completed'}`);
+        console.log('[Execution Output]:', res.output);
+      } else if (res && res.error) {
+        toast(`${prefix}${desc}${currentLang === 'zh' ? '』完成: ' : '" completed: '}${res.error}`);
+      } else {
+        toast(`${prefix}${desc}${currentLang === 'zh' ? '』执行完成' : '" completed'}`);
+      }
+      return;
+    }
+    // 2. WebView2 / Local server HTTP execution
+    if (window.location.protocol.startsWith('http')) {
+      const resp = await fetch('/api/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cmd })
+      });
+      const data = await resp.json();
+      toast(`${prefix}${desc}${currentLang === 'zh' ? '』执行成功' : '" completed'}`);
+      return;
+    }
+  } catch(e) {
+    console.error(e);
+  }
+
+  // Standalone browser preview fallback
+  toast(`${prefix}${desc}${currentLang === 'zh' ? '』已触发 ➜ qstoolbox ' : '" triggered ➜ qstoolbox '}${cmd}`);
 }
 
 function showPage(id){
@@ -2493,11 +2525,17 @@ function filterAppList(type) {
         <span class="app-size">${app.size}</span>
         ${app.type === 'dormant'
           ? `<button class="app-act-btn" onclick="uninstallApp('${app.name}')">${actBtnText}</button>`
-          : `<button class="app-act-btn" style="border-color:rgba(210,232,220,.35);background:rgba(210,232,220,.12);color:#c9e8d5" onclick="triggerOp('asset locate ${app.name}', '${currentLang==='zh'?'打开软件安装路径':'Open install directory'}')">${actBtnText}</button>`}
+          : `<button class="app-act-btn" style="border-color:rgba(210,232,220,.35);background:rgba(210,232,220,.12);color:#c9e8d5" onclick="locateApp('${app.name}')">${actBtnText}</button>`}
       </div>
     </div>
   `;
   }).join('');
+}
+
+
+function locateApp(appName) {
+  const desc = currentLang === 'zh' ? `定位软件安装路径: ${appName}` : `Locate app directory: ${appName}`;
+  triggerOp(`asset locate "${appName}"`, desc);
 }
 
 function uninstallApp(appName) {
@@ -2565,6 +2603,49 @@ window.addEventListener('keydown', e => {
 // Initial load: apply stored or default language
 setLanguage(currentLang, true);
 selectWorkspace('desktop', true);
+
+// Desktop Window Controls
+function minimizeApp(){
+  if (window.electronAPI && window.electronAPI.minimize) {
+    try { window.electronAPI.minimize(); } catch(e) {}
+  }
+}
+
+function maximizeApp(){
+  if (window.electronAPI && window.electronAPI.maximize) {
+    try { window.electronAPI.maximize(); } catch(e) {}
+  }
+}
+
+function closeApp(){
+  // 1. Electron IPC
+  if (window.electronAPI && window.electronAPI.close) {
+    try { window.electronAPI.close(); } catch(e) {}
+  }
+  // 2. WebView2 / Local server
+  if (window.location.protocol.startsWith('http')) {
+    try { fetch('/api/exit', { method: 'POST' }).catch(() => {}); } catch(e) {}
+  }
+  // 3. Fallback
+  setTimeout(() => {
+    try { window.close(); } catch(e) {}
+  }, 50);
+}
+
+// Remote Execution
+function execRemote(){
+  const input = document.getElementById('remote-input');
+  const cmd = input ? input.value.trim() : 'Get-Service spooler';
+  const desc = currentLang === 'zh' ? `批量下发远程指令: ${cmd}` : `Batch execute remote command: ${cmd}`;
+  triggerOp(`remote exec "${cmd}"`, desc);
+}
+
+// Printer Test Page
+function printTestPage(){
+  const desc = currentLang === 'zh' ? '发送标准 Windows 打印机测试页任务' : 'Send Windows Printer Test Page';
+  triggerOp('desktop fix --print-test', desc);
+}
+
 </script>
 </body>
 </html>
