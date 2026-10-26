@@ -32,7 +32,7 @@
   @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(65px,-45px) scale(1.12)}}
 
   /* 主舞台容器 */
-  #stage{position:relative;width:1220px;height:820px;flex:none;z-index:10;transform-origin:center center}
+  #stage{position:relative;width:1200px;height:800px;flex:none;z-index:10;transform-origin:center center}
   .win{position:absolute;inset:0;border-radius:24px;
     background:linear-gradient(160deg, rgba(210,232,220,.11), rgba(210,232,220,.03) 42%, rgba(210,232,220,.08));
     border:1.5px solid var(--theme-border);
@@ -51,11 +51,10 @@
     color:rgba(210,232,220,.85);font-size:16px;transition:.15s;user-select:none;
     background:rgba(210,232,220,.10);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   .xbtn:hover{background:rgba(210,232,220,.24);color:#eef7f2}
-  .lang-btn{width:auto;min-width:38px;padding:0 9px;border-radius:17px;font-size:12px;font-weight:700;letter-spacing:.5px;font-family:system-ui,-apple-system,sans-serif;cursor:pointer}
 
   /* 顶部古韵标题栏 */
   .win-top{position:absolute;left:0;right:0;top:0;height:48px;padding-top:6px;display:flex;align-items:center;z-index:8}
-  .win-top .wt{flex:1;text-align:center;color:#eef7f2;font-size:25px;font-weight:700;letter-spacing:12px;
+  .win-top .wt{flex:1;text-align:center;color:#eef7f2;font-size:22px;font-weight:700;letter-spacing:8px;
     padding-left:12px;
     text-shadow:0 1px 12px rgba(210,232,220,.4), 0 2px 8px rgba(0,0,0,.6)}
   .win-top .wln{width:160px;height:1.5px;background:linear-gradient(90deg,transparent,rgba(210,232,220,.65))}
@@ -472,7 +471,6 @@
 
     <!-- 右上快捷动作 -->
     <div class="win-actions">
-      <div class="xbtn lang-btn" id="lang-btn" title="切换语言 / Switch Language" onclick="toggleLanguage()">EN</div>
       <div class="xbtn" id="export-btn" title="导出硬件报告" onclick="triggerOp('asset export hardware_report.json', currentLang === 'zh' ? '导出硬件资产清单' : 'Export Hardware Inventory')">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
@@ -1321,7 +1319,7 @@
                   <div style="font-size:13px;color:#eef7f2;display:flex;flex-direction:column;gap:12px;width:100%">
                     <div style="display:flex;justify-content:space-between;align-items:center">
                       <span data-i18n="settings_lang_label">界面语言 (Language):</span>
-                      <select class="qin" id="lang-select" onchange="setLanguage(this.value)" style="width:115px;padding:4px 8px;font-size:12px;background:rgba(210,232,220,.14);color:#eef7f2;border-radius:6px;border:1px solid rgba(210,232,220,.35);cursor:pointer">
+                      <select class="qin" id="lang-select" onchange="setLanguage(this.value)" style="width:120px;padding:5px 10px;font-size:12px;background:rgba(210,232,220,.14);color:#eef7f2;border-radius:6px;border:1px solid rgba(210,232,220,.35);cursor:pointer">
                         <option value="zh" style="background:#0e1726;color:#eef7f2">简体中文</option>
                         <option value="en" style="background:#0e1726;color:#eef7f2">English</option>
                       </select>
@@ -2171,11 +2169,11 @@ function setLanguage(lang, silent) {
   currentLang = lang === 'en' ? 'en' : 'zh';
   localStorage.setItem('qstoolbox_lang', currentLang);
 
-  // Update switcher button in top right
-  const langBtn = document.getElementById('lang-btn');
-  if (langBtn) {
-    langBtn.textContent = I18N[currentLang].btn_lang;
-    langBtn.title = I18N[currentLang].btn_lang_title;
+  // Update window title typography according to language
+  const winTitle = document.getElementById('win-title');
+  if (winTitle) {
+    winTitle.style.letterSpacing = currentLang === 'zh' ? '8px' : '2px';
+    winTitle.style.fontSize = currentLang === 'zh' ? '22px' : '19px';
   }
 
   // Update language select dropdown in Settings
@@ -2577,7 +2575,7 @@ window.addEventListener('keydown', e => {
 });
 
 function fitScreen(){
-  const zoom = Math.min(window.innerWidth / 1300, window.innerHeight / 880, 1);
+  const zoom = Math.min(window.innerWidth / 1240, window.innerHeight / 840, 1);
   document.getElementById('stage').style.transform = `scale(${zoom})`;
 }
 window.addEventListener('resize', fitScreen);

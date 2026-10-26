@@ -1,200 +1,184 @@
-<h1 align="center">🔧 QingShan Toolbox</h1>
+<h1 align="center">🔧 QingShan Toolbox (青衫工具箱)</h1>
 
 <p align="center">
-  <strong>An all-in-one IT operations toolkit built with Go — making daily ops simple.</strong>
+  <strong>All-in-One IT Desktop Support & DevOps Automation Toolkit built with Go</strong><br>
+  <em>一站式企业桌面运维与 DevOps 自动化工具箱 —— 让日常运维更简单、高效、无感。</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/qingshan/toolbox/actions/workflows/ci.yml"><img src="https://github.com/qingshan/toolbox/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
-  <a href="https://github.com/qingshan/toolbox/releases/latest"><img src="https://img.shields.io/github/v/release/qingshan/toolbox?color=blue" alt="Release"></a>
+  <a href="https://github.com/DragonTsunami/qingshan-toolbox/releases/latest"><img src="https://img.shields.io/github/v/release/DragonTsunami/qingshan-toolbox?color=2ea44f&label=Release" alt="Release"></a>
   <img src="https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white" alt="Go Version">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/github/stars/qingshan/toolbox?style=social" alt="Stars">
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-informational" alt="Platforms">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/github/stars/DragonTsunami/qingshan-toolbox?style=social" alt="Stars">
 </p>
 
 <p align="center">
-  <a href="README_zh.md">🇨🇳 中文文档</a> •
-  <a href="docs/getting-started.md">Getting Started</a> •
-  <a href="docs/architecture.md">Architecture</a> •
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="README.md"><b>🇺🇸 English</b></a> •
+  <a href="README_zh.md"><b>🇨🇳 简体中文</b></a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-dual-mode-architecture">Architecture</a> •
+  <a href="#-gui-interface-genshin-frosted-glass">GUI Interface</a>
 </p>
 
 ---
 
-## ✨ Features
+## 🌟 Overview / 项目简介
 
-| Module | Description |
-|--------|-------------|
-| 🏥 **System Health Check** | CPU, memory, disk, and overall system health at a glance |
-| ⚙️ **Service Management** | Start, stop, restart, and monitor Windows services |
-| 📋 **Log Viewer** | Tail, search, and filter application and system logs in real-time |
-| 🖥️ **Remote SSH Execution** | Execute commands on remote hosts via SSH — single or batch |
-| 📦 **Software Asset Inventory** | Scan and report installed software across machines |
-| 🌐 **Network Diagnostics** | Ping, traceroute, port scan, and DNS lookup utilities |
-| 🧹 **Disk Cleanup** | Identify and remove temp files, old logs, and reclaim disk space |
-| 💾 **Backup Management** | Schedule and manage file/folder backups with retention policies |
+**QingShan Toolbox (青衫工具箱)** is a modern, lightweight, and high-performance toolkit designed specifically for **Windows System Administrators, Enterprise Desktop Support (Helpdesk), and DevOps Engineers**. 
 
-## 🚀 Quick Install
+It uniquely unifies **Dual Workspace Modes**:
+1. **Desktop Support Mode (桌面支持卷)**: Solves real-world enterprise employee pain points — hardware tampering detection, equipment handover sign-off sheet generation, zero-impact safe disk cleanup, dormant software audit, print spooler & 0x709 sharing error fixes, DNS/proxy network rescue, and meeting room projection/audio emergencies.
+2. **DevOps Ops Mode (DevOps 运维卷)**: Full suite of system health inspection, Windows service management, real-time log trailing, batch SSH remote execution, snapshot backup/recovery, and decentralized Git/NPM plugin loading.
 
-### Option 1: Go Install
+The project features both a powerful **CLI** (`qstoolbox`) and a standalone, zero-dependency **Genshin Liyue Jade Frosted Glass UI** (`web/index.html`) supporting **dynamic Chinese & English (i18n) switching**.
+
+---
+
+## ✨ Key Features / 核心功能
+
+### 🖥️ 1. Enterprise Desktop IT Support (桌面运维支持卷)
+
+* **Hardware Asset & Anti-Tampering Fingerprint (`qstoolbox asset`)**
+  * Instant hardware inventory (CPU, Motherboard UUID, RAM slot details, GPU, Disk SNs).
+  * **Anti-Tampering Fingerprint Verification**: Compares baseline hardware signatures to detect unauthorized RAM or SSD swapping by employees before return.
+  * **Equipment Handover Sign-off Sheet**: Automatically generates printable handover receipts for employee onboarding or offboarding.
+* **Zero-Impact Safe Cleanup & Dormant App Audit (`qstoolbox disk` / `asset usage`)**
+  * **Daily Safe Cleanup**: Skips locked active files, preserves all browser cookies, session logins, and document caches — frees ~21GB of harmless dead cache.
+  * **Dormant App Frequency Audit**: Identifies applications unused for >90 days and provides one-click uninstallation.
+  * Per-drive threshold monitor with 85% red-dot visual warnings.
+* **Printer & Peripheral Troubleshooting (`qstoolbox desktop fix --spooler | --print709`)**
+  * One-click print queue purge and Spooler daemon recovery.
+  * Fixes post-update LAN shared printer errors `0x00000709` and `0x0000011b` (RPC authentication).
+* **Network & Proxy Emergency Fixes (`qstoolbox desktop fix --dns | --proxy | --winsock`)**
+  * Flushes DNS cache, resets Winsock TCP/IP stack.
+  * Cleans leftover proxy configurations (fixes "WeChat works but web browsers cannot open pages").
+* **Meeting Room Emergency SOS (`qstoolbox desktop fix --display-reset | --audio-reset | --presentation`)**
+  * Resets GPU display pipelines and Win+P projection outputs for projectors and external displays.
+  * Restores HDMI conference audio output routing.
+  * Enables high-priority presentation keep-awake mode to prevent executive screen timeouts during meetings.
+* **System Environment Repair (`qstoolbox desktop fix --icon-cache | --hibernate`)**
+  * Rebuilds corrupted desktop icon cache databases.
+  * Disables hibernation to reclaim 16GB~32GB of `hiberfil.sys` space on drive C:.
+
+### ⚙️ 2. DevOps & Infrastructure Operations (DevOps 运维卷)
+
+* **System Health Inspection (`qstoolbox check all`)**: Real-time CPU, RAM, and physical drive metrics.
+* **Service Daemon Management (`qstoolbox service`)**: Query, stop, start, and restart Windows background services without heavy GUI tools.
+* **Log Analyzer & Tail Stream (`qstoolbox logs`)**: Real-time `tail -f` log streaming with error keyword filtering and Windows Event Log inspection.
+* **Remote Batch Execution (`qstoolbox remote`)**: Concurrent SSH/WinRM script execution and automated software deployment.
+* **Backup & Restore (`qstoolbox backup`)**: JSON manifest snapshot backup with ZIP compression and automated retention policies.
+* **Decentralized Plugin Ecosystem (`qstoolbox plugin`)**: Zero-server, review-free extension loading directly from Git repositories or NPM packages.
+
+---
+
+## 🎨 GUI Interface (Genshin Frosted Glass UI)
+
+The web dashboard is delivered in a single, lightweight file [web/index.html](web/index.html):
+- **Aesthetic**: Genshin Impact Liyue-inspired frosted jade glass texture with subtle breathing aurora blobs.
+- **Dynamic Language Switch (i18n)**: Switch between **简体中文** and **English** dynamically in **Settings (系统设置 ➜ 交互与主题偏好)**. User preferences are automatically remembered via `localStorage`.
+- **Pure & Clean**: No visual clutter, SVG hardware indicators, responsive scaling for 1080p, 2K, and laptop displays.
+
+---
+
+## 🚀 Quick Start / 快速开始
+
+### 1. Build from Source
 
 ```bash
-go install github.com/qingshan/toolbox/cmd/qstoolbox@latest
-```
+# Clone the repository
+git clone https://github.com/DragonTsunami/qingshan-toolbox.git
+cd qingshan-toolbox
 
-### Option 2: Download Binary
-
-Download the latest release for your platform from the [Releases](https://github.com/qingshan/toolbox/releases/latest) page.
-
-### Option 3: PowerShell One-liner (Windows)
-
-```powershell
-irm https://raw.githubusercontent.com/qingshan/toolbox/main/scripts/install.ps1 | iex
-```
-
-### Option 4: Build from Source
-
-```bash
-git clone https://github.com/qingshan/toolbox.git
-cd toolbox
+# Build binary
 go build -o qstoolbox.exe ./cmd/qstoolbox
 ```
 
-## 📖 Quick Start
+### 2. Common CLI Commands
 
 ```bash
-# Check system health
-qstoolbox health
+# === Desktop IT Support Mode ===
+# Show hardware specs
+./qstoolbox.exe asset hardware
 
-# View detailed system info
-qstoolbox health --verbose
+# Run hardware anti-tampering fingerprint verification
+./qstoolbox.exe asset fingerprint
 
-# Manage Windows services
-qstoolbox service list
-qstoolbox service status <service-name>
-qstoolbox service restart <service-name>
+# Generate equipment handover sheet
+./qstoolbox.exe asset handover --type return
 
-# Tail logs in real-time
-qstoolbox log tail -f /var/log/app.log
-qstoolbox log search --keyword "ERROR" --path C:\Logs\app.log
+# Safe cache cleanup without losing browser logins
+./qstoolbox.exe disk clean --safe
 
-# Execute remote commands via SSH
-qstoolbox ssh exec --host 192.168.1.100 --user admin "hostname"
-qstoolbox ssh batch --inventory hosts.yml --command "uptime"
+# Fix print spooler stalled queue
+./qstoolbox.exe desktop fix --spooler
 
-# Software inventory
-qstoolbox inventory scan
-qstoolbox inventory export --format csv --output report.csv
+# Fix shared printer 0x709 / 0x11b error
+./qstoolbox.exe desktop fix --print709
 
-# Network diagnostics
-qstoolbox net ping 8.8.8.8
-qstoolbox net trace 1.1.1.1
-qstoolbox net portscan --host 192.168.1.1 --ports 22,80,443
-qstoolbox net dns example.com
+# Reset network proxy leftovers (fix browser unreachable)
+./qstoolbox.exe desktop fix --proxy
 
-# Disk cleanup
-qstoolbox disk analyze C:\
-qstoolbox disk cleanup --older-than 30d --path C:\Temp
+# Reset conference display projection
+./qstoolbox.exe desktop fix --display-reset
 
-# Backup management
-qstoolbox backup create --source C:\Data --dest D:\Backups
-qstoolbox backup schedule --cron "0 2 * * *" --source C:\Data --dest D:\Backups
-qstoolbox backup list
+# Rebuild corrupted desktop white icon cache
+./qstoolbox.exe desktop fix --icon-cache
+
+# === DevOps Mode ===
+# Run full system health check
+./qstoolbox.exe check all
+
+# Query and restart service
+./qstoolbox.exe service status wuauserv
+./qstoolbox.exe service restart spooler
+
+# Tail real-time log
+./qstoolbox.exe logs tail C:\app\logs\sys.log
 ```
 
-## ⚙️ Configuration
+### 3. Launching the GUI Dashboard
 
-QingShan Toolbox uses a YAML configuration file. By default, it looks for `qstoolbox.yaml` in the current directory, `$HOME/.qstoolbox/`, or `/etc/qstoolbox/`.
+Simply double-click or serve [web/index.html](web/index.html) in any modern browser (Edge, Chrome, Firefox).
 
-```yaml
-# qstoolbox.yaml
-log:
-  level: info          # debug, info, warn, error
-  format: text         # text, json
-  output: stdout       # stdout, stderr, or file path
+---
 
-ssh:
-  default_user: admin
-  default_port: 22
-  key_path: ~/.ssh/id_rsa
-  timeout: 30s
-
-backup:
-  retention_days: 30
-  compression: gzip    # gzip, zstd, none
-
-cleanup:
-  default_age: 30d
-  protected_paths:
-    - C:\Windows
-    - C:\Program Files
-```
-
-You can also use environment variables with the `QSTOOLBOX_` prefix:
-
-```bash
-export QSTOOLBOX_LOG_LEVEL=debug
-export QSTOOLBOX_SSH_DEFAULT_USER=root
-```
-
-## 🖼️ Screenshots
-
-<!-- Screenshots will be added here -->
-<p align="center">
-  <em>Screenshots coming soon — stay tuned!</em>
-</p>
-
-## 🏗️ Architecture Overview
+## 📂 Repository Structure
 
 ```
 qingshan-toolbox/
 ├── cmd/
-│   └── qstoolbox/          # CLI entry point (Cobra)
-│       └── main.go
+│   └── qstoolbox/          # CLI Entrypoint (Cobra)
 ├── internal/
-│   ├── health/              # System health checks
-│   ├── service/             # Windows service management
-│   ├── logview/             # Log viewing and searching
-│   ├── ssh/                 # Remote SSH execution
-│   ├── inventory/           # Software asset inventory
-│   ├── network/             # Network diagnostics
-│   ├── cleanup/             # Disk cleanup utilities
-│   ├── backup/              # Backup management
-│   └── config/              # Viper-based configuration
-├── pkg/
-│   └── util/                # Shared utilities
-├── docs/                    # Documentation
-├── scripts/                 # Install & helper scripts
-└── configs/                 # Example config files
+│   ├── cli/                # Desktop fix, asset fingerprint, disk, net commands
+│   ├── health/             # System health inspection
+│   ├── service/            # Windows service daemon management
+│   ├── logview/            # Log streaming and event viewer
+│   ├── ssh/                # Batch remote SSH runner
+│   ├── inventory/          # Hardware & software asset auditing
+│   ├── cleanup/            # Safe cache cleanup algorithms
+│   ├── backup/             # Snapshot backup engine
+│   └── config/             # YAML and environment variable configuration
+├── web/
+│   └── index.html          # Standalone Genshin Frosted Glass UI (bilingual i18n)
+├── docs/                   # Documentation & guides
+├── scripts/                # Utility and deployment scripts
+├── README.md               # English Documentation (Default)
+└── README_zh.md            # 简体中文详细文档
 ```
-
-Each module is self-contained under `internal/` and registers its own Cobra subcommand. The CLI entry point in `cmd/qstoolbox/` wires everything together. Configuration is managed via Viper, supporting YAML files, environment variables, and command-line flags.
-
-For a detailed architecture description, see [docs/architecture.md](docs/architecture.md).
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) to get started.
-
-- 🐛 [Report a Bug](https://github.com/qingshan/toolbox/issues/new?template=bug_report.md)
-- 💡 [Request a Feature](https://github.com/qingshan/toolbox/issues/new?template=feature_request.md)
-- 📖 [Read the Docs](docs/getting-started.md)
-
-## 📜 License
-
-This project is licensed under the [MIT License](LICENSE).
-
-Copyright © 2024-present QingShan Contributors.
-
-## ⭐ Star History
-
-<!-- Star history chart placeholder -->
-<p align="center">
-  If you find this project useful, please consider giving it a ⭐ — it helps a lot!
-</p>
 
 ---
 
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/qingshan">QingShan</a> and contributors.
-</p>
+## 🌐 Bilingual Support / 双语支持
+
+QingShan Toolbox is fully bilingual:
+- **Documentation**: Both English ([README.md](README.md)) and Simplified Chinese ([README_zh.md](README_zh.md)) are maintained in this single repository.
+- **Application GUI**: Switch between **简体中文** and **English** inside the **Settings** view (`系统设置 ➜ 交互与主题偏好 ➜ 界面语言`).
+
+---
+
+## 📜 License
+
+This project is open-sourced under the [MIT License](LICENSE).
+
+Copyright © 2026-present QingShan Contributors.
