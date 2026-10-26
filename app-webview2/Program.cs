@@ -106,6 +106,32 @@ namespace QingShanToolbox
             {
                 string rawUrl = ctx.Request.Url.AbsolutePath;
 
+                // Handle Exit command
+                if (rawUrl == "/api/exit" && ctx.Request.HttpMethod == "POST")
+                {
+                    try
+                    {
+                        ctx.Response.StatusCode = 200;
+                        ctx.Response.Close();
+                    }
+                    catch { }
+
+                    ThreadPool.QueueUserWorkItem(s =>
+                    {
+                        Thread.Sleep(50);
+                        try
+                        {
+                            if (edgeProcess != null && !edgeProcess.HasExited)
+                            {
+                                edgeProcess.Kill();
+                            }
+                        }
+                        catch { }
+                        Environment.Exit(0);
+                    });
+                    return;
+                }
+
                 if (rawUrl == "/api/exec" && ctx.Request.HttpMethod == "POST")
                 {
                     string reqBody;

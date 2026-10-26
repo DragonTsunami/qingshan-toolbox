@@ -1,8 +1,14 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  minimize: () => ipcRenderer.invoke('win:minimize'),
-  maximize: () => ipcRenderer.invoke('win:maximize'),
-  close: () => ipcRenderer.invoke('win:close'),
+  minimize: () => {
+    ipcRenderer.send('win:minimize');
+  },
+  maximize: () => {
+    ipcRenderer.send('win:maximize');
+  },
+  close: () => {
+    ipcRenderer.send('win:close');
+  },
   exec: (cmd) => ipcRenderer.invoke('sys:exec', cmd)
 });

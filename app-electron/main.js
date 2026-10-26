@@ -50,11 +50,11 @@ function createWindow() {
 }
 
 // Window control IPC
-ipcMain.handle('win:minimize', () => {
+function handleMinimize() {
   if (mainWindow) mainWindow.minimize();
-});
+}
 
-ipcMain.handle('win:maximize', () => {
+function handleMaximize() {
   if (mainWindow) {
     if (mainWindow.isMaximized()) {
       mainWindow.unmaximize();
@@ -62,12 +62,23 @@ ipcMain.handle('win:maximize', () => {
       mainWindow.maximize();
     }
   }
-});
+}
 
-ipcMain.handle('win:close', () => {
-  // Directly terminate and quit the application completely
-  app.quit();
-});
+function handleClose() {
+  if (mainWindow) {
+    try { mainWindow.destroy(); } catch(e) {}
+  }
+  app.exit(0);
+}
+
+ipcMain.handle('win:minimize', handleMinimize);
+ipcMain.on('win:minimize', handleMinimize);
+
+ipcMain.handle('win:maximize', handleMaximize);
+ipcMain.on('win:maximize', handleMaximize);
+
+ipcMain.handle('win:close', handleClose);
+ipcMain.on('win:close', handleClose);
 
 // Run PowerShell or System Ops
 ipcMain.handle('sys:exec', async (event, command) => {
@@ -85,7 +96,6 @@ ipcMain.handle('sys:exec', async (event, command) => {
       psCmd = 'ie4uinit.exe -show; "Windows 图标缓存已重建"';
     }
 
-    // Force UTF-8 output encoding in PowerShell
     const fullCmd = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ${psCmd}`;
     exec(`powershell.exe -NoProfile -Command "${fullCmd}"`, { windowsHide: true, encoding: 'utf8' }, (error, stdout, stderr) => {
       resolve({
@@ -105,5 +115,5 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  app.quit();
+  app.exit(0);
 });
