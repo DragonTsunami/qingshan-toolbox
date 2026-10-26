@@ -16,31 +16,12 @@
     --theme-sub: rgba(210,232,220,.78);
     --theme-dim: rgba(210,232,220,.45);
   }
-  html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#060a14;
-    font-family:'Microsoft YaHei','Segoe UI',-apple-system,sans-serif;
-    position:relative}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0c131d;
+    font-family:'Microsoft YaHei','Segoe UI',-apple-system,sans-serif;user-select:none}
   
-  /* 背景：深邃极光光斑 + 纹理 */
-  .backdrop{position:fixed;inset:0;background:radial-gradient(1000px 700px at 50% 40%, #111a30 0%, #080d1a 60%, #04070d 100%);overflow:hidden;z-index:0}
-  .backdrop::after{content:'';position:absolute;inset:0;
-    background:repeating-linear-gradient(115deg, transparent 0 110px, rgba(210,232,220,.025) 110px 112px, transparent 112px 260px)}
-  .blob{position:absolute;border-radius:50%;filter:blur(95px);opacity:.48}
-  .blob.b1{width:580px;height:580px;left:6%;top:10%;background:#2e4c7a;animation:drift 18s ease-in-out infinite alternate}
-  .blob.b2{width:500px;height:500px;right:6%;top:10%;background:#3d7a5a;animation:drift 22s ease-in-out infinite alternate-reverse}
-  .blob.b3{width:540px;height:540px;left:34%;bottom:-12%;background:#235848;animation:drift 24s ease-in-out infinite alternate}
-  .blob.b4{width:400px;height:400px;right:20%;bottom:5%;background:#8b995e;opacity:.25;animation:drift 19s ease-in-out infinite alternate-reverse}
-  @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(65px,-45px) scale(1.12)}}
-
-  /* 主舞台容器 */
-  #stage{position:absolute;left:50%;top:50%;width:1220px;height:820px;transform:translate(-50%,-50%);transform-origin:center center;z-index:10;margin:0}
-  .win{position:absolute;inset:0;border-radius:24px;
-    background:linear-gradient(160deg, rgba(210,232,220,.11), rgba(210,232,220,.03) 42%, rgba(210,232,220,.08));
-    border:1.5px solid var(--theme-border);
-    backdrop-filter:blur(28px) saturate(1.25);
-    -webkit-backdrop-filter:blur(28px) saturate(1.25);
-    box-shadow:0 30px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(210,232,220,.35), inset 0 -1px 0 rgba(210,232,220,.08);
-    transition:opacity .28s ease, transform .28s ease}
-  .win.hide{opacity:0;transform:scale(.965);pointer-events:none}
+  #app{position:relative;width:100%;height:100%;display:flex;flex-direction:column;
+    background:radial-gradient(1200px 800px at 50% 25%, #152233 0%, #0d1624 55%, #080d16 100%);
+    box-sizing:border-box;overflow:hidden}
   .win::before{content:'';position:absolute;inset:0;border-radius:24px;pointer-events:none;z-index:1;
     background:linear-gradient(165deg, rgba(210,232,220,.16) 0%, transparent 28%, transparent 72%, rgba(210,232,220,.07) 100%)}
   
@@ -63,7 +44,7 @@
   .cld{width:30px;height:17px;flex:none;margin:0 12px;opacity:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.45)) drop-shadow(0 0 7px rgba(210,232,220,.35))}
 
   /* 主体区 */
-  .win-body{position:absolute;left:0;right:0;top:48px;bottom:0;display:flex}
+  .win-body{flex:1;display:flex;position:relative;overflow:hidden}
   
   /* 左侧菜单导航 */
   .side{width:290px;flex:none;padding:10px 14px 14px;box-sizing:border-box;position:relative;display:flex;flex-direction:column}
@@ -458,25 +439,25 @@
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
 </div>
 
-<div id="stage">
-  <div class="win" id="win">
+<div id="app">
 
-    <!-- 顶部祥云居中标题 -->
-    <div class="win-top">
-      <span class="wln"></span>
-      <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.75)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
-      <span class="wt" id="win-title" data-i18n="win_title">青 衫 工 具 箱</span>
-      <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.75)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
-      <span class="wln r"></span>
-    </div>
-
-    <!-- 右上快捷动作 -->
-    <div class="win-actions">
-      <div class="xbtn" id="export-btn" title="导出硬件报告" onclick="triggerOp('asset export hardware_report.json', currentLang === 'zh' ? '导出硬件资产清单' : 'Export Hardware Inventory')">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <!-- 桌面客户端原生顶部导航栏 -->
+    <header class="win-top">
+      <div class="win-title-left">
+        <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.85)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
+        <span class="wt" id="win-title" data-i18n="win_title">青 衫 工 具 箱</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(210,232,220,.10);color:rgba(210,232,220,.7);border:1px solid rgba(210,232,220,.2);letter-spacing:1px">桌面版</span>
       </div>
-      <div class="xbtn" id="xbtn" title="关闭/最小化">✕</div>
-    </div>
+
+      <div class="win-actions">
+        <div class="xbtn" id="export-btn" title="导出硬件报告" onclick="triggerOp('asset export hardware_report.json', currentLang === 'zh' ? '导出硬件资产清单' : 'Export Hardware Inventory')">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="xbtn" id="minbtn" title="最小化" onclick="minimizeApp()">—</div>
+        <div class="xbtn" id="maxbtn" title="最大化 / 还原" onclick="maximizeApp()">⬜</div>
+        <div class="xbtn close-btn" id="xbtn" title="退出程序" onclick="closeApp()">✕</div>
+      </div>
+    </header>
 
     <div class="win-body">
       <!-- 左侧菜单导航 -->
@@ -2183,8 +2164,9 @@ function setLanguage(lang, silent) {
   // Adjust title spacing for English/Chinese
   const wt = document.getElementById('win-title');
   if (wt) {
-    wt.style.letterSpacing = currentLang === 'en' ? '4px' : '12px';
-    wt.style.fontSize = currentLang === 'en' ? '20px' : '25px';
+    wt.style.letterSpacing = currentLang === 'en' ? '1px' : '2px';
+    wt.style.fontSize = currentLang === 'en' ? '14px' : '15px';
+    wt.style.paddingLeft = '0';
   }
 
   // Update all tagged static elements
@@ -2573,19 +2555,13 @@ function copyHandoverText() {
   });
 }
 
-const win = document.getElementById('win');
-document.getElementById('xbtn').addEventListener('click', () => win.classList.add('hide'));
+// ESC closes modals if open
 window.addEventListener('keydown', e => {
-  if (e.key === 'Escape') win.classList.toggle('hide');
+  const openModal = document.querySelector('.modal-overlay.open');
+  if (openModal && e.key === 'Escape') openModal.classList.remove('open');
 });
 
-function fitScreen(){
-  const zoom = Math.min(window.innerWidth / 1300, window.innerHeight / 880, 1);
-  const stage = document.getElementById('stage');
-  if (stage) stage.style.transform = `translate(-50%, -50%) scale(${zoom})`;
-}
-window.addEventListener('resize', fitScreen);
-fitScreen();
+
 
 // Initial load: apply stored or default language
 setLanguage(currentLang, true);
