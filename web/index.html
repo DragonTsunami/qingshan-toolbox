@@ -2144,7 +2144,11 @@ const I18N = {
   }
 };
 
-let currentLang = localStorage.getItem('qstoolbox_lang') || 'zh';
+let currentLang = 'zh';
+try {
+  const saved = localStorage.getItem('qstoolbox_lang');
+  if (saved === 'en') currentLang = 'en';
+} catch(e) {}
 
 const PAGE_CONFIG = {
   check:        { name_zh: '系统巡检', name_en: 'System Inspection', cmd: 'qstoolbox check all' },
@@ -2173,6 +2177,13 @@ function setLanguage(lang, silent) {
   const langSelect = document.getElementById('lang-select');
   if (langSelect) {
     langSelect.value = currentLang;
+  }
+
+  // Adjust title spacing for English/Chinese
+  const wt = document.getElementById('win-title');
+  if (wt) {
+    wt.style.letterSpacing = currentLang === 'en' ? '4px' : '12px';
+    wt.style.fontSize = currentLang === 'en' ? '20px' : '25px';
   }
 
   // Update all tagged static elements
