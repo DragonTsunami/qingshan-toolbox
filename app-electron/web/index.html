@@ -2634,9 +2634,11 @@ function closeApp(){
 
 // Remote Execution
 function execRemote(){
-  const input = document.getElementById('remote-input');
-  const cmd = input ? input.value.trim() : 'Get-Service spooler';
-  const desc = currentLang === 'zh' ? `批量下发远程指令: ${cmd}` : `Batch execute remote command: ${cmd}`;
+  const hostInput = document.getElementById('remote-host');
+  const cmdInput = document.getElementById('remote-cmd');
+  const host = hostInput && hostInput.value.trim() ? hostInput.value.trim() : '192.168.1.50';
+  const cmd = cmdInput && cmdInput.value.trim() ? cmdInput.value.trim() : 'Get-Service spooler';
+  const desc = currentLang === 'zh' ? `向 [${host}] 批量下发远程指令: ${cmd}` : `Batch execute on [${host}]: ${cmd}`;
   triggerOp(`remote exec "${cmd}"`, desc);
 }
 
