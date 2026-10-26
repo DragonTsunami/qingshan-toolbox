@@ -6,6 +6,11 @@
 *.dylib
 /bin/
 /dist/
+!app-webview2/青衫工具箱-WebView2.exe
+
+# Node dependencies
+node_modules/
+package-lock.json
 
 # Test binary / 测试二进制文件
 *.test
