@@ -1,12 +1,30 @@
 {
   "name": "qingshan-toolbox-electron",
   "version": "1.0.0",
-  "description": "青衫工具箱 - 桌面运维与DevOps双模工具箱 (Electron 桌面客户端)",
+  "description": "青衫工具箱 - 桌面运维与DevOps双模工具箱",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build:dir": "electron-builder --dir",
-    "build:exe": "electron-builder --win portable"
+    "pack": "electron-packager . 青衫工具箱 --platform=win32 --arch=x64 --out=dist --overwrite",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.qingshan.toolbox",
+    "productName": "青衫工具箱",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "web/**/*"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "青衫工具箱-Portable.exe"
+    }
   },
   "keywords": ["devops", "desktop-support", "toolbox", "qingshan", "electron"],
   "author": "青衫",

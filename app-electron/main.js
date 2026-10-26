@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 
+const fs = require('fs');
+
 let mainWindow = null;
 
 function createWindow() {
@@ -25,7 +27,10 @@ function createWindow() {
   });
 
   // Load the web UI
-  const indexPath = path.join(__dirname, '..', 'web', 'index.html');
+  let indexPath = path.join(__dirname, 'web', 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    indexPath = path.join(__dirname, '..', 'web', 'index.html');
+  }
   mainWindow.loadFile(indexPath);
 
   // External link handling

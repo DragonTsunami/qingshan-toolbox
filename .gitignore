@@ -6,6 +6,8 @@
 *.dylib
 /bin/
 /dist/
+app-electron/dist/
+app-electron/release/
 !app-webview2/青衫工具箱-WebView2.exe
 
 # Node dependencies
