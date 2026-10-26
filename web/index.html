@@ -51,6 +51,7 @@
     color:rgba(210,232,220,.85);font-size:16px;transition:.15s;user-select:none;
     background:rgba(210,232,220,.10);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   .xbtn:hover{background:rgba(210,232,220,.24);color:#eef7f2}
+  .lang-btn{width:auto;min-width:38px;padding:0 9px;border-radius:17px;font-size:12px;font-weight:700;letter-spacing:.5px;font-family:system-ui,-apple-system,sans-serif;cursor:pointer}
 
   /* 顶部古韵标题栏 */
   .win-top{position:absolute;left:0;right:0;top:0;height:48px;padding-top:6px;display:flex;align-items:center;z-index:8}
@@ -464,14 +465,15 @@
     <div class="win-top">
       <span class="wln"></span>
       <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.75)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
-      <span class="wt">青 衫 工 具 箱</span>
+      <span class="wt" id="win-title" data-i18n="win_title">青 衫 工 具 箱</span>
       <svg class="cld" viewBox="0 0 24 14" fill="rgba(210,232,220,.75)"><path d="M5 12c-2.2 0-4-1.6-4-3.6 0-1.9 1.5-3.4 3.4-3.5C5.1 2.6 7.2 1 9.7 1c2.4 0 4.4 1.5 5.2 3.6.4-.1.8-.2 1.3-.2 2.6 0 4.8 2.1 4.8 4.8 0 1.6-.8 3-2 3.8z"/></svg>
       <span class="wln r"></span>
     </div>
 
     <!-- 右上快捷动作 -->
     <div class="win-actions">
-      <div class="xbtn" title="导出硬件报告" onclick="triggerOp('asset export hardware_report.json', '导出硬件资产清单')">
+      <div class="xbtn lang-btn" id="lang-btn" title="切换语言 / Switch Language" onclick="toggleLanguage()">EN</div>
+      <div class="xbtn" id="export-btn" title="导出硬件报告" onclick="triggerOp('asset export hardware_report.json', currentLang === 'zh' ? '导出硬件资产清单' : 'Export Hardware Inventory')">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </div>
       <div class="xbtn" id="xbtn" title="关闭/最小化">✕</div>
@@ -485,7 +487,7 @@
           <button class="ws-btn" id="ws-btn" onclick="toggleWorkspaceDropdown(event)">
             <div class="ws-btn-center">
               <div class="ws-info">
-                <span class="ws-badge">当前工作区</span>
+                <span class="ws-badge" data-i18n="ws_badge">当前工作区</span>
                 <span class="ws-title" id="ws-title">桌面运维模式</span>
               </div>
             </div>
@@ -494,84 +496,84 @@
 
           <!-- 下拉弹出面板 -->
           <div class="ws-dropdown" id="ws-dropdown">
-            <div class="ws-dropdown-header">切换工作区模式</div>
+            <div class="ws-dropdown-header" data-i18n="ws_dropdown_header">切换工作区模式</div>
             
             <div class="ws-item active" id="ws-item-desktop" onclick="selectWorkspace('desktop')">
               <div class="ws-item-body">
-                <div class="ws-item-title">桌面运维模式 <span class="ws-check">✓</span></div>
-                <div class="ws-item-desc">IT 桌面支持 · 硬件资产 · 磁盘清理与网络急救</div>
+                <div class="ws-item-title"><span data-i18n="ws_desktop_title">桌面运维模式</span> <span class="ws-check">✓</span></div>
+                <div class="ws-item-desc" data-i18n="ws_desktop_desc">IT 桌面支持 · 硬件资产 · 磁盘清理与网络急救</div>
               </div>
             </div>
 
             <div class="ws-item" id="ws-item-devops" onclick="selectWorkspace('devops')">
               <div class="ws-item-body">
-                <div class="ws-item-title">DevOps 运维模式 <span class="ws-check">✓</span></div>
-                <div class="ws-item-desc">系统巡检 · 进程与服务守护 · 批量远程与日志监控</div>
+                <div class="ws-item-title"><span data-i18n="ws_devops_title">DevOps 运维模式</span> <span class="ws-check">✓</span></div>
+                <div class="ws-item-desc" data-i18n="ws_devops_desc">系统巡检 · 进程与服务守护 · 批量远程与日志监控</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="cap">功 能 目 录</div>
+        <div class="cap" data-i18n="nav_cap">功 能 目 录</div>
         
         <!-- 基础功能滚动区 -->
         <div class="side-scroll">
           <!-- 桌面模式专属条目 -->
           <div class="sitem sel" data-page="asset" data-mode="desktop">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="24" height="18" rx="2"/><path d="M14 28v4h12v-4"/></svg></span>
-            <span class="tx">硬件信息</span>
+            <span class="tx" data-i18n="nav_asset">硬件信息</span>
           </div>
 
           <div class="sitem" data-page="disk" data-mode="desktop" style="position:relative">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12c0-3 5-5 12-5s12 2 12 5v16c0 3-5 5-12 5s-12-2-12-5V12z"/><path d="M8 20c0 3 5 5 12 5s12-2 12-5"/></svg></span>
-            <span class="tx">磁盘清理</span>
+            <span class="tx" data-i18n="nav_disk">磁盘清理</span>
             <span class="alarm-dot side-alarm" id="disk-side-dot" title="单盘容量告警 (C: 已占用 87.2% 超过预警线)"></span>
           </div>
 
           <div class="sitem" data-page="net" data-mode="desktop">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="13"/><path d="M7 20h26M20 7c-4 3.5-6 8-6 13s2 9.5 6 13c4-3.5 6-8 6-13s-2-9.5-6-13z"/></svg></span>
-            <span class="tx">网络排障</span>
+            <span class="tx" data-i18n="nav_net">网络排障</span>
           </div>
 
           <div class="sitem" data-page="print-fix" data-mode="desktop">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="14" width="20" height="15" rx="2"/><path d="M14 14V9h12v5M14 24h12v7H14z"/></svg></span>
-            <span class="tx">打印排障</span>
+            <span class="tx" data-i18n="nav_print_fix">打印排障</span>
           </div>
 
           <div class="sitem" data-page="sys-fix" data-mode="desktop">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 10l12 12M26 10l-12 12M6 34l8-8M30 6l4 4"/></svg></span>
-            <span class="tx">系统修护</span>
+            <span class="tx" data-i18n="nav_sys_fix">系统修护</span>
           </div>
 
           <div class="sitem" data-page="meeting-fix" data-mode="desktop">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="11" width="24" height="16" rx="2"/><path d="M15 27v4h10v-4M12 31h16"/></svg></span>
-            <span class="tx">会议急救</span>
+            <span class="tx" data-i18n="nav_meeting_fix">会议急救</span>
           </div>
 
           <!-- DevOps 模式专属条目 (初始在桌面模式下隐藏) -->
           <div class="sitem mode-hidden" data-page="check" data-mode="devops">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h6l4-10 6 20 4-10h6"/></svg></span>
-            <span class="tx">系统巡检</span>
+            <span class="tx" data-i18n="nav_check">系统巡检</span>
           </div>
 
           <div class="sitem mode-hidden" data-page="service" data-mode="devops">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="10" width="26" height="20" rx="3"/><path d="M14 20h12M14 25h7"/></svg></span>
-            <span class="tx">服务管理</span>
+            <span class="tx" data-i18n="nav_service">服务管理</span>
           </div>
 
           <div class="sitem mode-hidden" data-page="remote" data-mode="devops">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="28" height="18" rx="2"/><path d="M12 32h16M20 26v6M11 16l4 3-4 3M19 22h5"/></svg></span>
-            <span class="tx">远程执行</span>
+            <span class="tx" data-i18n="nav_remote">远程执行</span>
           </div>
 
           <div class="sitem mode-hidden" data-page="logs" data-mode="devops">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h20v24H10z"/><path d="M15 14h10M15 19h10M15 24h6"/></svg></span>
-            <span class="tx">日志分析</span>
+            <span class="tx" data-i18n="nav_logs">日志分析</span>
           </div>
 
           <div class="sitem mode-hidden" data-page="backup" data-mode="devops">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 26v4h20v-4M20 10v12M14 16l6 6 6-6"/></svg></span>
-            <span class="tx">备份恢复</span>
+            <span class="tx" data-i18n="nav_backup">备份恢复</span>
           </div>
         </div>
 
@@ -581,12 +583,12 @@
         <div class="side-foot">
           <div class="sitem" data-page="plugins">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8h8v6a4 4 0 0 0 8 0v-2h4v8a4 4 0 0 0 0 8h-4v6h-8a4 4 0 0 0 0 8h-2v-4a4 4 0 0 0-8 0v4H8v-8a4 4 0 0 0 0-8h4V14a4 4 0 0 0 0-8H8V4h8v4z"/></svg></span>
-            <span class="tx">插件中心</span>
+            <span class="tx" data-i18n="nav_plugins">插件中心</span>
           </div>
 
           <div class="sitem" data-page="settings">
             <span class="ic"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="20" cy="20" r="8"/><path d="M20 6v5M20 29v5M6 20h5M29 20h5M10.5 10.5l3.4 3.4M29.5 10.5l-3.4 3.4M10.5 29.5l3.4-3.4M29.5 29.5l-3.4-3.4"/></svg></span>
-            <span class="tx">系统设置</span>
+            <span class="tx" data-i18n="nav_settings">系统设置</span>
           </div>
         </div>
       </aside>
@@ -614,29 +616,29 @@
               <!-- ① 第一排：CPU使用率、内存使用率、运行时间 -->
               <div class="grid-3">
                 <div class="card" onclick="toast('处理器: AMD Ryzen 7 9700X · 当前占用率: 18.4%')" style="--c1:#a9c4cf;--c2:#5f8496">
-                  <span class="tag">正常 · 16线程</span>
+                  <span class="tag" data-i18n="tag_cpu">正常 · 16线程</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="8"/><circle cx="50" cy="50" r="10"/><path d="M50 15v10M50 75v10M15 50h10M75 50h10"/></svg></div>
-                  <div class="nm">CPU使用率</div>
+                  <div class="nm" data-i18n="card_cpu_nm">CPU使用率</div>
                   <div class="val" style="font-size:24px;font-weight:800;margin-top:6px">18.4%</div>
-                  <div class="sb" style="margin-top:4px">AMD Ryzen 7 9700X (8核16线程)</div>
+                  <div class="sb" style="margin-top:4px" data-i18n="card_cpu_sb">AMD Ryzen 7 9700X (8核16线程)</div>
                   <div class="card-progress"><i style="width:18.4%"></i></div>
                 </div>
 
                 <div class="card" onclick="toast('物理内存: 16GB DDR5 6000MHz · 当前已用: 6.8 GB (42.5%)')" style="--c1:#b8d4c4;--c2:#6f9c7d">
-                  <span class="tag">良好 · DDR5</span>
+                  <span class="tag" data-i18n="tag_ram">良好 · DDR5</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="32" width="60" height="36" rx="6"/><path d="M30 46v8M42 46v8M54 46v8M66 46v8"/></svg></div>
-                  <div class="nm">内存使用率</div>
+                  <div class="nm" data-i18n="card_ram_nm">内存使用率</div>
                   <div class="val" style="font-size:24px;font-weight:800;margin-top:6px">42.5%</div>
-                  <div class="sb" style="margin-top:4px">已用 6.8 GB / 16.0 GB (6000MHz)</div>
+                  <div class="sb" style="margin-top:4px" data-i18n="card_ram_sb">已用 6.8 GB / 16.0 GB (6000MHz)</div>
                   <div class="card-progress"><i style="width:42.5%"></i></div>
                 </div>
 
                 <div class="card" onclick="toast('开机运行时间: 0天23小时13分钟58秒')" style="--c1:#cfd8cc;--c2:#8e9c8a">
-                  <span class="tag">持续运行</span>
+                  <span class="tag" data-i18n="tag_uptime">持续运行</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M20 50h14l8-22 14 44 10-22h14"/></svg></div>
-                  <div class="nm">运行时间</div>
-                  <div class="val" style="font-size:20px;font-weight:800;margin-top:6px">0天23小时13分钟58秒</div>
-                  <div class="sb" style="margin-top:4px">系统内核健康 · 无崩溃异常</div>
+                  <div class="nm" data-i18n="card_uptime_nm">运行时间</div>
+                  <div class="val" style="font-size:20px;font-weight:800;margin-top:6px" data-i18n="card_uptime_val">0天23小时13分钟58秒</div>
+                  <div class="sb" style="margin-top:4px" data-i18n="card_uptime_sb">系统内核健康 · 无崩溃异常</div>
                 </div>
               </div>
 
@@ -644,47 +646,47 @@
               <div class="hw-spec-card">
                 <div class="hw-head">
                   <div class="hw-title">
-                    <span>📋 详细信息</span>
-                    <span class="hw-tag">WMI / DirectX 实时盘点</span>
+                    <span data-i18n="asset_detail_title">详细信息</span>
+                    <span class="hw-tag" data-i18n="asset_wmi_tag">WMI / DirectX 实时盘点</span>
                   </div>
                   <div style="display:flex;gap:8px">
-                    <button class="qbtn" onclick="openFingerprintModal()">防调包核验</button>
-                    <button class="qbtn" onclick="openHandoverModal()">交接单生成</button>
-                    <button class="qbtn" onclick="triggerOp('asset export hardware_report.json', '导出硬件资产清单')">导出报告</button>
-                    <button class="qbtn" onclick="toast('正在重新枚举设备管理器硬件清单...')">重新探测</button>
+                    <button class="qbtn" onclick="openFingerprintModal()" data-i18n="btn_tamper_audit">防调包核验</button>
+                    <button class="qbtn" onclick="openHandoverModal()" data-i18n="btn_handover_sheet">交接单生成</button>
+                    <button class="qbtn" onclick="triggerOp('asset export hardware_report.json', currentLang==='zh'?'导出硬件资产清单':'Export Hardware Inventory')" data-i18n="btn_export_report">导出报告</button>
+                    <button class="qbtn" onclick="toast(currentLang==='zh'?'正在重新枚举设备管理器硬件清单...':'Rescanning Device Manager hardware...')" data-i18n="btn_rescan">重新探测</button>
                   </div>
                 </div>
 
                 <div class="hw-spec-table">
                   <div class="hw-row">
-                    <div class="hw-k">操作系统:</div>
+                    <div class="hw-k" data-i18n="hw_k_os">操作系统:</div>
                     <div class="hw-v">Windows 11 IoT Enterprise LTSC 2024 Evaluation <span class="hw-tag">64 位 · Build 26100</span></div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">处理器:</div>
+                    <div class="hw-k" data-i18n="hw_k_cpu">处理器:</div>
                     <div class="hw-v">AMD Ryzen 7 9700X 8-Core Processor 八核 <span class="hw-tag">16 线程</span></div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">主板:</div>
+                    <div class="hw-k" data-i18n="hw_k_board">主板:</div>
                     <div class="hw-v">七彩虹 BATTLE-AX B650M-E PRO</div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">内存:</div>
+                    <div class="hw-k" data-i18n="hw_k_ram">内存:</div>
                     <div class="hw-v">16GB DDR5 6000MHz</div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">显卡:</div>
+                    <div class="hw-k" data-i18n="hw_k_gpu">显卡:</div>
                     <div class="hw-v">
                       <div class="hw-subline">AMD Radeon(TM) Graphics ( 486MB / AMD )</div>
                       <div class="hw-subline">Intel(R) Arc(TM) A770 Graphics ( 16GB / 蓝戟 )</div>
                     </div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">显示器:</div>
+                    <div class="hw-k" data-i18n="hw_k_display">显示器:</div>
                     <div class="hw-v">H27T22S-3 Pro [SKG27AA] ( 27英寸 )</div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">磁盘:</div>
+                    <div class="hw-k" data-i18n="hw_k_disk">磁盘:</div>
                     <div class="hw-v">
                       <div class="hw-subline">Samsung SSD 750 EVO 250GB ( 250GB )</div>
                       <div class="hw-subline">Acer SSD N5000S 1TB ( 1000GB )</div>
@@ -692,7 +694,7 @@
                     </div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">声卡:</div>
+                    <div class="hw-k" data-i18n="hw_k_audio">声卡:</div>
                     <div class="hw-v">
                       <div class="hw-subline">HD Audio Driver for Display Audio</div>
                       <div class="hw-subline">USB Audio Device</div>
@@ -700,7 +702,7 @@
                     </div>
                   </div>
                   <div class="hw-row">
-                    <div class="hw-k">网卡:</div>
+                    <div class="hw-k" data-i18n="hw_k_net">网卡:</div>
                     <div class="hw-v">Realtek PCIe GbE Family Controller</div>
                   </div>
                 </div>
@@ -720,7 +722,7 @@
                 <div class="card" onclick="triggerOp('check cpu', '刷新 CPU 状态')" style="--c1:#a9c4cf;--c2:#5f8496">
                   <span class="tag">健康</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="8"/><circle cx="50" cy="50" r="12"/><path d="M25 40H12M25 60H12M75 40H88M75 60H88M40 25V12M60 25V12M40 75V88M60 75V88"/></svg></div>
-                  <div class="nm">中央处理器 CPU</div>
+                  <div class="nm" data-i18n="check_cpu_nm">中央处理器 CPU</div>
                   <div class="val" id="cpu-val">18.4%</div>
                   <div class="sb">AMD Ryzen 7 9700X · 16 线程</div>
                   <div class="card-progress"><i style="width:18.4%"></i></div>
@@ -729,7 +731,7 @@
                 <div class="card" onclick="triggerOp('check memory', '检测内存占用')" style="--c1:#b8d4c4;--c2:#6f9c7d">
                   <span class="tag">正常</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="32" width="60" height="36" rx="6"/><path d="M30 46v8M42 46v8M54 46v8M66 46v8"/></svg></div>
-                  <div class="nm">物理内存 RAM</div>
+                  <div class="nm" data-i18n="check_ram_nm">物理内存 RAM</div>
                   <div class="val" id="mem-val">42.5%</div>
                   <div class="sb">已用 6.8 GB / 总计 16GB DDR5 6000MHz</div>
                   <div class="card-progress"><i style="width:42.5%"></i></div>
@@ -738,7 +740,7 @@
                 <div class="card" onclick="triggerOp('check disk', '盘点磁盘总容量')" style="--c1:#cfd8cc;--c2:#8e9c8a">
                   <span class="tag">良好</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M20 28h60v44H20z"/><circle cx="70" cy="50" r="4" fill="#eef7f2"/><path d="M30 44h24M30 56h14"/></svg></div>
-                  <div class="nm">存储硬盘 Disk</div>
+                  <div class="nm" data-i18n="check_disk_nm">存储硬盘 Disk</div>
                   <div class="val" id="disk-val">48.2%</div>
                   <div class="sb">已用 843 GB / 总计 1750 GB (3 块物理磁盘)</div>
                   <div class="card-progress"><i style="width:48.2%"></i></div>
@@ -753,7 +755,7 @@
                     <div class="rsub">已用 92 GB · 剩余 158 GB (占用 36.8%) · SATA 6Gb/s · 健康度 99%</div>
                     <div class="rbar"><i style="--p:37%"></i></div>
                   </div>
-                  <div class="ract" onclick="triggerOp('disk usage C:', '分析 Samsung 固态')">分析</div>
+                  <div class="ract" onclick="triggerOp('disk usage C:', currentLang==='zh'?'分析 Samsung 固态':'Analyze Samsung SSD')" data-i18n="btn_analyze">分析</div>
                 </div>
 
                 <div class="row">
@@ -763,7 +765,7 @@
                     <div class="rsub">已用 520 GB · 剩余 480 GB (占用 52.0%) · NVMe M.2 高速存储</div>
                     <div class="rbar"><i style="--p:52%"></i></div>
                   </div>
-                  <div class="ract" onclick="triggerOp('disk usage D:', '分析 Acer 固态')">分析</div>
+                  <div class="ract" onclick="triggerOp('disk usage D:', currentLang==='zh'?'分析 Acer 固态':'Analyze Acer SSD')" data-i18n="btn_analyze">分析</div>
                 </div>
               </div>
             </section>
@@ -771,9 +773,9 @@
             <!-- 2. 服务管理 -->
             <section class="page" data-page="service">
               <div class="qin-group">
-                <input class="qin" id="srv-input" placeholder="输入 Windows 服务名称 (例如: wuauserv, spooler, docker)..." value="wuauserv">
-                <button class="qbtn" onclick="searchService()">查询服务</button>
-                <button class="qbtn" onclick="triggerOp('service restart', '批量重启关键运维服务')">重启关联项</button>
+                <input class="qin" id="srv-input" data-i18n-ph="ph_srv_input" placeholder="输入 Windows 服务名称 (例如: wuauserv, spooler, docker)..." value="wuauserv">
+                <button class="qbtn" onclick="searchService()" data-i18n="btn_query_srv">查询服务</button>
+                <button class="qbtn" onclick="triggerOp('service restart', currentLang==='zh'?'批量重启关键运维服务':'Batch restart critical services')" data-i18n="btn_restart_rel">重启关联项</button>
               </div>
 
               <div class="rows">
@@ -784,8 +786,8 @@
                     <div class="rsub">状态: 正在运行 (Running) · 启动类型: 自动 (手动触发)</div>
                   </div>
                   <div class="rv">PID: 4920</div>
-                  <div class="ract" onclick="triggerOp('service restart wuauserv', '重启 Windows Update 服务')">重启</div>
-                  <div class="ract" style="background:rgba(255,100,100,.8);color:#fff" onclick="triggerOp('service stop wuauserv', '停止服务')">停止</div>
+                  <div class="ract" onclick="triggerOp('service restart wuauserv', currentLang==='zh'?'重启 Windows Update 服务':'Restart Windows Update service')" data-i18n="btn_restart">重启</div>
+                  <div class="ract" style="background:rgba(255,100,100,.8);color:#fff" onclick="triggerOp('service stop wuauserv', currentLang==='zh'?'停止服务':'Stop service')" data-i18n="btn_stop">停止</div>
                 </div>
 
                 <div class="row">
@@ -795,7 +797,7 @@
                     <div class="rsub">状态: 正在运行 (Running) · 桌面支持常见卡单恢复</div>
                   </div>
                   <div class="rv">PID: 2316</div>
-                  <div class="ract" onclick="triggerOp('service restart spooler', '重置打印机假脱机后台')">修复卡单</div>
+                  <div class="ract" onclick="triggerOp('service restart spooler', currentLang==='zh'?'重置打印机假脱机后台':'Reset print spooler service')" data-i18n="btn_fix_queue">修复卡单</div>
                 </div>
               </div>
             </section>
@@ -807,13 +809,13 @@
                 <div class="sg-left">
                   <div>
                     <div class="sg-title">
-                      <span>日常工作无感清理保障机制</span>
-                      <span class="safe-badge">已启用日常防护</span>
+                      <span data-i18n="sg_title">日常工作无感清理保障机制</span>
+                      <span class="safe-badge" data-i18n="safe_badge_enabled">已启用日常防护</span>
                     </div>
-                    <div class="sg-sub">严格保护浏览器登录账号与Cookies（无需重新登录）、微信与办公文档、桌面文件；自动跳过加锁运行中的应用文件，仅释放无害死数据。</div>
+                    <div class="sg-sub" data-i18n="sg_sub">严格保护浏览器登录账号与Cookies（无需重新登录）、微信与办公文档、桌面文件；自动跳过加锁运行中的应用文件，仅释放无害死数据。</div>
                   </div>
                 </div>
-                <button class="qbtn" onclick="triggerOp('disk clean --safe', '一键日常无感安全瘦身 (全盘相对缓存)')" style="white-space:nowrap;padding:8px 16px;background:linear-gradient(160deg,#67d995,#389e68);color:#06140b">一键日常无害瘦身 (~21.6 GB)</button>
+                <button class="qbtn" onclick="triggerOp('disk clean --safe', currentLang==='zh'?'一键日常无感安全瘦身 (全盘相对缓存)':'One-Click Safe Cleanup (All Drives)')" style="white-space:nowrap;padding:8px 16px;background:linear-gradient(160deg,#67d995,#389e68);color:#06140b" data-i18n="btn_safe_clean">一键日常无害瘦身 (~21.6 GB)</button>
               </div>
 
               <!-- ② 软件使用频率与长期闲置分析 (置于一键日常瘦身下方额外添加的新项) -->
@@ -821,14 +823,14 @@
                 <div class="aub-left">
                   <div>
                     <div class="aub-title">
-                      <span>软件使用频率与长期闲置分析</span>
-                      <span class="alarm-badge">5 款应用超过 90 天未用 · 建议卸载释放 ~7.75 GB</span>
+                      <span data-i18n="aub_title">软件使用频率与长期闲置分析</span>
+                      <span class="alarm-badge" data-i18n="aub_alarm_badge">5 款应用超过 90 天未用 · 建议卸载释放 ~7.75 GB</span>
                     </div>
-                    <div class="aub-sub">盘点已安装 42 款应用的使用频率与闲置状态，快速识别长期吃灰未用软件并推荐卸载腾出空间</div>
+                    <div class="aub-sub" data-i18n="aub_sub">盘点已安装 42 款应用的使用频率与闲置状态，快速识别长期吃灰未用软件并推荐卸载腾出空间</div>
                   </div>
                 </div>
                 <button class="aub-btn" onclick="openAppUsageModal(); event.stopPropagation();">
-                  <span>打开分析面板</span>
+                  <span data-i18n="aub_open_btn">打开分析面板</span>
                   <span style="font-size:11px;opacity:.85">➔</span>
                 </button>
               </div>
@@ -837,11 +839,11 @@
               <div class="drive-monitor-box">
                 <div class="drive-monitor-head">
                   <div style="font-size:14px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:8px">
-                    <span>单硬盘容量检测与预警</span>
-                    <span class="hw-tag">预警红线: 85% 阈值</span>
+                    <span data-i18n="dm_title">单硬盘容量检测与预警</span>
+                    <span class="hw-tag" data-i18n="dm_redline">预警红线: 85% 阈值</span>
                   </div>
                   <div style="font-size:11.5px;color:rgba(210,232,220,.7)">
-                    <span>红点规则：单盘空间占用 ≥ 85% 触发红点警报 · 无论是否触发均提供相对缓存清理</span>
+                    <span data-i18n="dm_rule">红点规则：单盘空间占用 ≥ 85% 触发红点警报 · 无论是否触发均提供相对缓存清理</span>
                   </div>
                 </div>
 
@@ -856,13 +858,13 @@
                     </div>
                     <div class="dc-model">Samsung SSD 750 EVO (250GB 系统盘)</div>
                     <div class="dc-metric">
-                      <span class="dc-space">已用 218 GB · 剩余 32 GB</span>
+                      <span class="dc-space" data-i18n="c_space_used">已用 218 GB · 剩余 32 GB</span>
                       <span class="dc-pct">87.2%</span>
                     </div>
                     <div class="dc-bar"><i style="width:87.2%"></i></div>
                     <!-- 检测仅保留一键释放 -->
                     <div class="dc-foot">
-                      <div class="dc-clean-btn btn-release" onclick="releaseMemoryAndCache('C')">一键释放 C 盘内存与相对缓存 (18.2G)</div>
+                      <div class="dc-clean-btn btn-release" onclick="releaseMemoryAndCache('C')" data-i18n="btn_release_c">一键释放 C 盘内存与相对缓存 (18.2G)</div>
                     </div>
                   </div>
 
@@ -876,13 +878,13 @@
                     </div>
                     <div class="dc-model">Acer SSD N5000S NVMe (1000GB 数据盘)</div>
                     <div class="dc-metric">
-                      <span class="dc-space">已用 520 GB · 剩余 480 GB</span>
+                      <span class="dc-space" data-i18n="d_space_used">已用 520 GB · 剩余 480 GB</span>
                       <span class="dc-pct">52.0%</span>
                     </div>
                     <div class="dc-bar"><i style="width:52%"></i></div>
                     <!-- 检测仅保留一键释放 -->
                     <div class="dc-foot">
-                      <div class="dc-clean-btn btn-release" onclick="releaseMemoryAndCache('D')">一键释放 D 盘相对缓存 (3.4G)</div>
+                      <div class="dc-clean-btn btn-release" onclick="releaseMemoryAndCache('D')" data-i18n="btn_release_d">一键释放 D 盘相对缓存 (3.4G)</div>
                     </div>
                   </div>
                 </div>
@@ -893,51 +895,51 @@
                 <div class="row">
                   <div class="chip" style="--c1:#b8d4c4;--c2:#6f9c7d"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 30l40 40M70 30L30 70"/></svg></div>
                   <div class="rmain">
-                    <div class="rnm"><span class="status-dot ok"></span>系统与用户 Temp 临时文件<span class="hw-tag">14.8 GB</span></div>
-                    <div class="rsub">路径: %TEMP% · 自动跳过正在读写文件，仅清除 24 小时前创建的孤立临时死文件，完全不影响正在运行的日常软件</div>
+                    <div class="rnm"><span class="status-dot ok"></span><span data-i18n="rnm_temp">系统与用户 Temp 临时文件</span><span class="hw-tag">14.8 GB</span></div>
+                    <div class="rsub" data-i18n="rsub_temp">路径: %TEMP% · 自动跳过正在读写文件，仅清除 24 小时前创建的孤立临时死文件，完全不影响正在运行的日常软件</div>
                   </div>
                   <div class="rv">14.8 GB</div>
-                  <div class="ract" onclick="triggerOp('disk clean --temp', '清理系统与用户 Temp 临时文件 (安全跳过被锁定项)')">安全清理</div>
+                  <div class="ract" onclick="triggerOp('disk clean --temp', currentLang==='zh'?'清理系统与用户 Temp 临时文件 (安全跳过被锁定项)':'Clean system & user temp files')" data-i18n="ract_safe_clean">安全清理</div>
                 </div>
 
                 <div class="row">
                   <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="24" width="60" height="52" rx="8"/><path d="M35 50l10 10 20-20"/></svg></div>
                   <div class="rmain">
-                    <div class="rnm"><span class="status-dot ok"></span>Windows Update 补丁下载残留缓存<span class="hw-tag">4.2 GB</span></div>
-                    <div class="rsub">路径: C:\Windows\SoftwareDistribution\Download · 已成功安装完成的补丁安装包残余，官方支持安全清空，随时自动重建</div>
+                    <div class="rnm"><span class="status-dot ok"></span><span data-i18n="rnm_update">Windows Update 补丁下载残留缓存</span><span class="hw-tag">4.2 GB</span></div>
+                    <div class="rsub" data-i18n="rsub_update">路径: C:\Windows\SoftwareDistribution\Download · 已成功安装完成的补丁安装包残余，官方支持安全清空，随时自动重建</div>
                   </div>
                   <div class="rv">4.2 GB</div>
-                  <div class="ract" onclick="triggerOp('disk clean --update-cache', '清理 Windows Update 补丁下载残余')">安全清理</div>
+                  <div class="ract" onclick="triggerOp('disk clean --update-cache', currentLang==='zh'?'清理 Windows Update 补丁下载残余':'Clean Windows Update download cache')" data-i18n="ract_safe_clean">安全清理</div>
                 </div>
 
                 <div class="row">
                   <div class="chip" style="--c1:#cfd8cc;--c2:#8e9c8a"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="14"/></svg></div>
                   <div class="rmain">
-                    <div class="rnm"><span class="status-dot ok"></span>浏览器网页静态资源缓存 (Edge / Chrome)<span class="hw-tag">2.6 GB</span><span class="safe-badge">保护登录态</span></div>
-                    <div class="rsub">【日常无影响保障】仅清理网页图片与脚本离线副本，<b>绝不清除 Cookies、账号密码与书签</b>，清理后依然保持各大网站登录状态！</div>
+                    <div class="rnm"><span class="status-dot ok"></span><span data-i18n="rnm_browser">浏览器网页静态资源缓存 (Edge / Chrome)</span><span class="hw-tag">2.6 GB</span><span class="safe-badge" data-i18n="safe_badge_login">保护登录态</span></div>
+                    <div class="rsub" data-i18n="rsub_browser">【日常无影响保障】仅清理网页图片与脚本离线副本，<b>绝不清除 Cookies、账号密码与书签</b>，清理后依然保持各大网站登录状态！</div>
                   </div>
                   <div class="rv">2.6 GB</div>
-                  <div class="ract" onclick="triggerOp('disk clean --browser-cache', '清理浏览器离线资源缓存 (保留所有 Cookies/登录态)')">清理资源</div>
+                  <div class="ract" onclick="triggerOp('disk clean --browser-cache', currentLang==='zh'?'清理浏览器离线资源缓存 (保留所有 Cookies/登录态)':'Clean browser offline cache (preserves logins)')" data-i18n="ract_clean_res">清理资源</div>
                 </div>
 
                 <div class="row">
                   <div class="chip" style="--c1:#8fb3a5;--c2:#4f7d6b"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="6"/><circle cx="45" cy="45" r="8"/></svg></div>
                   <div class="rmain">
-                    <div class="rnm"><span class="status-dot ok"></span>资源管理器缩略图快照与图标缓存<span class="hw-tag">850 MB</span></div>
-                    <div class="rsub">路径: %LOCALAPPDATA%\Microsoft\Windows\Explorer · 仅清理已废弃缩略图快照，日常打开照片文件夹时系统将按需自动无感重新生成</div>
+                    <div class="rnm"><span class="status-dot ok"></span><span data-i18n="rnm_thumb">资源管理器缩略图快照与图标缓存</span><span class="hw-tag">850 MB</span></div>
+                    <div class="rsub" data-i18n="rsub_thumb">路径: %LOCALAPPDATA%\Microsoft\Windows\Explorer · 仅清理已废弃缩略图快照，日常打开照片文件夹时系统将按需自动无感重新生成</div>
                   </div>
                   <div class="rv">850 MB</div>
-                  <div class="ract" onclick="triggerOp('disk clean --thumbnails', '重置并清理资源管理器缩略图缓存')">清理快照</div>
+                  <div class="ract" onclick="triggerOp('disk clean --thumbnails', currentLang==='zh'?'重置并清理资源管理器缩略图缓存':'Clean Explorer thumbnails cache')" data-i18n="ract_clean_thumb">清理快照</div>
                 </div>
 
                 <div class="row">
                   <div class="chip" style="--c1:#a9c4cf;--c2:#5f8496"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 35h40v45H30zM25 35h50M42 22h16v13H42z"/></svg></div>
                   <div class="rmain">
-                    <div class="rnm"><span class="status-dot ok"></span>全盘驱动器回收站 (各盘废纸篓)<span class="hw-tag">3.2 GB</span></div>
-                    <div class="rsub">包含 C:、D:、E: 等各驱动器内已被用户删除并放置于回收站中的弃用垃圾，彻底释放底层物理扇区空间</div>
+                    <div class="rnm"><span class="status-dot ok"></span><span data-i18n="rnm_recycle">全盘驱动器回收站 (各盘废纸篓)</span><span class="hw-tag">3.2 GB</span></div>
+                    <div class="rsub" data-i18n="rsub_recycle">包含 C:、D:、E: 等各驱动器内已被用户删除并放置于回收站中的弃用垃圾，彻底释放底层物理扇区空间</div>
                   </div>
                   <div class="rv">3.2 GB</div>
-                  <div class="ract" onclick="triggerOp('disk clean --recycle-bin', '清空所有驱动器回收站')">清空回收站</div>
+                  <div class="ract" onclick="triggerOp('disk clean --recycle-bin', currentLang==='zh'?'清空所有驱动器回收站':'Empty recycle bin for all drives')" data-i18n="ract_empty_recycle">清空回收站</div>
                 </div>
               </div>
             </section>
@@ -946,36 +948,36 @@
             <section class="page" data-page="net">
               <div class="grid-3">
                 <div class="card" onclick="triggerOp('desktop fix --dns', '重置并刷新 DNS 解析缓存')" style="--c1:#b8d4c4;--c2:#6f9c7d">
-                  <span class="tag">解析排障</span>
+                  <span class="tag" data-i18n="tag_dns_fix">解析排障</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M35 50h30M50 35v30"/></svg></div>
-                  <div class="nm">刷新 DNS 缓存</div>
+                  <div class="nm" data-i18n="nm_dns_fix">刷新 DNS 缓存</div>
                   <div class="val" style="font-size:18px">flushdns</div>
-                  <div class="sb">解决网站打不开/内网解析失败</div>
+                  <div class="sb" data-i18n="sb_dns_fix">解决网站打不开/内网解析失败</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --winsock', '重置网络协议栈 Winsock')" style="--c1:#cfd8cc;--c2:#8e9c8a">
-                  <span class="tag">协议重置</span>
+                  <span class="tag" data-i18n="tag_winsock_fix">协议重置</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40l25-15 25 15v30l-25 15-25-15z"/></svg></div>
-                  <div class="nm">重置网络协议栈</div>
+                  <div class="nm" data-i18n="nm_winsock_fix">重置网络协议栈</div>
                   <div class="val" style="font-size:18px">netsh winsock</div>
-                  <div class="sb">修复受限或无Internet连接</div>
+                  <div class="sb" data-i18n="sb_winsock_fix">修复受限或无Internet连接</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --proxy', '重置系统网络代理为直连模式')" style="--c1:#a9c4cf;--c2:#5f8496">
-                  <span class="tag">代理清理</span>
+                  <span class="tag" data-i18n="tag_proxy_fix">代理清理</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M20 50h60M50 20c-8 10-12 20-12 30s4 20 12 30c8-10 12-20 12-30s-4-20-12-30z"/></svg></div>
-                  <div class="nm">清理系统代理残留</div>
-                  <div class="val" style="font-size:18px">重置直连</div>
-                  <div class="sb">急救微信正常但网页全打不开</div>
+                  <div class="nm" data-i18n="nm_proxy_fix">清理系统代理残留</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_proxy_fix">重置直连</div>
+                  <div class="sb" data-i18n="sb_proxy_fix">急救微信正常但网页全打不开</div>
                 </div>
               </div>
 
               <!-- 下方网络探测与网关诊断 -->
               <div class="qin-group">
-                <input class="qin" id="net-target" placeholder="输入目标主机 IP 或域名..." value="1.1.1.1">
-                <button class="qbtn" onclick="runPing()">Ping 测试</button>
-                <button class="qbtn" onclick="runPortScan()">端口探测</button>
-                <button class="qbtn" onclick="runDns()">DNS 解析</button>
+                <input class="qin" id="net-target" data-i18n-ph="ph_net_target" placeholder="输入目标主机 IP 或域名..." value="1.1.1.1">
+                <button class="qbtn" onclick="runPing()" data-i18n="btn_ping">Ping 测试</button>
+                <button class="qbtn" onclick="runPortScan()" data-i18n="btn_port_scan">端口探测</button>
+                <button class="qbtn" onclick="runDns()" data-i18n="btn_dns_query">DNS 解析</button>
               </div>
 
               <div class="rows">
@@ -995,27 +997,27 @@
             <section class="page" data-page="print-fix">
               <div class="grid-3">
                 <div class="card" onclick="triggerOp('desktop fix --spooler', '修复打印机假脱机卡单')" style="--c1:#a9c4cf;--c2:#5f8496">
-                  <span class="tag">打印急救</span>
+                  <span class="tag" data-i18n="tag_print_sos">打印急救</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="30" width="50" height="40" rx="6"/><path d="M35 30V18h30v12M35 55h30v25H35z"/></svg></div>
-                  <div class="nm">打印卡单清理</div>
-                  <div class="val" style="font-size:18px">一键重置</div>
-                  <div class="sb">清空 Spool 队列并重启服务</div>
+                  <div class="nm" data-i18n="nm_print_queue">打印卡单清理</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_reset_queue">一键重置</div>
+                  <div class="sb" data-i18n="sb_print_queue">清空 Spool 队列并重启服务</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --print709', '修复局域网共享打印机 0x709 / 0x11b 报错并重启服务')" style="--c1:#8fb3a5;--c2:#4f7d6b">
-                  <span class="tag">共享修复</span>
+                  <span class="tag" data-i18n="tag_print_share">共享修复</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="30" width="50" height="40" rx="6"/><path d="M35 30V18h30v12M35 55h30v25H35z"/><circle cx="65" cy="45" r="4" fill="#eef7f2"/></svg></div>
-                  <div class="nm">共享打印机 709 修复</div>
-                  <div class="val" style="font-size:18px">RPC 管道授权</div>
-                  <div class="sb">解决更新后 0x709/0x11b 报错</div>
+                  <div class="nm" data-i18n="nm_print_709">共享打印机 709 修复</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_print_709">RPC 管道授权</div>
+                  <div class="sb" data-i18n="sb_print_709">解决更新后 0x709/0x11b 报错</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('net renew', '重新请求网关 DHCP IP 分配')" style="--c1:#cfd8cc;--c2:#8e9c8a">
-                  <span class="tag">租期刷新</span>
+                  <span class="tag" data-i18n="tag_dhcp_renew">租期刷新</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><circle cx="50" cy="50" r="12"/></svg></div>
-                  <div class="nm">重新获取内网 IP</div>
+                  <div class="nm" data-i18n="nm_dhcp_renew">重新获取内网 IP</div>
                   <div class="val" style="font-size:18px">DHCP Renew</div>
-                  <div class="sb">释放冲突地址并重新向网关申领</div>
+                  <div class="sb" data-i18n="sb_dhcp_renew">释放冲突地址并重新向网关申领</div>
                 </div>
               </div>
 
@@ -1037,27 +1039,27 @@
             <section class="page" data-page="sys-fix">
               <div class="grid-3">
                 <div class="card" onclick="triggerOp('desktop fix --icon-cache', '清理图标缓存数据库并重启 Explorer')" style="--c1:#cfd8cc;--c2:#8e9c8a">
-                  <span class="tag">图标修复</span>
+                  <span class="tag" data-i18n="tag_icon_fix">图标修复</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="22" y="22" width="24" height="24" rx="4"/><rect x="54" y="22" width="24" height="24" rx="4"/><rect x="22" y="54" width="24" height="24" rx="4"/><path d="M56 66l10-10 12 12M78 66l-6-6"/></svg></div>
-                  <div class="nm">桌面图标白块修复</div>
-                  <div class="val" style="font-size:18px">重建缓存</div>
-                  <div class="sb">清理损坏缓存数据库并重启桌面</div>
+                  <div class="nm" data-i18n="nm_icon_fix">桌面图标白块修复</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_icon_fix">重建缓存</div>
+                  <div class="sb" data-i18n="sb_icon_fix">清理损坏缓存数据库并重启桌面</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --wuauserv', '清空补丁下载缓存并重置更新服务')" style="--c1:#b8d4c4;--c2:#6f9c7d">
-                  <span class="tag">更新急救</span>
+                  <span class="tag" data-i18n="tag_wu_fix">更新急救</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="24" width="60" height="52" rx="8"/><path d="M35 50l10 10 20-20"/></svg></div>
-                  <div class="nm">补丁更新卡死急救</div>
-                  <div class="val" style="font-size:18px">清空临时块</div>
-                  <div class="sb">清空损坏补丁缓存并重置服务</div>
+                  <div class="nm" data-i18n="nm_wu_fix">补丁更新卡死急救</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_wu_fix">清空临时块</div>
+                  <div class="sb" data-i18n="sb_wu_fix">清空损坏补丁缓存并重置服务</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --hibernate', '关闭系统休眠并释放 C 盘 hiberfil.sys 占用')" style="--c1:#8fb3a5;--c2:#4f7d6b">
-                  <span class="tag">空间扩容</span>
+                  <span class="tag" data-i18n="tag_hiber_fix">空间扩容</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="30" width="60" height="40" rx="8"/><circle cx="35" cy="50" r="5" fill="#eef7f2"/><path d="M50 50h25M50 40l10 10-10 10"/></svg></div>
-                  <div class="nm">C 盘休眠空间释放</div>
+                  <div class="nm" data-i18n="nm_hiber_fix">C 盘休眠空间释放</div>
                   <div class="val" style="font-size:18px">powercfg -h</div>
-                  <div class="sb">关闭休眠腾出 16GB~32GB 空间</div>
+                  <div class="sb" data-i18n="sb_hiber_fix">关闭休眠腾出 16GB~32GB 空间</div>
                 </div>
               </div>
 
@@ -1078,27 +1080,27 @@
             <section class="page" data-page="meeting-fix">
               <div class="grid-3">
                 <div class="card" onclick="triggerOp('desktop fix --display-reset', '重置多屏投影输出管道并刷新显卡驱动')" style="--c1:#a9c4cf;--c2:#5f8496">
-                  <span class="tag">多屏纠偏</span>
+                  <span class="tag" data-i18n="tag_disp_fix">多屏纠偏</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="20" y="25" width="60" height="42" rx="6"/><path d="M35 67v12h30V67M25 79h50"/></svg></div>
-                  <div class="nm">投影与外接屏纠偏</div>
-                  <div class="val" style="font-size:18px">Win+P 重置</div>
-                  <div class="sb">刷新显卡渲染管道，重置外接输出</div>
+                  <div class="nm" data-i18n="nm_disp_fix">投影与外接屏纠偏</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_disp_fix">Win+P 重置</div>
+                  <div class="sb" data-i18n="sb_disp_fix">刷新显卡渲染管道，重置外接输出</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --audio-reset', '强制纠偏系统音频输出设备至会议大屏')" style="--c1:#b8d4c4;--c2:#6f9c7d">
-                  <span class="tag">音频路由</span>
+                  <span class="tag" data-i18n="tag_audio_fix">音频路由</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40h15l18-15v50l-18-15H25zM68 35c4 4 6 9 6 15s-2 11-6 15M78 25c7 7 11 15 11 25s-4 18-11 25"/></svg></div>
-                  <div class="nm">会议音频输出纠偏</div>
-                  <div class="val" style="font-size:18px">重置音响通道</div>
-                  <div class="sb">急救大屏无声音，修正主播放设备</div>
+                  <div class="nm" data-i18n="nm_audio_fix">会议音频输出纠偏</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_audio_fix">重置音响通道</div>
+                  <div class="sb" data-i18n="sb_audio_fix">急救大屏无声音，修正主播放设备</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('desktop fix --presentation', '启用高优先级会议演示防息屏保活')" style="--c1:#cfd8cc;--c2:#8e9c8a">
-                  <span class="tag">演示保活</span>
+                  <span class="tag" data-i18n="tag_stay_awake">演示保活</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M50 32v18l14 8"/></svg></div>
-                  <div class="nm">演示防息屏保活</div>
-                  <div class="val" style="font-size:18px">阻止休眠锁屏</div>
-                  <div class="sb">保持屏幕常亮，杜绝高管开会黑屏</div>
+                  <div class="nm" data-i18n="nm_stay_awake">演示防息屏保活</div>
+                  <div class="val" style="font-size:18px" data-i18n="val_stay_awake">阻止休眠锁屏</div>
+                  <div class="sb" data-i18n="sb_stay_awake">保持屏幕常亮，杜绝高管开会黑屏</div>
                 </div>
               </div>
 
@@ -1119,27 +1121,27 @@
             <section class="page" data-page="logs">
               <div class="grid-3">
                 <div class="card" onclick="triggerOp('logs events --source System --level Error', '查看系统错误事件')" style="--c1:#cfd8cc;--c2:#8e9c8a">
-                  <span class="tag">近 24 小时</span>
+                  <span class="tag" data-i18n="tag_past24">近 24 小时</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 20h40v60H30z"/><path d="M40 35h20M40 50h20M40 65h12"/></svg></div>
-                  <div class="nm">Windows 系统事件</div>
-                  <div class="val">2 条异常</div>
+                  <div class="nm" data-i18n="logs_sys_title">Windows 系统事件</div>
+                  <div class="val" data-i18n="logs_sys_val">2 条异常</div>
                   <div class="sb">Event Log: System Error</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('logs events --source Application', '查看应用程序崩溃')" style="--c1:#a9c4cf;--c2:#5f8496">
                   <span class="tag">App Crash</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><circle cx="50" cy="50" r="30"/><path d="M50 35v18M50 62v4"/></svg></div>
-                  <div class="nm">应用异常日志</div>
-                  <div class="val">0 条严重崩溃</div>
+                  <div class="nm" data-i18n="logs_app_title">应用异常日志</div>
+                  <div class="val" data-i18n="logs_app_val">0 条严重崩溃</div>
                   <div class="sb">Application Events</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('logs tail C:\\app\\logs\\sys.log', '实时 tail 日志流')" style="--c1:#b8d4c4;--c2:#6f9c7d">
-                  <span class="tag">实时流</span>
+                  <span class="tag" data-i18n="tag_live_stream">实时流</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M25 40l20 20 30-30"/></svg></div>
-                  <div class="nm">实时日志跟随 (Tail)</div>
+                  <div class="nm" data-i18n="logs_tail_title">实时日志跟随 (Tail)</div>
                   <div class="val">Listening</div>
-                  <div class="sb">内置关键词高亮过滤</div>
+                  <div class="sb" data-i18n="logs_tail_sb">内置关键词高亮过滤</div>
                 </div>
               </div>
             </section>
@@ -1147,9 +1149,9 @@
             <!-- 7. 远程执行 -->
             <section class="page" data-page="remote">
               <div class="qin-group">
-                <input class="qin" id="remote-host" placeholder="目标主机组或 IP..." value="192.168.1.50">
-                <input class="qin" id="remote-cmd" placeholder="执行命令..." value="Get-Service spooler | Select Status">
-                <button class="qbtn" onclick="execRemote()">SSH 批量并发执行</button>
+                <input class="qin" id="remote-host" data-i18n-ph="ph_remote_host" placeholder="目标主机组或 IP..." value="192.168.1.50">
+                <input class="qin" id="remote-cmd" data-i18n-ph="ph_remote_cmd" placeholder="执行命令..." value="Get-Service spooler | Select Status">
+                <button class="qbtn" onclick="execRemote()" data-i18n="btn_exec_remote">SSH 批量并发执行</button>
               </div>
 
               <div class="rows">
@@ -1159,8 +1161,8 @@
                     <div class="rnm"><span class="status-dot ok"></span>主机: 192.168.1.50 (财务部打印服务器)</div>
                     <div class="rsub">响应: ExitCode 0 · 耗时 120ms</div>
                   </div>
-                  <div class="rv">已完成</div>
-                  <div class="ract" onclick="triggerOp('remote copy file.txt 192.168.1.50:/tmp', '推送维护脚本')">下发配置</div>
+                  <div class="rv" data-i18n="val_completed">已完成</div>
+                  <div class="ract" onclick="triggerOp('remote copy file.txt 192.168.1.50:/tmp', currentLang==='zh'?'推送维护脚本':'Deploy script')" data-i18n="btn_deploy_script">下发配置</div>
                 </div>
               </div>
             </section>
@@ -1169,17 +1171,17 @@
             <section class="page" data-page="backup">
               <div class="grid-3">
                 <div class="card" onclick="triggerOp('backup create C:\\Config D:\\Backup --compress', '创建压缩快照备份')" style="--c1:#8fb3a5;--c2:#4f7d6b">
-                  <span class="tag">一键备份</span>
+                  <span class="tag" data-i18n="tag_oneclick_backup">一键备份</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><path d="M30 45l20-20 20 20M50 25v45M25 75h50"/></svg></div>
-                  <div class="nm">新建备份任务</div>
-                  <div class="sb">自动生成 JSON 清单及 ZIP 归档</div>
+                  <div class="nm" data-i18n="backup_new_nm">新建备份任务</div>
+                  <div class="sb" data-i18n="backup_new_sb">自动生成 JSON 清单及 ZIP 归档</div>
                 </div>
 
                 <div class="card" onclick="triggerOp('backup list D:\\Backup', '查阅现有备份文件历史')" style="--c1:#a9c4cf;--c2:#5f8496">
-                  <span class="tag">归档库</span>
+                  <span class="tag" data-i18n="tag_vault">归档库</span>
                   <div class="chip"><svg viewBox="0 0 100 100" fill="none" stroke="#eef7f2" stroke-width="6"><rect x="25" y="25" width="50" height="50" rx="6"/><path d="M35 45h30M35 55h20"/></svg></div>
-                  <div class="nm">备份快照库</div>
-                  <div class="sb">历史备份存档列表</div>
+                  <div class="nm" data-i18n="backup_vault_nm">备份快照库</div>
+                  <div class="sb" data-i18n="backup_vault_sb">历史备份存档列表</div>
                 </div>
               </div>
             </section>
@@ -1190,38 +1192,38 @@
               <div class="plugin-install-box">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                   <div style="font-size:14px;font-weight:700;color:#eef7f2;display:flex;align-items:center;gap:6px">
-                    <span>插件安装 (Git 仓库克隆 / NPM 包安装)</span>
-                    <span class="hw-tag">免中心化审核 · 零服务器开销</span>
+                    <span data-i18n="plugin_install_title">插件安装 (Git 仓库克隆 / NPM 包安装)</span>
+                    <span class="hw-tag" data-i18n="plugin_decentral_tag">免中心化审核 · 零服务器开销</span>
                   </div>
                   <div style="display:flex;gap:8px">
-                    <button class="qbtn" onclick="triggerOp('plugin dir', '打开本机插件存储目录')" style="padding:4px 10px;font-size:11px">插件目录</button>
-                    <button class="qbtn" onclick="toast('正在重新枚举扫描本地已安装扩展...')" style="padding:4px 10px;font-size:11px">重新扫描</button>
+                    <button class="qbtn" onclick="triggerOp('plugin dir', currentLang==='zh'?'打开本机插件存储目录':'Open local plugin directory')" style="padding:4px 10px;font-size:11px" data-i18n="btn_plugin_dir">插件目录</button>
+                    <button class="qbtn" onclick="toast(currentLang==='zh'?'正在重新枚举扫描本地已安装扩展...':'Scanning local installed plugins...')" style="padding:4px 10px;font-size:11px" data-i18n="btn_rescan_plugins">重新扫描</button>
                   </div>
                 </div>
 
                 <div class="qin-group" style="margin-bottom:0">
-                  <input class="qin" id="plugin-input" placeholder="输入 Git 仓库链接 (https://github.com/...) 或 NPM 包名 (@qstoolbox/plugin-xxx)..." value="https://github.com/qingshan-plugins/active-directory-kit.git">
-                  <button class="qbtn" onclick="installViaGit()">Git 克隆安装</button>
-                  <button class="qbtn" onclick="installViaNpm()">NPM 安装</button>
+                  <input class="qin" id="plugin-input" data-i18n-ph="ph_plugin_input" placeholder="输入 Git 仓库链接 (https://github.com/...) 或 NPM 包名 (@qstoolbox/plugin-xxx)..." value="https://github.com/qingshan-plugins/active-directory-kit.git">
+                  <button class="qbtn" onclick="installViaGit()" data-i18n="btn_git_install">Git 克隆安装</button>
+                  <button class="qbtn" onclick="installViaNpm()" data-i18n="btn_npm_install">NPM 安装</button>
                 </div>
 
                 <div class="plugin-tip">
-                  <span><b>去中心化架构说明</b>：插件中心仅用于罗列展示<b>本机已安装</b>的扩展。安装插件直接通过 Git 仓库克隆或 NPM 安装包获取，个人本地离线或自建插件均可无缝加载，无需依赖任何第三方应用市场审核或服务器托管开销。</span>
+                  <span data-i18n="plugin_decentral_note"><b>去中心化架构说明</b>：插件中心仅用于罗列展示<b>本机已安装</b>的扩展。安装插件直接通过 Git 仓库克隆或 NPM 安装包获取，个人本地离线或自建插件均可无缝加载，无需依赖任何第三方应用市场审核或服务器托管开销。</span>
                 </div>
               </div>
 
               <!-- 本地插件统计卡 -->
               <div class="plugin-stats">
                 <div class="p-stat">
-                  <span class="ps-k">本机已安装扩展</span>
-                  <span class="ps-v" id="plugin-count">4 个已加载</span>
+                  <span class="ps-k" data-i18n="plugin_stat_installed">本机已安装扩展</span>
+                  <span class="ps-v" id="plugin-count" data-i18n="plugin_stat_installed_val">4 个已加载</span>
                 </div>
                 <div class="p-stat">
-                  <span class="ps-k">服务启用状态</span>
-                  <span class="ps-v" style="color:#67d995">3 启用 · 1 禁用</span>
+                  <span class="ps-k" data-i18n="plugin_stat_status">服务启用状态</span>
+                  <span class="ps-v" style="color:#67d995" data-i18n="plugin_stat_status_val">3 启用 · 1 禁用</span>
                 </div>
                 <div class="p-stat">
-                  <span class="ps-k">本地插件存储根目录</span>
+                  <span class="ps-k" data-i18n="plugin_stat_root">本地插件存储根目录</span>
                   <span class="ps-v" style="font-family:monospace;font-size:12px;color:#c9e8d5">~/.qstoolbox/plugins/</span>
                 </div>
               </div>
@@ -1298,35 +1300,42 @@
             <section class="page" data-page="settings">
               <div class="grid-2">
                 <div class="card" style="--c1:#a9c4cf;--c2:#5f8496;align-items:flex-start;text-align:left;padding:20px">
-                  <div class="nm" style="font-size:18px">监控报警阈值设置</div>
-                  <div class="sb" style="margin:6px 0 14px">配置本地守护进程与巡检预警基线</div>
+                  <div class="nm" style="font-size:18px" data-i18n="settings_alarm_title">监控报警阈值设置</div>
+                  <div class="sb" style="margin:6px 0 14px" data-i18n="settings_alarm_sub">配置本地守护进程与巡检预警基线</div>
                   <div style="font-size:13px;color:#eef7f2;display:flex;flex-direction:column;gap:10px;width:100%">
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                      <span>CPU 告警阈值:</span>
+                      <span data-i18n="settings_cpu_label">CPU 告警阈值:</span>
                       <input class="qin" style="width:70px;padding:4px 8px;font-size:12px;text-align:center" value="85%">
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                      <span>内存告警阈值:</span>
+                      <span data-i18n="settings_mem_label">内存告警阈值:</span>
                       <input class="qin" style="width:70px;padding:4px 8px;font-size:12px;text-align:center" value="90%">
                     </div>
                   </div>
-                  <button class="qbtn" style="margin-top:14px;width:100%" onclick="toast('告警配置已保存至 config.yaml')">保存配置</button>
+                  <button class="qbtn" style="margin-top:14px;width:100%" onclick="toast(currentLang==='zh'?'告警配置已保存至 config.yaml':'Alarm settings saved to config.yaml')" data-i18n="settings_save_btn">保存配置</button>
                 </div>
 
                 <div class="card" style="--c1:#b8d4c4;--c2:#6f9c7d;align-items:flex-start;text-align:left;padding:20px">
-                  <div class="nm" style="font-size:18px">交互与主题偏好</div>
-                  <div class="sb" style="margin:6px 0 14px">自定义视觉风格与声音反馈</div>
+                  <div class="nm" style="font-size:18px" data-i18n="settings_pref_title">交互与主题偏好</div>
+                  <div class="sb" style="margin:6px 0 14px" data-i18n="settings_pref_sub">自定义视觉风格与声音反馈</div>
                   <div style="font-size:13px;color:#eef7f2;display:flex;flex-direction:column;gap:12px;width:100%">
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                      <span>璃月毛玻璃特效:</span>
-                      <label class="switch"><input type="checkbox" checked onchange="toast('毛玻璃着色器已更新')"><span class="slider"></span></label>
+                      <span data-i18n="settings_lang_label">界面语言 (Language):</span>
+                      <select class="qin" id="lang-select" onchange="setLanguage(this.value)" style="width:115px;padding:4px 8px;font-size:12px;background:rgba(210,232,220,.14);color:#eef7f2;border-radius:6px;border:1px solid rgba(210,232,220,.35);cursor:pointer">
+                        <option value="zh" style="background:#0e1726;color:#eef7f2">简体中文</option>
+                        <option value="en" style="background:#0e1726;color:#eef7f2">English</option>
+                      </select>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center">
-                      <span>系统音效与提示音:</span>
-                      <label class="switch"><input type="checkbox" checked onchange="toast('音效反馈已开启')"><span class="slider"></span></label>
+                      <span data-i18n="settings_glass_label">璃月毛玻璃特效:</span>
+                      <label class="switch"><input type="checkbox" checked onchange="toast(currentLang==='zh'?'毛玻璃着色器已更新':'Frosted glass shader updated')"><span class="slider"></span></label>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span data-i18n="settings_sound_label">系统音效与提示音:</span>
+                      <label class="switch"><input type="checkbox" checked onchange="toast(currentLang==='zh'?'音效反馈已开启':'Sound feedback enabled')"><span class="slider"></span></label>
                     </div>
                   </div>
-                  <button class="qbtn" style="margin-top:14px;width:100%" onclick="toast('偏好设置已更新')">应用设置</button>
+                  <button class="qbtn" style="margin-top:14px;width:100%" onclick="toast(currentLang==='zh'?'偏好设置已更新':'Preferences updated')" data-i18n="settings_apply_btn">应用设置</button>
                 </div>
               </div>
             </section>
@@ -1340,8 +1349,8 @@
             <div class="app-modal-win" onclick="event.stopPropagation()">
               <div class="app-modal-head">
                 <div class="app-modal-title">
-                  <span>软件使用频率与长期闲置统计</span>
-                  <span class="hw-tag">已扫描 42 款已安装程序</span>
+                  <span data-i18n="app_modal_title">软件使用频率与长期闲置统计</span>
+                  <span class="hw-tag" data-i18n="app_modal_tag">已扫描 42 款已安装程序</span>
                 </div>
                 <div class="app-modal-close" onclick="closeAppUsageModal()" title="关闭">✕</div>
               </div>
@@ -1350,19 +1359,19 @@
                 <!-- 概览看板 -->
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
                   <div style="background:rgba(210,232,220,.08);border:1px solid rgba(210,232,220,.2);border-radius:10px;padding:12px 14px">
-                    <div style="font-size:11px;color:rgba(210,232,220,.7);letter-spacing:1px">已安装软件总数</div>
+                    <div style="font-size:11px;color:rgba(210,232,220,.7);letter-spacing:1px" data-i18n="stat_total_installed">已安装软件总数</div>
                     <div style="font-size:22px;font-weight:800;color:#eef7f2;margin-top:2px">42 <span style="font-size:12px;font-weight:normal">款应用</span></div>
-                    <div style="font-size:11px;color:rgba(210,232,220,.55);margin-top:2px">注册表与当前用户目录盘点</div>
+                    <div style="font-size:11px;color:rgba(210,232,220,.55);margin-top:2px" data-i18n="stat_total_sub">注册表与当前用户目录盘点</div>
                   </div>
                   <div style="background:rgba(255,77,79,.14);border:1px solid rgba(255,77,79,.4);border-radius:10px;padding:12px 14px">
-                    <div style="font-size:11px;color:#ffa39e;letter-spacing:1px;font-weight:700">长期闲置未用 (>90天)</div>
+                    <div style="font-size:11px;color:#ffa39e;letter-spacing:1px;font-weight:700" data-i18n="stat_dormant_title">长期闲置未用 (>90天)</div>
                     <div style="font-size:22px;font-weight:800;color:#ff7875;margin-top:2px">5 <span style="font-size:12px;font-weight:normal">款软件</span></div>
-                    <div style="font-size:11px;color:#ffa39e;margin-top:2px">占用 7.75 GB · 建议卸载释放</div>
+                    <div style="font-size:11px;color:#ffa39e;margin-top:2px" data-i18n="stat_dormant_sub">占用 7.75 GB · 建议卸载释放</div>
                   </div>
                   <div style="background:rgba(103,217,149,.14);border:1px solid rgba(103,217,149,.4);border-radius:10px;padding:12px 14px">
-                    <div style="font-size:11px;color:#a7f3d0;letter-spacing:1px;font-weight:700">高频活跃使用</div>
+                    <div style="font-size:11px;color:#a7f3d0;letter-spacing:1px;font-weight:700" data-i18n="stat_frequent_title">高频活跃使用</div>
                     <div style="font-size:22px;font-weight:800;color:#67d995;margin-top:2px">8 <span style="font-size:12px;font-weight:normal">款软件</span></div>
-                    <div style="font-size:11px;color:#a7f3d0;margin-top:2px">近 7 天每日或工作日频繁使用</div>
+                    <div style="font-size:11px;color:#a7f3d0;margin-top:2px" data-i18n="stat_frequent_sub">近 7 天每日或工作日频繁使用</div>
                   </div>
                 </div>
 
@@ -1384,8 +1393,8 @@
             <div class="app-modal-win" onclick="event.stopPropagation()" style="width:840px">
               <div class="app-modal-head">
                 <div class="app-modal-title">
-                  <span>硬件资产防调包防拆核验</span>
-                  <span class="safe-badge" style="font-size:11px">100% 账实相符 · 未检测到硬件篡改</span>
+                  <span data-i18n="fp_title">硬件资产防调包防拆核验</span>
+                  <span class="safe-badge" style="font-size:11px" data-i18n="fp_badge">100% 账实相符 · 未检测到硬件篡改</span>
                 </div>
                 <div class="app-modal-close" onclick="closeFingerprintModal()" title="关闭">✕</div>
               </div>
@@ -1393,10 +1402,10 @@
               <div class="app-modal-body">
                 <div style="background:rgba(103,217,149,.12);border:1px solid rgba(103,217,149,.4);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
                   <div>
-                    <div style="font-size:13px;font-weight:700;color:#67d995">初始交付指纹校验通过 (Baseline Verified)</div>
-                    <div style="font-size:11.5px;color:rgba(210,232,220,.75);margin-top:2px">已自动与初始资产入库建档指纹深度比对，当前主机主板 UUID、CPU、内存槽位及硬盘 SN 完全一致。</div>
+                    <div style="font-size:13px;font-weight:700;color:#67d995" data-i18n="fp_baseline_title">初始交付指纹校验通过 (Baseline Verified)</div>
+                    <div style="font-size:11.5px;color:rgba(210,232,220,.75);margin-top:2px" data-i18n="fp_baseline_desc">已自动与初始资产入库建档指纹深度比对，当前主机主板 UUID、CPU、内存槽位及硬盘 SN 完全一致。</div>
                   </div>
-                  <button class="qbtn" onclick="toast('硬件基准指纹已重新固化更新！')" style="padding:6px 14px;font-size:12px;white-space:nowrap">更新基线指纹</button>
+                  <button class="qbtn" onclick="toast(currentLang==='zh'?'硬件基准指纹已重新固化更新！':'Hardware baseline fingerprint updated!')" style="padding:6px 14px;font-size:12px;white-space:nowrap" data-i18n="btn_update_baseline">更新基线指纹</button>
                 </div>
 
                 <div class="hw-spec-card" style="margin-bottom:0;background:rgba(210,232,220,.04)">
@@ -1520,22 +1529,22 @@
                   </table>
 
                   <!-- 外设清点 -->
-                  <div style="font-size:12.5px;font-weight:700;color:#2d3748;margin-bottom:6px">二、外设配件清点（签字确认）</div>
+                  <div style="font-size:12.5px;font-weight:700;color:#2d3748;margin-bottom:6px" data-i18n="handover_sec2">二、外设配件清点（签字确认）</div>
                   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px;margin-bottom:14px">
-                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 电源适配器及线缆</label>
-                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 视频线 (HDMI/DP)</label>
-                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 外接显示器 (27寸)</label>
-                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> 键鼠套装及拓展坞</label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> <span data-i18n="item_pwr">电源适配器及线缆</span></label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> <span data-i18n="item_video">视频线 (HDMI/DP)</span></label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> <span data-i18n="item_mon">外接显示器 (27寸)</span></label>
+                    <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" checked disabled> <span data-i18n="item_kb">键鼠套装及拓展坞</span></label>
                   </div>
 
                   <!-- 签署责任区域 -->
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;border-top:1px dashed #a0aec0;padding-top:12px;font-size:11.5px">
                     <div style="line-height:1.9">
-                      <div><b>IT 资产交付/验收人签字:</b> ___________________</div>
-                      <div style="color:#718096">签署日期: 2026 年 _____ 月 _____ 日</div>
+                      <div><b data-i18n="sign_it">IT 资产交付/验收人签字:</b> ___________________</div>
+                      <div style="color:#718096" data-i18n="sign_date">签署日期: 2026 年 _____ 月 _____ 日</div>
                     </div>
                     <div style="line-height:1.9">
-                      <div><b>员工本人确认签字:</b> ___________________</div>
+                      <div><b data-i18n="sign_emp">员工本人确认签字:</b> ___________________</div>
                       <div style="color:#718096">签署日期: 2026 年 _____ 月 _____ 日</div>
                     </div>
                   </div>
@@ -1544,12 +1553,12 @@
                 <!-- 底部操作按钮条 -->
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
                   <div style="font-size:12px;color:rgba(210,232,220,.7)">
-                    <span>凭证已固化硬件防伪指纹，打印后签署具有企业资产审计法律效力</span>
+                    <span data-i18n="handover_legal_note">凭证已固化硬件防伪指纹，打印后签署具有企业资产审计法律效力</span>
                   </div>
                   <div style="display:flex;gap:10px">
-                    <button class="qbtn" onclick="printHandoverSheet()">打印交接签署单</button>
-                    <button class="qbtn" onclick="copyHandoverText()">复制文本清单</button>
-                    <button class="qbtn" onclick="closeHandoverModal()">关闭</button>
+                    <button class="qbtn" onclick="printHandoverSheet()" data-i18n="btn_print_handover">打印交接签署单</button>
+                    <button class="qbtn" onclick="copyHandoverText()" data-i18n="btn_copy_manifest">复制文本清单</button>
+                    <button class="qbtn" onclick="closeHandoverModal()" data-i18n="btn_close">关闭</button>
                   </div>
                 </div>
               </div>
@@ -1562,24 +1571,675 @@
 </div>
 
 <script>
+const I18N = {
+
+  zh: {
+    win_title: '青 衫 工 具 箱',
+    btn_lang: 'EN',
+    btn_lang_title: '切换为英文 / Switch to English',
+    btn_export_title: '导出硬件报告',
+    btn_close_title: '关闭/最小化',
+    ws_badge: '当前工作区',
+    ws_dropdown_header: '切换工作区模式',
+    ws_desktop_title: '桌面运维模式',
+    ws_desktop_desc: 'IT 桌面支持 · 硬件资产 · 磁盘清理与网络急救',
+    ws_devops_title: 'DevOps 运维模式',
+    ws_devops_desc: '系统巡检 · 进程与服务守护 · 批量远程与日志监控',
+    ws_badge_desktop: '桌面支持卷',
+    ws_badge_devops: 'DevOps 运维卷',
+    nav_cap: '功 能 目 录',
+    nav_asset: '硬件信息',
+    nav_disk: '磁盘清理',
+    nav_net: '网络排障',
+    nav_print_fix: '打印排障',
+    nav_sys_fix: '系统修护',
+    nav_meeting_fix: '会议急救',
+    nav_check: '系统巡检',
+    nav_service: '服务管理',
+    nav_remote: '远程执行',
+    nav_logs: '日志分析',
+    nav_backup: '备份恢复',
+    nav_plugins: '插件中心',
+    nav_settings: '系统设置',
+
+    // Page names & hints
+    page_asset: '硬件信息',
+    hint_asset: '第一排实时负载：CPU使用率 · 内存使用率 · 运行时间',
+    page_disk: '磁盘清理',
+    hint_disk: '日常工作无感清理保障 · 释放无效缓存',
+    page_net: '网络排障',
+    hint_net: '网络连通性探测 · DNS 与代理急救修复',
+    page_print_fix: '打印排障',
+    hint_print_fix: '打印机脱机卡单与共享打印机 709 修复',
+    page_sys_fix: '系统修护',
+    hint_sys_fix: '图标白块重建 · 更新卡死与休眠清理',
+    page_meeting_fix: '会议急救',
+    hint_meeting_fix: '多屏投影纠偏 · 音频路由与会议演示防息屏',
+    page_check: '系统巡检',
+    hint_check: '系统核心健康状态监测与磁盘使用率',
+    page_service: '服务管理',
+    hint_service: 'Windows 核心系统与后台守护服务状态',
+    page_remote: '远程执行',
+    hint_remote: 'SSH / WinRM 批量远程指令下发与分发',
+    page_logs: '日志分析',
+    hint_logs: 'Windows 系统与应用程序崩溃日志监控',
+    page_backup: '备份恢复',
+    hint_backup: '配置文件快照备份与一键归档恢复',
+    page_plugins: '插件中心',
+    hint_plugins: '去中心化扩展生态 · 本地与 Git / NPM 插件',
+    page_settings: '系统设置',
+    hint_settings: '报警阈值、主题偏好与系统配置',
+
+    // Asset Cards
+    tag_cpu: '正常 · 16线程',
+    card_cpu_nm: 'CPU使用率',
+    card_cpu_sb: 'AMD Ryzen 7 9700X (8核16线程)',
+    tag_ram: '良好 · DDR5',
+    card_ram_nm: '内存使用率',
+    card_ram_sb: '已用 6.8 GB / 16.0 GB (6000MHz)',
+    tag_uptime: '持续运行',
+    card_uptime_nm: '运行时间',
+    card_uptime_val: '0天23小时13分钟58秒',
+    card_uptime_sb: '系统内核健康 · 无崩溃异常',
+    asset_wmi_tag: 'WMI / DirectX 实时盘点',
+
+    // Buttons
+    btn_tamper_audit: '防调包核验',
+    btn_handover_sheet: '交接单生成',
+    btn_export_report: '导出报告',
+    btn_rescan: '重新探测',
+    btn_safe_clean: '一键日常无害瘦身 (~21.6 GB)',
+    btn_release_c: '一键释放 C 盘内存与相对缓存 (18.2G)',
+    btn_release_d: '一键释放 D 盘相对缓存 (3.4G)',
+    btn_print_handover: '打印交接签署单',
+    btn_copy_manifest: '复制文本清单',
+    btn_close: '关闭',
+    handover_legal_note: '凭证已固化硬件防伪指纹，打印后签署具有企业资产审计法律效力',
+
+    // Hardware table keys
+    asset_detail_title: '详细信息',
+    hw_k_os: '操作系统:',
+    hw_k_cpu: '处理器:',
+    hw_k_board: '主板:',
+    hw_k_ram: '内存:',
+    hw_k_gpu: '显卡:',
+    hw_k_display: '显示器:',
+    hw_k_disk: '磁盘:',
+    hw_k_audio: '声卡:',
+    hw_k_net: '网卡:',
+
+    // Disk page
+    safe_badge_enabled: '已启用日常防护',
+    sg_title: '日常工作无感清理保障机制',
+    sg_sub: '严格保护浏览器登录账号与Cookies（无需重新登录）、微信与办公文档、桌面文件；自动跳过加锁运行中的应用文件，仅释放无害死数据。',
+    aub_title: '软件使用频率与长期闲置分析',
+    aub_alarm_badge: '5 款应用超过 90 天未用 · 建议卸载释放 ~7.75 GB',
+    aub_sub: '盘点已安装 42 款应用的使用频率与闲置状态，快速识别长期吃灰未用软件并推荐卸载腾出空间',
+    aub_open_btn: '打开分析面板',
+    dm_title: '单硬盘容量检测与预警',
+    dm_redline: '预警红线: 85% 阈值',
+    dm_rule: '红点规则：单盘空间占用 ≥ 85% 触发红点警报 · 无论是否触发均提供相对缓存清理',
+    c_space_used: '已用 218 GB · 剩余 32 GB',
+    d_space_used: '已用 520 GB · 剩余 480 GB',
+
+    // Disk Cache Rows
+    rnm_temp: '系统与用户 Temp 临时文件',
+    rsub_temp: '路径: %TEMP% · 自动跳过正在读写文件，仅清除 24 小时前创建的孤立临时死文件，完全不影响正在运行的日常软件',
+    ract_safe_clean: '安全清理',
+    rnm_update: 'Windows Update 补丁下载残留缓存',
+    rsub_update: '路径: C:\\Windows\\SoftwareDistribution\\Download · 已成功安装完成的补丁安装包残余，官方支持安全清空，随时自动重建',
+    rnm_browser: '浏览器网页静态资源缓存 (Edge / Chrome)',
+    safe_badge_login: '保护登录态',
+    rsub_browser: '【日常无影响保障】仅清理网页图片与脚本离线副本，<b>绝不清除 Cookies、账号密码与书签</b>，清理后依然保持各大网站登录状态！',
+    ract_clean_res: '清理资源',
+    rnm_thumb: '资源管理器缩略图快照与图标缓存',
+    rsub_thumb: '路径: %LOCALAPPDATA%\\Microsoft\\Windows\\Explorer · 仅清理已废弃缩略图快照，日常打开照片文件夹时系统将按需自动无感重新生成',
+    ract_clean_thumb: '清理快照',
+    rnm_recycle: '全盘驱动器回收站 (各盘废纸篓)',
+    rsub_recycle: '包含 C:、D:、E: 等各驱动器内已被用户删除并放置于回收站中的弃用垃圾，彻底释放底层物理扇区空间',
+    ract_empty_recycle: '清空回收站',
+
+    // Net Page
+    tag_dns_fix: '解析排障',
+    nm_dns_fix: '刷新 DNS 缓存',
+    sb_dns_fix: '解决网站打不开/内网解析失败',
+    tag_winsock_fix: '协议重置',
+    nm_winsock_fix: '重置网络协议栈',
+    sb_winsock_fix: '修复受限或无Internet连接',
+    tag_proxy_fix: '代理清理',
+    nm_proxy_fix: '清理系统代理残留',
+    val_proxy_fix: '重置直连',
+    sb_proxy_fix: '急救微信正常但网页全打不开',
+    btn_ping: 'Ping 测试',
+    btn_port_scan: '端口探测',
+    btn_dns_query: 'DNS 解析',
+    ph_net_target: '输入目标主机 IP 或域名...',
+
+    // Print Fix Page
+    tag_print_sos: '打印急救',
+    nm_print_queue: '打印卡单清理',
+    val_reset_queue: '一键重置',
+    sb_print_queue: '清空 Spool 队列并重启服务',
+    tag_print_share: '共享修复',
+    nm_print_709: '共享打印机 709 修复',
+    val_print_709: 'RPC 管道授权',
+    sb_print_709: '解决更新后 0x709/0x11b 报错',
+    tag_dhcp_renew: '租期刷新',
+    nm_dhcp_renew: '重新获取内网 IP',
+    sb_dhcp_renew: '释放冲突地址并重新向网关申领',
+
+    // System Fix Page
+    tag_icon_fix: '图标修复',
+    nm_icon_fix: '桌面图标白块修复',
+    val_icon_fix: '重建缓存',
+    sb_icon_fix: '清理损坏缓存数据库并重启桌面',
+    tag_wu_fix: '更新急救',
+    nm_wu_fix: '补丁更新卡死急救',
+    val_wu_fix: '清空临时块',
+    sb_wu_fix: '清空损坏补丁缓存并重置服务',
+    tag_hiber_fix: '空间扩容',
+    nm_hiber_fix: 'C 盘休眠空间释放',
+    sb_hiber_fix: '关闭休眠腾出 16GB~32GB 空间',
+
+    // Meeting Fix Page
+    tag_disp_fix: '多屏纠偏',
+    nm_disp_fix: '投影与外接屏纠偏',
+    val_disp_fix: 'Win+P 重置',
+    sb_disp_fix: '刷新显卡渲染管道，重置外接输出',
+    tag_audio_fix: '音频路由',
+    nm_audio_fix: '会议音频输出纠偏',
+    val_audio_fix: '重置音响通道',
+    sb_audio_fix: '急救大屏无声音，修正主播放设备',
+    tag_stay_awake: '演示保活',
+    nm_stay_awake: '演示防息屏保活',
+    val_stay_awake: '阻止休眠锁屏',
+    sb_stay_awake: '保持屏幕常亮，杜绝高管开会黑屏',
+
+    // App Modal
+    app_modal_title: '软件使用频率与长期闲置统计',
+    app_modal_tag: '已扫描 42 款已安装程序',
+    stat_total_installed: '已安装软件总数',
+    stat_total_sub: '注册表与当前用户目录盘点',
+    stat_dormant_title: '长期闲置未用 (>90天)',
+    stat_dormant_sub: '占用 7.75 GB · 建议卸载释放',
+    stat_frequent_title: '高频活跃使用',
+    stat_frequent_sub: '近 7 天每日或工作日频繁使用',
+
+    // Fingerprint Modal
+    fp_title: '硬件资产防调包防拆核验',
+    fp_badge: '100% 账实相符 · 未检测到硬件篡改',
+    fp_baseline_title: '初始交付指纹校验通过 (Baseline Verified)',
+    fp_baseline_desc: '已自动与初始资产入库建档指纹深度比对，当前主机主板 UUID、CPU、内存槽位及硬盘 SN 完全一致。',
+    btn_update_baseline: '更新基线指纹',
+
+    // Handover Sheet Modal
+    handover_modal_title: '企业 IT 办公电脑领用/归还交接确认单',
+    handover_sheet_heading: '企业 IT 办公设备资产交付与归还签署单',
+    handover_verified_badge: '已通过硬件指纹核验',
+    handover_type_label: '签署类型:',
+    handover_type_val: '归还核验 (离职/转岗)',
+    handover_sec1: '一、核心硬件配置与序列号清单（防拆调包核实）',
+    handover_sec2: '二、外设配件清点（签字确认）',
+    item_pwr: '电源适配器及线缆',
+    item_video: '视频线 (HDMI/DP)',
+    item_mon: '外接显示器 (27寸)',
+    item_kb: '键鼠套装及拓展坞',
+    sign_it: 'IT 资产交付/验收人签字:',
+    sign_emp: '员工本人确认签字:',
+    sign_date: '签署日期: 2026 年 _____ 月 _____ 日',
+
+    // Settings
+    settings_alarm_title: '监控报警阈值设置',
+    settings_alarm_sub: '配置本地守护进程与巡检预警基线',
+    settings_cpu_label: 'CPU 告警阈值:',
+    settings_mem_label: '内存告警阈值:',
+    settings_save_btn: '保存配置',
+    settings_pref_title: '交互与主题偏好',
+    settings_pref_sub: '自定义视觉风格与声音反馈',
+    settings_lang_label: '界面语言 (Language):',
+    settings_glass_label: '璃月毛玻璃特效:',
+    settings_sound_label: '系统音效与提示音:',
+    settings_apply_btn: '应用设置',
+
+    // Dynamic strings
+    switched_lang: '已切换至 简体中文',
+    switched_ws_prefix: '已切换至【',
+    switched_ws_suffix: '】',
+    desktop_ws: '桌面运维工作区',
+    devops_ws: 'DevOps 运维工作区',
+    tab_dormant: '长期闲置未用 (>90天) (5款可卸载)',
+    tab_frequent: '高频活跃软件 (8款)',
+    tab_all: '全部应用 (42款)',
+    act_uninstall: '一键卸载',
+    act_locate: '定位',
+    handover_copied: '交接凭证纯文本已复制到剪贴板，可直接粘贴发至沟通群！',
+    handover_title: '【企业 IT 设备领用/归还交接单】',
+
+    check_cpu_nm: '中央处理器 CPU',
+    check_ram_nm: '物理内存 RAM',
+    check_disk_nm: '存储硬盘 Disk',
+    btn_analyze: '分析',
+    ph_srv_input: '输入 Windows 服务名称 (例如: wuauserv, spooler, docker)...',
+    btn_query_srv: '查询服务',
+    btn_restart_rel: '重启关联项',
+    btn_restart: '重启',
+    btn_stop: '停止',
+    btn_fix_queue: '修复卡单',
+    ph_remote_host: '目标主机组或 IP...',
+    ph_remote_cmd: '执行命令...',
+    btn_exec_remote: 'SSH 批量并发执行',
+    val_completed: '已完成',
+    btn_deploy_script: '下发配置',
+    tag_past24: '近 24 小时',
+    logs_sys_title: 'Windows 系统事件',
+    logs_sys_val: '2 条异常',
+    logs_app_title: '应用异常日志',
+    logs_app_val: '0 条严重崩溃',
+    tag_live_stream: '实时流',
+    logs_tail_title: '实时日志跟随 (Tail)',
+    logs_tail_sb: '内置关键词高亮过滤',
+    tag_oneclick_backup: '一键备份',
+    backup_new_nm: '新建备份任务',
+    backup_new_sb: '自动生成 JSON 清单及 ZIP 归档',
+    tag_vault: '归档库',
+    backup_vault_nm: '备份快照库',
+    backup_vault_sb: '历史备份存档列表',
+    plugin_install_title: '插件安装 (Git 仓库克隆 / NPM 包安装)',
+    plugin_decentral_tag: '免中心化审核 · 零服务器开销',
+    btn_plugin_dir: '插件目录',
+    btn_rescan_plugins: '重新扫描',
+    ph_plugin_input: '输入 Git 仓库链接 (https://github.com/...) 或 NPM 包名 (@qstoolbox/plugin-xxx)...',
+    btn_git_install: 'Git 克隆安装',
+    btn_npm_install: 'NPM 安装',
+    plugin_decentral_note: '<b>去中心化架构说明</b>：插件中心仅用于罗列展示<b>本机已安装</b>的扩展。安装插件直接通过 Git 仓库克隆或 NPM 安装包获取，个人本地离线或自建插件均可无缝加载，无需依赖任何第三方应用市场审核或服务器托管开销。',
+    plugin_stat_installed: '本机已安装扩展',
+    plugin_stat_installed_val: '4 个已加载',
+    plugin_stat_status: '服务启用状态',
+    plugin_stat_status_val: '3 启用 · 1 禁用',
+    plugin_stat_root: '本地插件存储根目录',
+  },
+
+  en: {
+    win_title: 'QINGSHAN TOOLBOX',
+    btn_lang: '中',
+    btn_lang_title: 'Switch to Chinese / 切换为中文',
+    btn_export_title: 'Export Hardware Report',
+    btn_close_title: 'Close / Minimize',
+    ws_badge: 'WORKSPACE',
+    ws_dropdown_header: 'Switch Workspace Mode',
+    ws_desktop_title: 'Desktop Support Mode',
+    ws_desktop_desc: 'IT Desktop Support · Hardware Assets · Disk Clean & SOS',
+    ws_devops_title: 'DevOps Mode',
+    ws_devops_desc: 'System Inspection · Daemon & Services · Remote Execution & Logs',
+    ws_badge_desktop: 'Desktop Support Vol.',
+    ws_badge_devops: 'DevOps Ops Vol.',
+    nav_cap: 'NAVIGATION',
+    nav_asset: 'Hardware',
+    nav_disk: 'Disk Clean',
+    nav_net: 'Network',
+    nav_print_fix: 'Printer',
+    nav_sys_fix: 'System Fix',
+    nav_meeting_fix: 'Meeting SOS',
+    nav_check: 'Inspection',
+    nav_service: 'Services',
+    nav_remote: 'Remote Exec',
+    nav_logs: 'Log Analysis',
+    nav_backup: 'Backup',
+    nav_plugins: 'Plugins',
+    nav_settings: 'Settings',
+
+    // Page names & hints
+    page_asset: 'Hardware Info',
+    hint_asset: 'Real-time Metrics: CPU Usage · Memory Usage · Uptime',
+    page_disk: 'Disk Cleanup',
+    hint_disk: 'Zero-Impact Safe Cleanup · Free Inactive Cache',
+    page_net: 'Network SOS',
+    hint_net: 'Network Connectivity · DNS & Proxy Emergency Fix',
+    page_print_fix: 'Printer SOS',
+    hint_print_fix: 'Printer Spooler Queue & Shared Printer 709 Fix',
+    page_sys_fix: 'System Fix',
+    hint_sys_fix: 'Icon Cache Rebuild · Windows Update & Hibernate Cleanup',
+    page_meeting_fix: 'Meeting SOS',
+    hint_meeting_fix: 'Multi-display Projection · Audio Routing & Presentation SOS',
+    page_check: 'Inspection',
+    hint_check: 'System Core Health Status & Disk Utilization',
+    page_service: 'Services',
+    hint_service: 'Windows Core System & Background Service Status',
+    page_remote: 'Remote Exec',
+    hint_remote: 'SSH / WinRM Batch Remote Execution & Script Dispatch',
+    page_logs: 'Log Analysis',
+    hint_logs: 'Windows System & Application Crash Logs',
+    page_backup: 'Backup & Restore',
+    hint_backup: 'Configuration Snapshot Backup & Archive Restore',
+    page_plugins: 'Plugin Center',
+    hint_plugins: 'Decentralized Extensions · Local & Git / NPM Plugins',
+    page_settings: 'Settings',
+    hint_settings: 'Alarm Thresholds, Theme Preferences & System Settings',
+
+    // Asset Cards
+    tag_cpu: 'Normal · 16 Threads',
+    card_cpu_nm: 'CPU Usage',
+    card_cpu_sb: 'AMD Ryzen 7 9700X (8C/16T)',
+    tag_ram: 'Good · DDR5',
+    card_ram_nm: 'Memory Usage',
+    card_ram_sb: 'Used 6.8 GB / 16.0 GB (6000MHz)',
+    tag_uptime: 'Continuous',
+    card_uptime_nm: 'Uptime',
+    card_uptime_val: '0d 23h 13m 58s',
+    card_uptime_sb: 'Kernel healthy · No crash events',
+    asset_wmi_tag: 'WMI / DirectX Real-time Audit',
+
+    // Buttons
+    btn_tamper_audit: 'Tamper Audit',
+    btn_handover_sheet: 'Handover Sheet',
+    btn_export_report: 'Export Report',
+    btn_rescan: 'Rescan',
+    btn_safe_clean: 'One-Click Safe Cleanup (~21.6 GB)',
+    btn_release_c: 'Release C: Memory & Cache (18.2G)',
+    btn_release_d: 'Release D: Cache (3.4G)',
+    btn_print_handover: 'Print Handover Sheet',
+    btn_copy_manifest: 'Copy Text Manifest',
+    btn_close: 'Close',
+    handover_legal_note: 'Contains tamper-proof hardware fingerprints with corporate audit validity.',
+
+    // Hardware table keys
+    asset_detail_title: 'Hardware Specifications',
+    hw_k_os: 'OS:',
+    hw_k_cpu: 'CPU:',
+    hw_k_board: 'Motherboard:',
+    hw_k_ram: 'RAM:',
+    hw_k_gpu: 'GPU:',
+    hw_k_display: 'Display:',
+    hw_k_disk: 'Disks:',
+    hw_k_audio: 'Audio:',
+    hw_k_net: 'Network:',
+
+    // Disk page
+    safe_badge_enabled: 'Safe Mode Active',
+    sg_title: 'Zero-Impact Safe Cleanup Mechanism',
+    sg_sub: 'Protects browser logins, cookies, documents, and desktop files; skips locked running files and only frees inactive safe caches.',
+    aub_title: 'Software Usage Frequency & Dormant App Audit',
+    aub_alarm_badge: '5 apps unused for >90 days · Recommend uninstalling ~7.75 GB',
+    aub_sub: 'Audit 42 installed apps for usage frequency and dormant status; quickly identify unused apps to free up disk space.',
+    aub_open_btn: 'Open Analysis Panel',
+    dm_title: 'Per-Drive Capacity Monitor & Warnings',
+    dm_redline: 'Warning Baseline: 85% Threshold',
+    dm_rule: 'Red Dot Alert: Triggered when drive usage ≥ 85% · Safe cache release available for all drives',
+    c_space_used: 'Used 218 GB · Free 32 GB',
+    d_space_used: 'Used 520 GB · Free 480 GB',
+
+    // Disk Cache Rows
+    rnm_temp: 'System & User Temp Files',
+    rsub_temp: 'Path: %TEMP% · Skips active files, only purges orphan temp files >24h old with zero app impact',
+    ract_safe_clean: 'Safe Clean',
+    rnm_update: 'Windows Update Download Cache',
+    rsub_update: 'Path: C:\\Windows\\SoftwareDistribution\\Download · Safe to purge completed update packages',
+    rnm_browser: 'Browser Offline Static Cache (Edge / Chrome)',
+    safe_badge_login: 'Keeps Logins',
+    rsub_browser: 'Zero-Impact Guarantee: Clears cached images & offline scripts, <b>never touches Cookies, passwords or bookmarks</b>.',
+    ract_clean_res: 'Clean Cache',
+    rnm_thumb: 'Explorer Thumbnails & Icon Cache',
+    rsub_thumb: 'Path: %LOCALAPPDATA%\\Microsoft\\Windows\\Explorer · Cleans obsolete thumbnails, rebuilt seamlessly when viewing folders',
+    ract_clean_thumb: 'Clean Cache',
+    rnm_recycle: 'Recycle Bin (All Drives)',
+    rsub_recycle: 'Purges trashed files across all drives (C:, D:, E: etc.) to reclaim physical drive sectors',
+    ract_empty_recycle: 'Empty Trash',
+
+    // Net Page
+    tag_dns_fix: 'DNS Fix',
+    nm_dns_fix: 'Flush DNS Cache',
+    sb_dns_fix: 'Fix unreachable sites & local DNS failure',
+    tag_winsock_fix: 'Winsock',
+    nm_winsock_fix: 'Reset Winsock Stack',
+    sb_winsock_fix: 'Fix limited or no internet connection',
+    tag_proxy_fix: 'Proxy Clean',
+    nm_proxy_fix: 'Clean Proxy Leftover',
+    val_proxy_fix: 'Direct Connect',
+    sb_proxy_fix: 'Fix WeChat working but browser unreachable',
+    btn_ping: 'Ping Test',
+    btn_port_scan: 'Port Scan',
+    btn_dns_query: 'DNS Query',
+    ph_net_target: 'Enter target IP or hostname...',
+
+    // Print Fix Page
+    tag_print_sos: 'Print SOS',
+    nm_print_queue: 'Clear Print Queue',
+    val_reset_queue: 'Reset Queue',
+    sb_print_queue: 'Purge spool queue & restart service',
+    tag_print_share: 'Share Fix',
+    nm_print_709: 'Fix Shared Printer 709',
+    val_print_709: 'RPC Auth Fix',
+    sb_print_709: 'Fix 0x709 / 0x11b RPC errors after update',
+    tag_dhcp_renew: 'DHCP Lease',
+    nm_dhcp_renew: 'Renew Local IP',
+    sb_dhcp_renew: 'Release conflict IP and request from DHCP',
+
+    // System Fix Page
+    tag_icon_fix: 'Icon Fix',
+    nm_icon_fix: 'Fix White Blank Icons',
+    val_icon_fix: 'Rebuild Cache',
+    sb_icon_fix: 'Clean corrupted cache & restart desktop',
+    tag_wu_fix: 'Update Fix',
+    nm_wu_fix: 'Fix Windows Update Stalls',
+    val_wu_fix: 'Clear Cache',
+    sb_wu_fix: 'Clear corrupt download cache & reset service',
+    tag_hiber_fix: 'Reclaim Disk',
+    nm_hiber_fix: 'Free C: Hibernation File',
+    sb_hiber_fix: 'Disable hibernation to reclaim 16GB~32GB',
+
+    // Meeting Fix Page
+    tag_disp_fix: 'Display Fix',
+    nm_disp_fix: 'Projector & Display Reset',
+    val_disp_fix: 'Win+P Reset',
+    sb_disp_fix: 'Reset GPU rendering pipeline & display output',
+    tag_audio_fix: 'Audio Route',
+    nm_audio_fix: 'Meeting Audio Output Routing',
+    val_audio_fix: 'Reset Audio',
+    sb_audio_fix: 'Fix conference screen no sound, switch primary audio',
+    tag_stay_awake: 'Keep Awake',
+    nm_stay_awake: 'Prevent Screen Sleep / Lock',
+    val_stay_awake: 'Stay Awake',
+    sb_stay_awake: 'Keep display active during VIP executive meetings',
+
+    // App Modal
+    app_modal_title: 'Software Usage Frequency & Dormant App Statistics',
+    app_modal_tag: 'Scanned 42 installed applications',
+    stat_total_installed: 'Total Installed Apps',
+    stat_total_sub: 'Registry & user profile audit',
+    stat_dormant_title: 'Dormant Unused (>90 Days)',
+    stat_dormant_sub: 'Takes 7.75 GB · Recommend uninstall',
+    stat_frequent_title: 'Frequently Active',
+    stat_frequent_sub: 'Used daily or frequently in past 7 days',
+
+    // Fingerprint Modal
+    fp_title: 'Hardware Anti-Tampering Fingerprint Audit',
+    fp_badge: '100% Match · No Hardware Tampering Detected',
+    fp_baseline_title: 'Baseline Fingerprint Verified',
+    fp_baseline_desc: 'Compared against initial asset archiving baseline: Motherboard UUID, CPU, RAM slots, and disk SN match 100%.',
+    btn_update_baseline: 'Update Baseline',
+
+    // Handover Sheet Modal
+    handover_modal_title: 'Enterprise IT Equipment Handover Confirmation Sheet',
+    handover_sheet_heading: 'Enterprise IT Asset Handover & Sign-off Sheet',
+    handover_verified_badge: 'Hardware Fingerprint Verified',
+    handover_type_label: 'Type:',
+    handover_type_val: 'Return Audit (Resignation/Transfer)',
+    handover_sec1: 'I. Core Hardware Configuration & SN Manifest (Tamper-proof verified)',
+    handover_sec2: 'II. Peripheral Accessories Checklist (Signed confirmation)',
+    item_pwr: 'Power adapter & cables',
+    item_video: 'Video cable (HDMI/DP)',
+    item_mon: 'External monitor (27")',
+    item_kb: 'Keyboard/mouse set & docking station',
+    sign_it: 'IT Custodian Signature:',
+    sign_emp: 'Employee Signature:',
+    sign_date: 'Date: 2026 / _____ / _____',
+
+    // Settings
+    settings_alarm_title: 'Monitoring Alarm Thresholds',
+    settings_alarm_sub: 'Configure daemon & inspection baselines',
+    settings_cpu_label: 'CPU Alarm Baseline:',
+    settings_mem_label: 'Memory Alarm Baseline:',
+    settings_save_btn: 'Save Configuration',
+    settings_pref_title: 'UI & Theme Preferences',
+    settings_pref_sub: 'Customize visual styles and sound feedback',
+    settings_lang_label: 'Language (界面语言):',
+    settings_glass_label: 'Liyue Frosted Glass:',
+    settings_sound_label: 'Sound Effects & Audio:',
+    settings_apply_btn: 'Apply Settings',
+
+    // Dynamic strings
+    switched_lang: 'Switched to English',
+    switched_ws_prefix: 'Switched to [',
+    switched_ws_suffix: ']',
+    desktop_ws: 'Desktop Support Workspace',
+    devops_ws: 'DevOps Ops Workspace',
+    tab_dormant: 'Dormant (>90 Days) (5 ready)',
+    tab_frequent: 'Frequently Active (8 apps)',
+    tab_all: 'All Applications (42 apps)',
+    act_uninstall: 'Uninstall',
+    act_locate: 'Locate',
+    handover_copied: 'Handover text manifest copied to clipboard!',
+    handover_title: '[Enterprise IT Equipment Handover Sheet]',
+
+    check_cpu_nm: 'Processor CPU',
+    check_ram_nm: 'Physical Memory RAM',
+    check_disk_nm: 'Storage Disk',
+    btn_analyze: 'Analyze',
+    ph_srv_input: 'Enter Windows service name (e.g. wuauserv, spooler, docker)...',
+    btn_query_srv: 'Query Service',
+    btn_restart_rel: 'Restart Related',
+    btn_restart: 'Restart',
+    btn_stop: 'Stop',
+    btn_fix_queue: 'Fix Queue',
+    ph_remote_host: 'Target host group or IP...',
+    ph_remote_cmd: 'Command to execute...',
+    btn_exec_remote: 'SSH Batch Execution',
+    val_completed: 'Completed',
+    btn_deploy_script: 'Deploy Script',
+    tag_past24: 'Past 24 Hours',
+    logs_sys_title: 'Windows System Events',
+    logs_sys_val: '2 Errors',
+    logs_app_title: 'Application Crash Logs',
+    logs_app_val: '0 Fatal Crashes',
+    tag_live_stream: 'Live Stream',
+    logs_tail_title: 'Live Log Tail',
+    logs_tail_sb: 'Built-in keyword highlighting & filtering',
+    tag_oneclick_backup: 'One-click Backup',
+    backup_new_nm: 'New Backup Task',
+    backup_new_sb: 'Auto-generate JSON manifest & ZIP archive',
+    tag_vault: 'Vault',
+    backup_vault_nm: 'Backup Snapshot Vault',
+    backup_vault_sb: 'Historical backup archive list',
+    plugin_install_title: 'Plugin Installation (Git Clone / NPM Package)',
+    plugin_decentral_tag: 'Decentralized · Zero Server Cost',
+    btn_plugin_dir: 'Plugin Dir',
+    btn_rescan_plugins: 'Rescan',
+    ph_plugin_input: 'Enter Git repo URL (https://github.com/...) or NPM package name (@qstoolbox/plugin-xxx)...',
+    btn_git_install: 'Git Clone Install',
+    btn_npm_install: 'NPM Install',
+    plugin_decentral_note: '<b>Decentralized Architecture</b>: The Plugin Center only lists <b>locally installed</b> extensions. Install plugins directly from Git repos or NPM packages. No central approval or server hosting overhead required.',
+    plugin_stat_installed: 'Installed Extensions',
+    plugin_stat_installed_val: '4 Loaded',
+    plugin_stat_status: 'Service Status',
+    plugin_stat_status_val: '3 Active · 1 Disabled',
+    plugin_stat_root: 'Plugin Root Directory',
+  }
+};
+
+let currentLang = localStorage.getItem('qstoolbox_lang') || 'zh';
+
 const PAGE_CONFIG = {
-  check:        { name: '系统巡检', cmd: 'qstoolbox check all' },
-  service:      { name: '服务管理', cmd: 'qstoolbox service list' },
-  disk:         { name: '磁盘清理', cmd: 'qstoolbox disk clean --safe' },
-  net:          { name: '网络排障', cmd: 'qstoolbox desktop fix --dns' },
-  'print-fix':  { name: '打印排障', cmd: 'qstoolbox desktop fix --spooler' },
-  'sys-fix':    { name: '系统修护', cmd: 'qstoolbox desktop fix --icon-cache' },
-  'meeting-fix':{ name: '会议急救', cmd: 'qstoolbox desktop fix --display-reset' },
-  logs:         { name: '日志分析', cmd: 'qstoolbox logs events --level Error' },
-  asset:        { name: '硬件信息', cmd: 'qstoolbox asset hardware' },
-  remote:       { name: '远程执行', cmd: 'qstoolbox remote exec <cmd>' },
-  backup:       { name: '备份恢复', cmd: 'qstoolbox backup list' },
-  plugins:      { name: '插件中心', cmd: 'qstoolbox plugin list' },
-  settings:     { name: '系统设置', cmd: 'qstoolbox config show' }
+  check:        { name_zh: '系统巡检', name_en: 'System Inspection', cmd: 'qstoolbox check all' },
+  service:      { name_zh: '服务管理', name_en: 'Service Management', cmd: 'qstoolbox service list' },
+  disk:         { name_zh: '磁盘清理', name_en: 'Disk Cleanup', cmd: 'qstoolbox disk clean --safe' },
+  net:          { name_zh: '网络排障', name_en: 'Network SOS', cmd: 'qstoolbox desktop fix --dns' },
+  'print-fix':  { name_zh: '打印排障', name_en: 'Printer SOS', cmd: 'qstoolbox desktop fix --spooler' },
+  'sys-fix':    { name_zh: '系统修护', name_en: 'System Fix', cmd: 'qstoolbox desktop fix --icon-cache' },
+  'meeting-fix':{ name_zh: '会议急救', name_en: 'Meeting SOS', cmd: 'qstoolbox desktop fix --display-reset' },
+  logs:         { name_zh: '日志分析', name_en: 'Log Analysis', cmd: 'qstoolbox logs events --level Error' },
+  asset:        { name_zh: '硬件信息', name_en: 'Hardware Info', cmd: 'qstoolbox asset hardware' },
+  remote:       { name_zh: '远程执行', name_en: 'Remote Execution', cmd: 'qstoolbox remote exec <cmd>' },
+  backup:       { name_zh: '备份恢复', name_en: 'Backup & Restore', cmd: 'qstoolbox backup list' },
+  plugins:      { name_zh: '插件中心', name_en: 'Plugin Center', cmd: 'qstoolbox plugin list' },
+  settings:     { name_zh: '系统设置', name_en: 'Settings', cmd: 'qstoolbox config show' }
 };
 
 let curPage = 'asset';
 let currentWorkspace = 'desktop';
+
+function setLanguage(lang, silent) {
+  currentLang = lang === 'en' ? 'en' : 'zh';
+  localStorage.setItem('qstoolbox_lang', currentLang);
+
+  // Update switcher button in top right
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) {
+    langBtn.textContent = I18N[currentLang].btn_lang;
+    langBtn.title = I18N[currentLang].btn_lang_title;
+  }
+
+  // Update language select dropdown in Settings
+  const langSelect = document.getElementById('lang-select');
+  if (langSelect) {
+    langSelect.value = currentLang;
+  }
+
+  // Update all tagged static elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (I18N[currentLang] && I18N[currentLang][k] !== undefined) {
+      el.innerHTML = I18N[currentLang][k];
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const k = el.getAttribute('data-i18n-title');
+    if (I18N[currentLang] && I18N[currentLang][k] !== undefined) {
+      el.title = I18N[currentLang][k];
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const k = el.getAttribute('data-i18n-ph');
+    if (I18N[currentLang] && I18N[currentLang][k] !== undefined) {
+      el.placeholder = I18N[currentLang][k];
+    }
+  });
+
+  // Re-sync workspace labels
+  selectWorkspace(currentWorkspace, true);
+
+  // Update current page title and header
+  const dt = document.getElementById('dtitle');
+  const dcmd = document.getElementById('dcmd');
+  const dhint = document.querySelector('.dhead .hint');
+  if (dt && PAGE_CONFIG[curPage]) {
+    dt.textContent = currentLang === 'zh' ? PAGE_CONFIG[curPage].name_zh : PAGE_CONFIG[curPage].name_en;
+  }
+  if (dhint) {
+    const hintKey = 'hint_' + curPage.replace('-', '_');
+    if (I18N[currentLang][hintKey]) {
+      dhint.textContent = I18N[currentLang][hintKey];
+    }
+  }
+
+  // Re-filter app list if modal is open
+  const modal = document.getElementById('app-modal-overlay');
+  if (modal && modal.classList.contains('open')) {
+    const activeTab = document.querySelector('.app-tab-btn.active');
+    const tabType = activeTab ? activeTab.id.replace('tab-', '') : 'dormant';
+    filterAppList(tabType);
+  }
+
+  if (!silent) {
+    toast(I18N[currentLang].switched_lang);
+  }
+}
+
+function toggleLanguage() {
+  const nextLang = currentLang === 'zh' ? 'en' : 'zh';
+  setLanguage(nextLang);
+}
 
 function toggleWorkspaceDropdown(e){
   if (e) e.stopPropagation();
@@ -1600,13 +2260,21 @@ function selectWorkspace(mode, silent){
   const itemDesk = document.getElementById('ws-item-desktop');
   const itemDev = document.getElementById('ws-item-devops');
 
-  if (titleEl) titleEl.textContent = mode === 'desktop' ? '桌面运维模式' : 'DevOps 运维模式';
-  if (badgeEl) badgeEl.textContent = mode === 'desktop' ? '桌面支持卷' : 'DevOps 运维卷';
+  if (titleEl) {
+    titleEl.textContent = mode === 'desktop' 
+      ? I18N[currentLang].ws_desktop_title 
+      : I18N[currentLang].ws_devops_title;
+  }
+  if (badgeEl) {
+    badgeEl.textContent = mode === 'desktop' 
+      ? I18N[currentLang].ws_badge_desktop 
+      : I18N[currentLang].ws_badge_devops;
+  }
 
   if (itemDesk) itemDesk.classList.toggle('active', mode === 'desktop');
   if (itemDev) itemDev.classList.toggle('active', mode === 'devops');
 
-  // 过滤左侧滚动列表项
+  // Filter sidebar list items based on workspace
   const items = document.querySelectorAll('.side-scroll .sitem[data-mode]');
   items.forEach(item => {
     const itemMode = item.getAttribute('data-mode');
@@ -1617,7 +2285,7 @@ function selectWorkspace(mode, silent){
     }
   });
 
-  // 校验当前页是否属于新选中的模式，如不属于则自动跳转到该模式首项
+  // If current page does not belong to active mode, switch to first visible page
   const activeSitem = document.querySelector(`.side-scroll .sitem[data-page="${curPage}"]`);
   if (!activeSitem || activeSitem.classList.contains('mode-hidden')) {
     const firstVisible = document.querySelector(`.side-scroll .sitem:not(.mode-hidden)`);
@@ -1631,11 +2299,12 @@ function selectWorkspace(mode, silent){
   closeWorkspaceDropdown();
 
   if (!silent) {
-    toast(`已切换至【${mode === 'desktop' ? '桌面运维工作区' : 'DevOps 运维工作区'}】`);
+    const wsName = mode === 'desktop' ? I18N[currentLang].desktop_ws : I18N[currentLang].devops_ws;
+    toast(`${I18N[currentLang].switched_ws_prefix}${wsName}${I18N[currentLang].switched_ws_suffix}`);
   }
 }
 
-// 点击空白区域自动收起下拉选择器
+// Click outside automatically closes dropdown
 document.addEventListener('click', (e) => {
   const sel = document.getElementById('workspace-selector');
   if (sel && !sel.contains(e.target)) {
@@ -1652,7 +2321,9 @@ function toast(msg){
 }
 
 function triggerOp(cmd, desc){
-  toast(`『${desc}』已触发 ➜ qstoolbox ${cmd}`);
+  const prefix = currentLang === 'zh' ? '『' : '"';
+  const suffix = currentLang === 'zh' ? '』已触发 ➜ qstoolbox ' : '" triggered ➜ qstoolbox ';
+  toast(`${prefix}${desc}${suffix}${cmd}`);
   console.log(`[QingShan Toolbox] qstoolbox ${cmd}`);
 }
 
@@ -1673,11 +2344,19 @@ function showPage(id){
 
   const dt = document.getElementById('dtitle');
   const dcmd = document.getElementById('dcmd');
+  const dhint = document.querySelector('.dhead .hint');
   dt.style.opacity = '0';
   dcmd.style.opacity = '0';
+  if (dhint) dhint.style.opacity = '0';
+
   setTimeout(() => {
-    dt.textContent = PAGE_CONFIG[id].name;
+    dt.textContent = currentLang === 'zh' ? PAGE_CONFIG[id].name_zh : PAGE_CONFIG[id].name_en;
     dcmd.textContent = PAGE_CONFIG[id].cmd;
+    const hintKey = 'hint_' + id.replace('-', '_');
+    if (dhint && I18N[currentLang][hintKey]) {
+      dhint.textContent = I18N[currentLang][hintKey];
+      dhint.style.opacity = '1';
+    }
     dt.style.opacity = '1';
     dcmd.style.opacity = '1';
   }, 160);
@@ -1694,71 +2373,83 @@ document.querySelectorAll('.sitem').forEach(el => {
 
 function searchService(){
   const name = document.getElementById('srv-input').value.trim();
-  triggerOp(`service status ${name}`, `查询服务 ${name}`);
+  const desc = currentLang === 'zh' ? `查询服务 ${name}` : `Query service ${name}`;
+  triggerOp(`service status ${name}`, desc);
 }
 
 function runPing(){
   const target = document.getElementById('net-target').value.trim();
-  triggerOp(`net ping ${target}`, `探测目标 ${target}`);
+  const desc = currentLang === 'zh' ? `探测目标 ${target}` : `Ping target ${target}`;
+  triggerOp(`net ping ${target}`, desc);
 }
 
 function runPortScan(){
   const target = document.getElementById('net-target').value.trim();
-  triggerOp(`net scan ${target} 20-1000`, `扫描 ${target} 常用端口`);
+  const desc = currentLang === 'zh' ? `扫描 ${target} 常用端口` : `Scan ports for ${target}`;
+  triggerOp(`net scan ${target} 20-1000`, desc);
 }
 
 function runDns(){
   const target = document.getElementById('net-target').value.trim();
-  triggerOp(`net dns ${target}`, `DNS 查询`);
+  const desc = currentLang === 'zh' ? `DNS 查询` : `DNS query ${target}`;
+  triggerOp(`net dns ${target}`, desc);
 }
 
 function installViaGit(){
   const input = document.getElementById('plugin-input');
   const val = input ? input.value.trim() : '';
   if (!val) {
-    toast('请输入 Git 仓库地址 (如 https://github.com/.../repo.git)');
+    toast(currentLang === 'zh' ? '请输入 Git 仓库地址 (如 https://github.com/.../repo.git)' : 'Please enter Git repo URL');
     return;
   }
-  triggerOp(`plugin install ${val}`, `从 Git 仓库克隆扩展`);
+  const desc = currentLang === 'zh' ? '从 Git 仓库克隆扩展' : 'Clone plugin from Git repository';
+  triggerOp(`plugin install ${val}`, desc);
 }
 
 function installViaNpm(){
   const input = document.getElementById('plugin-input');
   const val = input ? input.value.trim() : '';
   if (!val) {
-    toast('请输入 NPM 包名 (如 @qstoolbox/xxx)');
+    toast(currentLang === 'zh' ? '请输入 NPM 包名 (如 @qstoolbox/xxx)' : 'Please enter NPM package name');
     return;
   }
-  triggerOp(`plugin install ${val}`, `通过 NPM 安装扩展`);
+  const desc = currentLang === 'zh' ? '通过 NPM 安装扩展' : 'Install plugin via NPM package';
+  triggerOp(`plugin install ${val}`, desc);
 }
 
 // 释放内存与相对安全缓存
 function releaseMemoryAndCache(drive) {
-  triggerOp(`disk clean --drive ${drive}: --safe`, `释放系统工作集/待机内存与 ${drive} 盘相对安全缓存`);
+  const desc = currentLang === 'zh' 
+    ? `释放系统工作集/待机内存与 ${drive} 盘相对安全缓存`
+    : `Release working set memory and ${drive}: drive safe cache`;
+  triggerOp(`disk clean --drive ${drive}: --safe`, desc);
   setTimeout(() => {
-    toast(`已成功完成 ${drive} 盘相对缓存与系统内存释放，已保留所有日常登录态！`);
+    toast(currentLang === 'zh' 
+      ? `已成功完成 ${drive} 盘相对缓存与系统内存释放，已保留所有日常登录态！`
+      : `Successfully released ${drive}: cache and system memory while preserving all logins!`);
   }, 200);
 }
 
-// 软件使用频率与闲置数据源
+// 软件使用频率与闲置数据源 (中英文双语字段)
 const APP_DATA = [
-  { id: 1, name: 'VMware Workstation Pro 17', type: 'dormant', lastUsed: '210 天未运行 (上次: 2025/08/12)', path: 'C:\\Program Files (x86)\\VMware', size: '4.5 GB', freq: '长期闲置' },
-  { id: 2, name: '百度网盘客户端 (BaiduNetdisk)', type: 'dormant', lastUsed: '180 天未运行 (上次: 2025/09/15)', path: 'C:\\Users\\青衫\\AppData\\Roaming\\BaiduNetdisk', size: '1.2 GB', freq: '长期闲置' },
-  { id: 3, name: '迅雷 11 (Thunder)', type: 'dormant', lastUsed: '120 天未运行 (上次: 2025/11/20)', path: 'C:\\Program Files (x86)\\Thunder Network', size: '980 MB', freq: '长期闲置' },
-  { id: 4, name: '格式工厂 (FormatFactory)', type: 'dormant', lastUsed: '95 天未运行 (上次: 2025/12/18)', path: 'C:\\Program Files\\FormatFactory', size: '650 MB', freq: '长期闲置' },
-  { id: 5, name: '多屏投屏与设备互联助手', type: 'dormant', lastUsed: '320 天未运行 (上次: 2025/04/02)', path: 'C:\\Program Files\\ScreenShare', size: '420 MB', freq: '长期闲置' },
-  { id: 6, name: '微信 / 企业微信 (WeChat)', type: 'frequent', lastUsed: '10 分钟前活跃', path: 'C:\\Program Files\\Tencent\\WeChat', size: '8.5 GB', freq: '每日极高频' },
-  { id: 7, name: 'Google Chrome 浏览器', type: 'frequent', lastUsed: '刚刚 (正在运行)', path: 'C:\\Program Files\\Google\\Chrome\\Application', size: '2.4 GB', freq: '每日极高频' },
-  { id: 8, name: 'Visual Studio Code', type: 'frequent', lastUsed: '1 小时前', path: 'C:\\Users\\青衫\\AppData\\Local\\Programs\\Microsoft VS Code', size: '1.8 GB', freq: '工作日高频' },
-  { id: 9, name: '飞书 / 钉钉客户端', type: 'frequent', lastUsed: '3 小时前', path: 'C:\\Users\\青衫\\AppData\\Local\\Feishu', size: '1.2 GB', freq: '工作日高频' },
-  { id: 10, name: '剪映 专业版 (CapCut)', type: 'frequent', lastUsed: '2 天前', path: 'C:\\Users\\青衫\\AppData\\Local\\CapCut', size: '3.2 GB', freq: '每周活跃' },
-  { id: 11, name: 'Git / GitHub Desktop', type: 'frequent', lastUsed: '4 小时前', path: 'C:\\Program Files\\Git', size: '580 MB', freq: '经常使用' },
-  { id: 12, name: '7-Zip 压缩文件管理器', type: 'frequent', lastUsed: '昨天', path: 'C:\\Program Files\\7-Zip', size: '35 MB', freq: '经常使用' },
-  { id: 13, name: 'Windows 终端 (Windows Terminal)', type: 'frequent', lastUsed: '20 分钟前', path: 'C:\\Users\\青衫\\AppData\\Local\\Microsoft\\WindowsApps', size: '120 MB', freq: '每日高频' }
+  { id: 1, name: 'VMware Workstation Pro 17', type: 'dormant', lastUsed_zh: '210 天未运行 (上次: 2025/08/12)', lastUsed_en: '210 days inactive (last: 2025/08/12)', path: 'C:\\Program Files (x86)\\VMware', size: '4.5 GB', freq_zh: '长期闲置', freq_en: 'Dormant' },
+  { id: 2, name: '百度网盘客户端 (BaiduNetdisk)', type: 'dormant', lastUsed_zh: '180 天未运行 (上次: 2025/09/15)', lastUsed_en: '180 days inactive (last: 2025/09/15)', path: 'C:\\Users\\青衫\\AppData\\Roaming\\BaiduNetdisk', size: '1.2 GB', freq_zh: '长期闲置', freq_en: 'Dormant' },
+  { id: 3, name: '迅雷 11 (Thunder)', type: 'dormant', lastUsed_zh: '120 天未运行 (上次: 2025/11/20)', lastUsed_en: '120 days inactive (last: 2025/11/20)', path: 'C:\\Program Files (x86)\\Thunder Network', size: '980 MB', freq_zh: '长期闲置', freq_en: 'Dormant' },
+  { id: 4, name: '格式工厂 (FormatFactory)', type: 'dormant', lastUsed_zh: '95 天未运行 (上次: 2025/12/18)', lastUsed_en: '95 days inactive (last: 2025/12/18)', path: 'C:\\Program Files\\FormatFactory', size: '650 MB', freq_zh: '长期闲置', freq_en: 'Dormant' },
+  { id: 5, name: '多屏投屏与设备互联助手', type: 'dormant', lastUsed_zh: '320 天未运行 (上次: 2025/04/02)', lastUsed_en: '320 days inactive (last: 2025/04/02)', path: 'C:\\Program Files\\ScreenShare', size: '420 MB', freq_zh: '长期闲置', freq_en: 'Dormant' },
+  { id: 6, name: '微信 / 企业微信 (WeChat)', type: 'frequent', lastUsed_zh: '10 分钟前活跃', lastUsed_en: 'Active 10 mins ago', path: 'C:\\Program Files\\Tencent\\WeChat', size: '8.5 GB', freq_zh: '每日极高频', freq_en: 'Very Frequent' },
+  { id: 7, name: 'Google Chrome 浏览器', type: 'frequent', lastUsed_zh: '刚刚 (正在运行)', lastUsed_en: 'Just now (Running)', path: 'C:\\Program Files\\Google\\Chrome\\Application', size: '2.4 GB', freq_zh: '每日极高频', freq_en: 'Very Frequent' },
+  { id: 8, name: 'Visual Studio Code', type: 'frequent', lastUsed_zh: '1 小时前', lastUsed_en: '1 hour ago', path: 'C:\\Users\\青衫\\AppData\\Local\\Programs\\Microsoft VS Code', size: '1.8 GB', freq_zh: '工作日高频', freq_en: 'Workday Frequent' },
+  { id: 9, name: '飞书 / 钉钉客户端', type: 'frequent', lastUsed_zh: '3 小时前', lastUsed_en: '3 hours ago', path: 'C:\\Users\\青衫\\AppData\\Local\\Feishu', size: '1.2 GB', freq_zh: '工作日高频', freq_en: 'Workday Frequent' },
+  { id: 10, name: '剪映 专业版 (CapCut)', type: 'frequent', lastUsed_zh: '2 天前', lastUsed_en: '2 days ago', path: 'C:\\Users\\青衫\\AppData\\Local\\CapCut', size: '3.2 GB', freq_zh: '每周活跃', freq_en: 'Weekly Active' },
+  { id: 11, name: 'Git / GitHub Desktop', type: 'frequent', lastUsed_zh: '4 小时前', lastUsed_en: '4 hours ago', path: 'C:\\Program Files\\Git', size: '580 MB', freq_zh: '经常使用', freq_en: 'Regularly Used' },
+  { id: 12, name: '7-Zip 压缩文件管理器', type: 'frequent', lastUsed_zh: '昨天', lastUsed_en: 'Yesterday', path: 'C:\\Program Files\\7-Zip', size: '35 MB', freq_zh: '经常使用', freq_en: 'Regularly Used' },
+  { id: 13, name: 'Windows 终端 (Windows Terminal)', type: 'frequent', lastUsed_zh: '20 分钟前', lastUsed_en: '20 mins ago', path: 'C:\\Users\\青衫\\AppData\\Local\\Microsoft\\WindowsApps', size: '120 MB', freq_zh: '每日高频', freq_en: 'Daily Frequent' }
 ];
 
 function openAppUsageModal() {
-  triggerOp('asset usage --frequency', '分析本地软件使用频率与长期闲置状态');
+  const desc = currentLang === 'zh' ? '分析本地软件使用频率与长期闲置状态' : 'Analyze local software usage frequency and dormant status';
+  triggerOp('asset usage --frequency', desc);
   const modal = document.getElementById('app-modal-overlay');
   if (modal) {
     modal.classList.add('open');
@@ -1779,44 +2470,64 @@ function filterAppList(type) {
   const activeBtn = document.getElementById(`tab-${type}`);
   if (activeBtn) activeBtn.classList.add('active');
 
+  // Update tab labels
+  const tabDormant = document.getElementById('tab-dormant');
+  const tabFrequent = document.getElementById('tab-frequent');
+  const tabAll = document.getElementById('tab-all');
+  if (tabDormant) tabDormant.textContent = I18N[currentLang].tab_dormant;
+  if (tabFrequent) tabFrequent.textContent = I18N[currentLang].tab_frequent;
+  if (tabAll) tabAll.textContent = I18N[currentLang].tab_all;
+
   const listContainer = document.getElementById('app-list-container');
   if (!listContainer) return;
 
   const filtered = type === 'all' ? APP_DATA : APP_DATA.filter(a => a.type === type);
 
-  listContainer.innerHTML = filtered.map(app => `
+  listContainer.innerHTML = filtered.map(app => {
+    const freq = currentLang === 'zh' ? app.freq_zh : app.freq_en;
+    const lastUsed = currentLang === 'zh' ? app.lastUsed_zh : app.lastUsed_en;
+    const actBtnText = app.type === 'dormant' ? I18N[currentLang].act_uninstall : I18N[currentLang].act_locate;
+    const pathPrefix = currentLang === 'zh' ? '路径: ' : 'Path: ';
+    const lastUsedPrefix = currentLang === 'zh' ? '上次使用: ' : 'Last used: ';
+
+    return `
     <div class="app-item ${app.type}">
       <div class="app-left">
         <div class="app-info">
           <div class="app-name">
             <span>${app.name}</span>
             ${app.type === 'dormant' 
-              ? `<span class="alarm-badge" style="font-size:10.5px">${app.freq} · ${app.lastUsed}</span>` 
-              : `<span class="safe-badge" style="font-size:10.5px">${app.freq} · 上次使用: ${app.lastUsed}</span>`}
+              ? `<span class="alarm-badge" style="font-size:10.5px">${freq} · ${lastUsed}</span>` 
+              : `<span class="safe-badge" style="font-size:10.5px">${freq} · ${lastUsedPrefix}${lastUsed}</span>`}
           </div>
           <div class="app-sub">
-            <span>路径: ${app.path}</span>
+            <span>${pathPrefix}${app.path}</span>
           </div>
         </div>
       </div>
       <div class="app-right">
         <span class="app-size">${app.size}</span>
         ${app.type === 'dormant'
-          ? `<button class="app-act-btn" onclick="uninstallApp('${app.name}')">一键卸载</button>`
-          : `<button class="app-act-btn" style="border-color:rgba(210,232,220,.35);background:rgba(210,232,220,.12);color:#c9e8d5" onclick="triggerOp('asset locate ${app.name}', '打开软件安装路径')">定位</button>`}
+          ? `<button class="app-act-btn" onclick="uninstallApp('${app.name}')">${actBtnText}</button>`
+          : `<button class="app-act-btn" style="border-color:rgba(210,232,220,.35);background:rgba(210,232,220,.12);color:#c9e8d5" onclick="triggerOp('asset locate ${app.name}', '${currentLang==='zh'?'打开软件安装路径':'Open install directory'}')">${actBtnText}</button>`}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function uninstallApp(appName) {
-  triggerOp(`asset uninstall "${appName}"`, `调用卸载程序清理长期闲置软件: ${appName}`);
-  toast(`已发起【${appName}】卸载向导，完成后将释放磁盘空间`);
+  const desc = currentLang === 'zh' ? `调用卸载程序清理长期闲置软件: ${appName}` : `Trigger uninstaller for dormant app: ${appName}`;
+  triggerOp(`asset uninstall "${appName}"`, desc);
+  toast(currentLang === 'zh' 
+    ? `已发起【${appName}】卸载向导，完成后将释放磁盘空间`
+    : `Launched uninstaller for [${appName}], disk space will be freed upon completion`);
 }
 
 // 硬件防调包与交接单弹窗管理
 function openFingerprintModal() {
-  triggerOp('asset fingerprint', '比对硬件防拆防调包指纹');
+  const desc = currentLang === 'zh' ? '比对硬件防拆防调包指纹' : 'Verify hardware anti-tampering fingerprint';
+  triggerOp('asset fingerprint', desc);
   const modal = document.getElementById('fingerprint-modal-overlay');
   if (modal) modal.classList.add('open');
 }
@@ -1828,7 +2539,8 @@ function closeFingerprintModal(e) {
 }
 
 function openHandoverModal() {
-  triggerOp('asset handover --type 离职归还', '生成企业IT设备领用/归还交接签署单');
+  const desc = currentLang === 'zh' ? '生成企业IT设备领用/归还交接签署单' : 'Generate enterprise IT equipment handover sheet';
+  triggerOp('asset handover --type 离职归还', desc);
   const modal = document.getElementById('handover-modal-overlay');
   if (modal) modal.classList.add('open');
 }
@@ -1844,11 +2556,17 @@ function printHandoverSheet() {
 }
 
 function copyHandoverText() {
-  const text = `【企业 IT 设备领用/归还交接单】\n单号: IT-20261025-0812\n员工: 青衫 (工号: QS-0812) · 技术研发中心\n主机: 七彩虹 B650M-E PRO (UUID: 4C4C4544-004A-5710-8032)\nCPU: AMD Ryzen 7 9700X (8C/16T)\n内存: 16GB Micron DDR5 6000MHz (SN: 2439180A)\n硬盘: Samsung 750 EVO 250G (SN: S2RBNX0H108291F) + Acer 1TB\n配件: 原装电源线、适配器、视频线均已清点齐全\n核验结果: 100% 账实相符 · 双方已签字确认`;
+  let text = '';
+  if (currentLang === 'zh') {
+    text = `【企业 IT 设备领用/归还交接单】\n单号: IT-20261025-0812\n员工: 青衫 (工号: QS-0812) · 技术研发中心\n主机: 七彩虹 B650M-E PRO (UUID: 4C4C4544-004A-5710-8032)\nCPU: AMD Ryzen 7 9700X (8C/16T)\n内存: 16GB Micron DDR5 6000MHz (SN: 2439180A)\n硬盘: Samsung 750 EVO 250G (SN: S2RBNX0H108291F) + Acer 1TB\n配件: 原装电源线、适配器、视频线均已清点齐全\n核验结果: 100% 账实相符 · 双方已签字确认`;
+  } else {
+    text = `[Enterprise IT Equipment Handover Sheet]\nSheet ID: IT-20261025-0812\nEmployee: QingShan (ID: QS-0812) · R&D Tech Center\nMotherboard: Colorful B650M-E PRO (UUID: 4C4C4544-004A-5710-8032)\nCPU: AMD Ryzen 7 9700X (8C/16T)\nMemory: 16GB Micron DDR5 6000MHz (SN: 2439180A)\nStorage: Samsung 750 EVO 250G (SN: S2RBNX0H108291F) + Acer 1TB\nAccessories: Power adapter, video cable, monitor all checked\nAudit Result: 100% Matched · Both parties signed and confirmed`;
+  }
+
   navigator.clipboard.writeText(text).then(() => {
-    toast('交接凭证纯文本已复制到剪贴板，可直接粘贴发至沟通群！');
+    toast(I18N[currentLang].handover_copied);
   }).catch(() => {
-    toast('交接单已生成！');
+    toast(currentLang === 'zh' ? '交接单已生成！' : 'Handover sheet generated!');
   });
 }
 
@@ -1864,6 +2582,9 @@ function fitScreen(){
 }
 window.addEventListener('resize', fitScreen);
 fitScreen();
+
+// Initial load: apply stored or default language
+setLanguage(currentLang, true);
 selectWorkspace('desktop', true);
 </script>
 </body>
