@@ -1,5 +1,6 @@
 import { ArrowRightOutlined, CloudServerOutlined, DashboardOutlined } from "@ant-design/icons";
 import { Button, Progress, Skeleton, Tag, Tooltip } from "antd";
+import PluginPanel from "../components/PluginPanel";
 import type { PageKey, SystemSnapshot } from "../types";
 import { formatBytes, formatUptime, ratio } from "../format";
 
@@ -157,6 +158,8 @@ export default function OverviewPage({ snapshot, onNavigate, onRefresh, refreshi
           </div>
         </article>
       </div>
+
+      <PluginPanel snapshot={snapshot} />
 
       <div className="split-row">
         <section className="panel core-panel">

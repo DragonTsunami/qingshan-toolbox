@@ -581,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "devops-app"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "devops-core",
  "devops-testkit",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "devops-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -598,7 +598,7 @@ dependencies = [
 
 [[package]]
 name = "devops-platform"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "devops-core",
  "sysinfo",
@@ -606,8 +606,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "devops-plugins"
+version = "0.3.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "devops-testkit"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "devops-core",
 ]
@@ -2147,11 +2156,12 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "opsdeck"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "devops-app",
  "devops-core",
  "devops-platform",
+ "devops-plugins",
  "serde",
  "serde_json",
  "tauri",

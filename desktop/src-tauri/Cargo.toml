@@ -37,3 +37,4 @@ serde_json.workspace = true
 devops-core.workspace = true
 devops-platform.workspace = true
 devops-app.workspace = true
+devops-plugins.workspace = true

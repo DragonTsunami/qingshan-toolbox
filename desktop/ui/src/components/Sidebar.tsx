@@ -75,7 +75,7 @@ export default function Sidebar({ page, onNavigate, snapshot, info, onElevate }:
       </div>
 
       <div className="sidebar-footer">
-        <span>v{info?.version ?? "0.2.0"}</span>
+        <span>v{info?.version ?? "0.3.0"}</span>
         <span className="footer-dot" />
         <span>Rust · Tauri</span>
       </div>

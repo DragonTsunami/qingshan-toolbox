@@ -47,14 +47,15 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | 契约测试 | `devops-core/tests/contract.rs` | camelCase 字段、枚举字符串、错误码、AppInfo | 5 / 5 |
 | 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 11 / 11 |
 | 组件单测 | `devops-app` 内部 | `OpsService: Send + Sync` | 1 / 1 |
+| 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、非法 id/URL | 7 / 7 |
 | 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS | 7 / 7 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |
-| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、Mock API 契约 | 12 / 12 |
-| 视觉冒烟 | `docs/images` | 六个页面 × 浅色/深色截图 | 通过 |
+| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件 Mock API 契约 | 13 / 13 |
+| 视觉冒烟 | `docs/images` | 六个页面 + 插件台/插件管理 × 浅色/深色截图 | 通过 |
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 
-总计 Rust 24 项测试（5 + 11 + 1 + 7），前端 12 项测试。
+总计 Rust 31 项测试（5 + 11 + 1 + 7 + 7），前端 13 项测试。
 
 ## 4. 验收清单
 

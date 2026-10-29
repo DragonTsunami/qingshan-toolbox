@@ -1,7 +1,11 @@
+use std::path::Path;
+use std::process::Command;
+
 use devops_core::{
     AppInfo, DnsLookupResult, NetworkInterface, PortCheckResult, ProcessInfo, ServiceAction,
     ServiceInfo, SystemSnapshot,
 };
+use devops_plugins::PluginCatalog;
 use tauri::{AppHandle, State};
 
 use crate::state::AppState;
@@ -113,6 +117,78 @@ pub fn app_info(state: State<'_, AppState>) -> AppInfo {
 #[tauri::command]
 pub fn is_elevated(state: State<'_, AppState>) -> bool {
     state.service.is_elevated()
+}
+
+#[tauri::command]
+pub fn plugin_catalog(state: State<'_, AppState>) -> Result<PluginCatalog, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .catalog()
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_rescan(state: State<'_, AppState>) -> Result<PluginCatalog, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .catalog()
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_set_enabled(
+    state: State<'_, AppState>,
+    id: String,
+    enabled: bool,
+) -> Result<PluginCatalog, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .set_enabled(&id, enabled)
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_open_directory(state: State<'_, AppState>) -> Result<String, String> {
+    let directory = state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .directory()
+        .to_path_buf();
+    open_path(&directory)?;
+    Ok(directory.display().to_string())
+}
+
+#[tauri::command]
+pub fn open_external_url(url: String) -> Result<(), String> {
+    let url = url.trim();
+    if url.len() > 2048
+        || !(url.starts_with("https://") || url.starts_with("http://"))
+        || url.chars().any(|c| c.is_whitespace() || c.is_control())
+    {
+        return Err("只允许打开 http(s) 链接".into());
+    }
+    open_target(url)?;
+    Ok(())
+}
+
+fn open_path(path: &Path) -> Result<(), String> {
+    open_target(path.as_os_str().to_string_lossy().as_ref())
+}
+
+fn open_target(target: &str) -> Result<(), String> {
+    #[cfg(windows)]
+    let mut command = Command::new("explorer.exe");
+    #[cfg(not(windows))]
+    let mut command = Command::new("xdg-open");
+
+    command.arg(target).spawn().map(|_| ()).map_err(to_message)
 }
 
 #[tauri::command]

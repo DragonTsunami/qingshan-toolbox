@@ -4,12 +4,13 @@ members = [
     "crates/devops-core",
     "crates/devops-platform",
     "crates/devops-app",
+    "crates/devops-plugins",
     "crates/devops-testkit",
     "src-tauri",
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.77"
 license = "MIT"
@@ -31,6 +32,7 @@ windows = { version = "0.58", features = [
 devops-core = { path = "crates/devops-core" }
 devops-platform = { path = "crates/devops-platform" }
 devops-app = { path = "crates/devops-app" }
+devops-plugins = { path = "crates/devops-plugins" }
 devops-testkit = { path = "crates/devops-testkit" }
 
 [profile.dev]

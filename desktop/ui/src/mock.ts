@@ -2,6 +2,8 @@ import type {
   AppInfo,
   DnsLookupResult,
   NetworkInterface,
+  PluginCatalog,
+  PluginInfo,
   PortCheckResult,
   ProcessInfo,
   ServiceInfo,
@@ -222,10 +224,114 @@ export async function mockResolve(host: string): Promise<DnsLookupResult> {
 export function mockAppInfo(): AppInfo {
   return {
     name: "青衫工具箱",
-    version: "0.2.0",
-    coreVersion: "0.2.0",
+    version: "0.3.0",
+    coreVersion: "0.3.0",
     buildProfile: "debug",
     platform: "windows-gnu",
     isElevated: true,
   };
+}
+
+const pluginSeed: PluginInfo[] = [
+  {
+    id: "qingshan.health-check",
+    name: "健康巡检",
+    version: "0.1.0",
+    description: "基于当前采样检查内存、系统盘与权限状态。",
+    author: "青衫工具箱",
+    icon: "pulse",
+    homepage: "https://github.com/DragonTsunami/qingshan-toolbox",
+    enabled: true,
+    builtin: true,
+    path: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins\\qingshan.health-check\\plugin.json",
+    widgets: [
+      {
+        id: "health",
+        title: "今日健康巡检",
+        kind: "health",
+        body: "只读取概览快照，不产生额外系统调用。",
+        items: [],
+        links: [],
+        health: {
+          memoryMaxPercent: 85,
+          systemDiskMaxPercent: 90,
+          requireElevation: false,
+        },
+      },
+    ],
+  },
+  {
+    id: "qingshan.release-links",
+    name: "版本与文档",
+    version: "0.1.0",
+    description: "把仓库、Release 与插件文档放到概览上。",
+    author: "青衫工具箱",
+    icon: "link",
+    homepage: "https://github.com/DragonTsunami/qingshan-toolbox",
+    enabled: false,
+    builtin: true,
+    path: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins\\qingshan.release-links\\plugin.json",
+    widgets: [
+      {
+        id: "links",
+        title: "项目入口",
+        kind: "links",
+        body: "从仓库、Release 和插件文档继续。",
+        items: [],
+        links: [
+          {
+            label: "GitHub 仓库",
+            url: "https://github.com/DragonTsunami/qingshan-toolbox",
+          },
+          {
+            label: "最新 Release",
+            url: "https://github.com/DragonTsunami/qingshan-toolbox/releases/latest",
+          },
+          {
+            label: "插件文档",
+            url: "https://github.com/DragonTsunami/qingshan-toolbox/blob/main/docs/plugins.md",
+          },
+        ],
+        health: null,
+      },
+    ],
+  },
+];
+
+const pluginOverrides: Record<string, boolean> = {};
+
+export function mockPluginCatalog(): PluginCatalog {
+  return {
+    directory: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins",
+    plugins: pluginSeed.map((plugin) => ({
+      ...plugin,
+      enabled: pluginOverrides[plugin.id] ?? plugin.enabled,
+      widgets: plugin.widgets.map((widget) => ({
+        ...widget,
+        items: [...widget.items],
+        links: widget.links.map((link) => ({ ...link })),
+        health: widget.health ? { ...widget.health } : null,
+      })),
+    })),
+    warnings: [],
+  };
+}
+
+export async function mockSetPluginEnabled(
+  id: string,
+  enabled: boolean,
+): Promise<PluginCatalog> {
+  if (!pluginSeed.some((plugin) => plugin.id === id)) {
+    throw new Error(`未找到插件: ${id}`);
+  }
+  pluginOverrides[id] = enabled;
+  return mockPluginCatalog();
+}
+
+export async function mockRescanPlugins(): Promise<PluginCatalog> {
+  return mockPluginCatalog();
+}
+
+export function mockOpenPluginDirectory(): string {
+  return mockPluginCatalog().directory;
 }

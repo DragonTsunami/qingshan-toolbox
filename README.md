@@ -9,13 +9,15 @@
 
 > 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
 
-> 状态：v0.2.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；24 项 Rust 测试、12 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> 状态：v0.3.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；新增声明式插件台。31 项 Rust 测试、13 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **阶段约定：只做框架，不做内容。** 在 [`docs/framework.md`](docs/framework.md) 的验收清单关闭前，不新增业务页面，也不开始网页端实现。现有五个页面仅作为框架参考实现。
 
 > **打开桌面端**：双击桌面快捷方式 **青衫工具箱**，或运行 `C:\QingshanToolbox\QingshanToolbox.exe`。`http://127.0.0.1:1421` 只是前端预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
 
 ![青衫工具箱 概览](docs/images/overview.png)
+
+![插件台：健康巡检、启停与插件管理](docs/images/plugin-overview.png)
 
 更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png)
 
@@ -29,6 +31,7 @@
 | 进程 | 列表、搜索、按 CPU/内存/名称排序、结束进程 | 自动刷新跟随全局间隔；支持强制终止；拦截对 青衫工具箱 自身的操作 |
 | 服务 | 枚举 Windows 服务、启停、重启、启动类型 | 操作后等待状态收敛（最长 20 秒）；需要管理员权限 |
 | 网络 | 接口、IP/MAC、流量、TCP 端口检测、DNS 解析 | 仅使用系统解析器与 TCP 握手，不执行任意命令 |
+| 插件 | 概览插件台、启停、重新扫描、插件目录、外链 | 声明式 `plugin.json`，不执行第三方代码；内置健康巡检与版本入口 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
@@ -72,6 +75,7 @@ DeepSeek-Devops/
 │  │  ├─ devops-core/            # 领域模型、trait、错误（无平台/UI 依赖）
 │  │  ├─ devops-app/             # 应用服务层 OpsService（可注入、可测试）
 │  │  ├─ devops-testkit/         # 全能力 Mock 与 fixtures
+│  │  ├─ devops-plugins/         # 声明式插件清单、校验、启停与内置插件
 │  │  └─ devops-platform/        # Windows 适配器（sysinfo / Win32）
 │  ├─ src-tauri/                 # Tauri 壳、命令层、能力声明
 │  └─ ui/                        # React 控制台（Vite + Vitest）
@@ -79,6 +83,7 @@ DeepSeek-Devops/
 │  ├─ architecture.md            # 分层、命令契约、安全模型
 │  ├─ framework.md               # 框架范围、测试矩阵、验收清单
 │  ├─ design-system.md           # DSH 同源视觉 token 与组件规则
+│  ├─ plugins.md                 # 声明式插件：目录、manifest、卡片与安全边界
 │  └─ roadmap.md                 # 桌面端 + 网页端演进路线
 ├─ .github/workflows/ci.yml      # Linux core / Windows workspace / UI
 ├─ scripts/
@@ -104,7 +109,7 @@ npm test               # Vitest：工具函数 + Mock API 契约
 
 cd ../src-tauri
 cargo build --release --features custom-protocol
-# 产物：desktop/target/release/opsdeck.exe（独立 exe，内嵌前端）
+# 产物：desktop/target/release/opsdeck.exe（交付时重命名为 QingshanToolbox.exe）
 ```
 
 `custom-protocol` 必须开启：否则 Tauri 会加载 `build.devUrl`（`http://localhost:1420`），窗口显示“无法访问此页面”。开发时 `cargo run` 可配合 `npm run dev` 使用 HMR；交付/分发必须用 release + `custom-protocol`。
@@ -146,13 +151,14 @@ cd ../..
 | 验证项 | 结果 |
 | --- | --- |
 | `cargo check`（全 workspace，含 Tauri 2.12） | 通过 |
-| `cargo build --release --features custom-protocol` → `desktop/dist/QingshanToolbox.exe` | 通过（6.7 MB） |
-| `cargo test --workspace` | 24 / 24 通过（core 5 + app 12 + platform 7） |
+| `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（6.7 MB） |
+| `cargo test --workspace` | 31 / 31 通过（core 5 + app 12 + platform 7 + plugins 7） |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 通过 |
 | `cargo fmt --all -- --check` | 通过 |
 | 前端 `tsc --noEmit && vite build` | 通过 |
-| 前端 `npm test`（Vitest） | 12 / 12 通过 |
+| 前端 `npm test`（Vitest） | 13 / 13 通过 |
 | 刷新间隔选择（1/3/5/10/30/60 秒） | 已实现并持久化到本机 |
+| 插件台：内置健康巡检 / 版本入口、启停、扫描 | 已实现；Rust 7 项插件测试通过 |
 | 六个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
 | 真实窗口启动 | **已通过**：release + `custom-protocol`，窗口标题 `青衫工具箱`，真实硬件数据渲染 |
 
@@ -176,6 +182,11 @@ cd ../..
 | `network_resolve` | `host` | `DnsLookupResult` |
 | `app_info` | — | `AppInfo` |
 | `is_elevated` | — | `boolean` |
+| `plugin_catalog` | — | `PluginCatalog` |
+| `plugin_rescan` | — | `PluginCatalog` |
+| `plugin_set_enabled` | `id`, `enabled` | `PluginCatalog` |
+| `plugin_open_directory` | — | `string`（插件目录） |
+| `open_external_url` | `url` | `void`（仅 http(s)） |
 | `set_window_theme` | `dark: boolean` | `void`（同步 Windows 标题栏明暗） |
 | `relaunch_as_admin` | — | `void`（进程退出并由新实例接管） |
 
@@ -189,6 +200,7 @@ cd ../..
 - 结束进程前必须二次确认；青衫工具箱 自身 PID 被硬编码拦截。
 - 服务启停依赖 Windows UAC，权限不足时返回明确错误，不在后台静默提权。
 - 网络诊断只做 DNS 解析与 TCP 握手，不调用 `cmd/powershell`。
+- 插件只声明数据，不执行第三方 JS/Shell；链接白名单、清单大小与字段长度均受限制。
 - 前端启用 Tauri capability 白名单；当前仅 `core:default`。
 - CSP 目前为 `null`（本地资源、无远程加载），接入远程内容前必须收紧。
 

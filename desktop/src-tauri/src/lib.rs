@@ -10,7 +10,12 @@ use state::AppState;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            app.manage(AppState::new()?);
+            let plugin_directory = app
+                .path()
+                .app_data_dir()
+                .unwrap_or_else(|_| std::env::temp_dir().join("qingshan-toolbox"))
+                .join("plugins");
+            app.manage(AppState::new(plugin_directory)?);
 
             // WebView2 needs a writable user-data directory. Enterprise
             // deployments can redirect it (portable installs, restricted
@@ -47,6 +52,11 @@ pub fn run() {
             commands::network_resolve,
             commands::app_info,
             commands::is_elevated,
+            commands::plugin_catalog,
+            commands::plugin_rescan,
+            commands::plugin_set_enabled,
+            commands::plugin_open_directory,
+            commands::open_external_url,
             commands::set_window_theme,
             commands::relaunch_as_admin,
         ])

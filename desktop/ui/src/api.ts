@@ -3,6 +3,7 @@ import type {
   AppInfo,
   DnsLookupResult,
   NetworkInterface,
+  PluginCatalog,
   PortCheckResult,
   ProcessInfo,
   ServiceAction,
@@ -12,8 +13,12 @@ import type {
 import {
   mockAppInfo,
   mockInterfaces,
+  mockOpenPluginDirectory,
+  mockPluginCatalog,
   mockProcesses,
+  mockRescanPlugins,
   mockServices,
+  mockSetPluginEnabled,
   mockSnapshot,
   mockCheckPort,
   mockResolve,
@@ -94,4 +99,35 @@ export async function relaunchAsAdmin(): Promise<void> {
 export async function setWindowTheme(dark: boolean): Promise<void> {
   if (!isDesktopRuntime) return;
   await call<void>("set_window_theme", { dark });
+}
+
+export async function pluginCatalog(): Promise<PluginCatalog> {
+  if (!isDesktopRuntime) return mockPluginCatalog();
+  return call<PluginCatalog>("plugin_catalog");
+}
+
+export async function rescanPlugins(): Promise<PluginCatalog> {
+  if (!isDesktopRuntime) return mockRescanPlugins();
+  return call<PluginCatalog>("plugin_rescan");
+}
+
+export async function setPluginEnabled(
+  id: string,
+  enabled: boolean,
+): Promise<PluginCatalog> {
+  if (!isDesktopRuntime) return mockSetPluginEnabled(id, enabled);
+  return call<PluginCatalog>("plugin_set_enabled", { id, enabled });
+}
+
+export async function openPluginDirectory(): Promise<string> {
+  if (!isDesktopRuntime) return mockOpenPluginDirectory();
+  return call<string>("plugin_open_directory");
+}
+
+export async function openExternalUrl(url: string): Promise<void> {
+  if (!isDesktopRuntime) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+  await call<void>("open_external_url", { url });
 }

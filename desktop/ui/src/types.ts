@@ -97,4 +97,47 @@ export interface AppInfo {
   isElevated: boolean;
 }
 
+export type PluginWidgetKind = "note" | "checklist" | "links" | "health";
+
+export interface PluginLink {
+  label: string;
+  url: string;
+}
+
+export interface PluginHealthRule {
+  memoryMaxPercent: number;
+  systemDiskMaxPercent: number;
+  requireElevation: boolean;
+}
+
+export interface PluginWidget {
+  id: string;
+  title: string;
+  kind: PluginWidgetKind;
+  body: string;
+  items: string[];
+  links: PluginLink[];
+  health: PluginHealthRule | null;
+}
+
+export interface PluginInfo {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  icon: string | null;
+  homepage: string | null;
+  enabled: boolean;
+  builtin: boolean;
+  path: string;
+  widgets: PluginWidget[];
+}
+
+export interface PluginCatalog {
+  directory: string;
+  plugins: PluginInfo[];
+  warnings: string[];
+}
+
 export type PageKey = "overview" | "processes" | "services" | "network" | "settings";

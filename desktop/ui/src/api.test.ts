@@ -5,7 +5,11 @@ import {
   isDesktopRuntime,
   listProcesses,
   listServices,
+  openPluginDirectory,
+  pluginCatalog,
   resolveHost,
+  rescanPlugins,
+  setPluginEnabled,
   systemSnapshot,
 } from "./api";
 
@@ -45,5 +49,27 @@ describe("browser mock contract", () => {
     const dns = await resolveHost("github.com");
     expect(dns.addresses.length).toBeGreaterThan(0);
     expect(dns.error).toBeNull();
+  });
+
+  it("loads and toggles the declarative plugin catalog", async () => {
+    const catalog = await pluginCatalog();
+    expect(catalog.plugins.some((plugin) => plugin.builtin)).toBe(true);
+    expect(catalog.directory).toContain("plugins");
+
+    const target = catalog.plugins.find((plugin) => plugin.id === "qingshan.release-links");
+    expect(target?.enabled).toBe(false);
+
+    const enabled = await setPluginEnabled("qingshan.release-links", true);
+    expect(enabled.plugins.find((plugin) => plugin.id === "qingshan.release-links")?.enabled).toBe(
+      true,
+    );
+
+    const rescanned = await rescanPlugins();
+    expect(rescanned.plugins.find((plugin) => plugin.id === "qingshan.release-links")?.enabled).toBe(
+      true,
+    );
+
+    await setPluginEnabled("qingshan.release-links", false);
+    expect(await openPluginDirectory()).toContain("plugins");
   });
 });

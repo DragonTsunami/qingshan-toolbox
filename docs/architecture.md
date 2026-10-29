@@ -19,8 +19,8 @@
                             │ Tauri IPC（白名单命令）
 ┌───────────────────────────▼──────────────────────────────┐
 │  桌面壳层 (src-tauri)                                    │
-│  commands.rs  —— IPC 参数适配、错误转换、spawn_blocking  │
-│  state.rs     —— 注入 OpsService                         │
+│  commands.rs  —— IPC 参数适配、插件命令、错误转换       │
+│  state.rs     —— 注入 OpsService + PluginStore           │
 │  window       —— 主题、WebView2 数据目录                 │
 └───────────────────────────┬──────────────────────────────┘
                             │ 用例调用
@@ -43,6 +43,7 @@
 └──────────────────────────────────────────────────────────┘
 
 devops-testkit —— 全部 trait 的 Mock，供 devops-app 测试注入
+devops-plugins —— 声明式插件清单、校验、启停状态；不依赖 Tauri / Win32 / 前端
 ```
 
 关键约束：
@@ -53,6 +54,7 @@ devops-testkit —— 全部 trait 的 Mock，供 devops-app 测试注入
 4. UI 不得拼接命令字符串；只能调用已注册命令。
 5. 所有跨层数据结构实现 `Serialize + Deserialize`，字段统一 `camelCase`。
 6. 每个 `devops-core` trait 必须在 `devops-testkit` 有 Mock；新增命令必须补应用层测试。
+7. `devops-plugins` 只解析声明式 JSON；不得执行插件提供的 JS/Shell，外链仅允许 `http(s)`。
 
 ## 3. 为什么这样分层
 
