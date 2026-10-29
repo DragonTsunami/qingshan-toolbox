@@ -1,0 +1,290 @@
+.log-page {
+  gap: 18px;
+}
+
+.log-panel {
+  padding: 22px 24px 14px;
+}
+
+.log-panel-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.log-panel-head h2 .anticon {
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.log-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 0 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 14px;
+}
+
+.log-toolbar-filters,
+.log-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-source-select {
+  width: 148px;
+}
+
+.log-level-select {
+  width: 132px;
+}
+
+.log-search {
+  width: 280px;
+}
+
+.log-limit-select {
+  width: 104px;
+}
+
+.log-source-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 18px;
+  padding-bottom: 10px;
+}
+
+.log-alert {
+  margin: 10px 0 12px;
+}
+
+.log-table .ant-table {
+  background: transparent;
+}
+
+.log-table .ant-table-thead > tr > th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--panel-muted);
+}
+
+.log-table .ant-table-tbody > tr {
+  cursor: pointer;
+}
+
+.log-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.log-event-id {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+.log-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.log-level-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.log-level-critical,
+.log-level-error {
+  color: var(--danger);
+}
+
+.log-level-warning {
+  color: #d97706;
+}
+
+.log-level-information {
+  color: var(--accent);
+}
+
+.log-level-verbose,
+.log-level-unknown {
+  color: var(--muted);
+}
+
+.log-provider {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.log-provider > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-channel {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.log-message {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.log-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 2px 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.log-detail-head h3 {
+  margin: 0 0 3px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.log-detail-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-detail-message {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--panel-muted);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-facts {
+  border-top: 1px solid var(--border);
+}
+
+.log-facts > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.log-facts span {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.log-facts strong {
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+}
+
+.log-detail-section {
+  margin: 22px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.log-fields {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.log-fields > div {
+  display: flex;
+  gap: 14px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.log-fields > div:last-child {
+  border-bottom: 0;
+}
+
+.log-fields span {
+  flex: 0 0 34%;
+  color: var(--muted);
+}
+
+.log-fields code {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.log-muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-raw {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.log-raw summary {
+  cursor: pointer;
+}
+
+.log-raw code {
+  display: block;
+  margin-top: 8px;
+  word-break: break-all;
+  color: var(--text);
+}
+
+@media (max-width: 1120px) {
+  .log-search {
+    width: 220px;
+  }
+}

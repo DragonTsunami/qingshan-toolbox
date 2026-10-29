@@ -154,10 +154,67 @@ export interface PluginMarketEntry {
   official: boolean;
 }
 
+export type LogSourceKind = "eventlog" | "file";
+
+export type LogLevel =
+  | "critical"
+  | "error"
+  | "warning"
+  | "information"
+  | "verbose"
+  | "unknown";
+
+export interface LogSource {
+  id: string;
+  name: string;
+  kind: LogSourceKind;
+  description: string;
+  available: boolean;
+}
+
+export interface LogField {
+  name: string;
+  value: string;
+}
+
+export interface LogEntry {
+  id: string;
+  timestamp: string;
+  level: LogLevel;
+  channel: string;
+  provider: string;
+  eventId: number;
+  message: string;
+  computer: string;
+  user: string | null;
+  fields: LogField[];
+}
+
+export interface LogQuery {
+  source: string;
+  level: LogLevel | null;
+  keyword: string;
+  limit: number;
+}
+
+export interface LogBatch {
+  source: string;
+  entries: LogEntry[];
+  scanned: number;
+  total: number;
+  truncated: boolean;
+}
+
+export interface LogExport {
+  path: string;
+  count: number;
+}
+
 export type PageKey =
   | "plugins"
   | "overview"
   | "processes"
   | "services"
   | "network"
+  | "logs"
   | "settings";

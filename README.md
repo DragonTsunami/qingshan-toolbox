@@ -4,12 +4,12 @@
 
 青衫工具箱 是一个面向企业员工与运维团队的 DevOps 工具，规划为**桌面端 + 网页端**两种形态：
 
-- **桌面端（当前阶段）**：Rust + Tauri 2 构建的 Windows 桌面运维工作台，提供系统概览、进程管理、服务管理、网络诊断与权限模型。
+- **桌面端（当前阶段）**：Rust + Tauri 2 构建的 Windows 桌面运维工作台，提供系统概览、进程管理、服务管理、网络诊断、日志中心与权限模型。
 - **网页端（后续阶段）**：统一处理 Terraform、Ansible、GitHub Actions、Jenkins、Dockerfile、Shell 脚本与 Git 数据记录，形成可审计的 DevOps 控制面。
 
 > 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
 
-> 状态：v0.3.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；新增独立「插件」工作台入口，插件页按 DeepSeek Harness 的「已安装 / 发现」结构重做。33 项 Rust 测试、14 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> 状态：v0.4.0，**阶段 2（桌面运维增强）进行中**。日志中心已完成：Application / System / Security 事件通道检索、级别与关键字过滤、事件详情、CSV 导出；新增独立「日志中心」侧栏入口。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；插件页按 DeepSeek Harness 的「已安装 / 发现」结构实现。40 项 Rust 测试、15 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **阶段约定：只做框架，不做内容。** 在 [`docs/framework.md`](docs/framework.md) 的验收清单关闭前，不新增业务页面，也不开始网页端实现。现有六个页面仅作为框架参考实现。
 
@@ -20,6 +20,8 @@
 ![插件页：按 DSH 结构重做的插件管理](docs/images/plugins-page.png)
 
 ![插件发现：官方可选插件与安装入口](docs/images/plugins-discover.png)
+
+![日志中心：事件通道检索与导出](docs/images/logs-page.png)
 
 更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png) · [插件详情](docs/images/plugins-detail.png) · [添加插件](docs/images/plugins-add.png)
 
@@ -33,11 +35,12 @@
 | 进程 | 列表、搜索、按 CPU/内存/名称排序、结束进程 | 自动刷新跟随全局间隔；支持强制终止；拦截对 青衫工具箱 自身的操作 |
 | 服务 | 枚举 Windows 服务、启停、重启、启动类型 | 操作后等待状态收敛（最长 20 秒）；需要管理员权限 |
 | 网络 | 接口、IP/MAC、流量、TCP 端口检测、DNS 解析 | 仅使用系统解析器与 TCP 握手，不执行任意命令 |
+| 日志 | Windows 事件日志 Application / System / Security 检索、级别与关键字过滤、事件详情、CSV 导出 | 通过 `wevtutil` 只读读取；Security 通道需要管理员权限；导出到 Downloads |
 | 插件 | 独立「插件」页：已安装 / 发现、启停、搜索筛选、添加本地插件、官方可选包安装、详情与移除 | 声明式 `plugin.json`，不执行第三方代码；插件页结构参考 DSH 插件管理 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
-**尚未实现（见路线图）**：日志检索、启动项、计划任务、磁盘清理、软件清单、资产上报、远程协助。
+**尚未实现（见路线图）**：启动项、计划任务、磁盘清理、软件清单、资产上报、远程协助。
 
 ---
 
@@ -78,13 +81,14 @@ DeepSeek-Devops/
 │  │  ├─ devops-app/             # 应用服务层 OpsService（可注入、可测试）
 │  │  ├─ devops-testkit/         # 全能力 Mock 与 fixtures
 │  │  ├─ devops-plugins/         # 插件清单、市场、安装/移除、启停与内置包
-│  │  └─ devops-platform/        # Windows 适配器（sysinfo / Win32）
+│  │  └─ devops-platform/        # Windows 适配器（sysinfo / Win32 / Event Log）
 │  ├─ src-tauri/                 # Tauri 壳、命令层、能力声明
 │  └─ ui/                        # React 控制台（Vite + Vitest）
 ├─ docs/
 │  ├─ architecture.md            # 分层、命令契约、安全模型
 │  ├─ framework.md               # 框架范围、测试矩阵、验收清单
 │  ├─ design-system.md           # DSH 同源视觉 token 与组件规则
+│  ├─ logs.md                    # 日志中心：通道、过滤、导出与安全边界
 │  ├─ plugins.md                 # 声明式插件：目录、manifest、卡片与安全边界
 │  └─ roadmap.md                 # 桌面端 + 网页端演进路线
 ├─ .github/workflows/ci.yml      # Linux core / Windows workspace / UI
@@ -154,17 +158,18 @@ cd ../..
 | --- | --- |
 | `cargo check`（全 workspace，含 Tauri 2.12） | 通过 |
 | `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（6.7 MB） |
-| `cargo test --workspace` | 33 / 33 通过（core 5 + app 12 + platform 7 + plugins 9） |
+| `cargo test --workspace` | 40 / 40 通过（core 5 + app 15 + platform 11 + plugins 9） |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 通过 |
 | `cargo fmt --all -- --check` | 通过 |
 | 前端 `tsc --noEmit && vite build` | 通过 |
-| 前端 `npm test`（Vitest） | 14 / 14 通过 |
+| 前端 `npm test`（Vitest） | 15 / 15 通过 |
 | 刷新间隔选择（1/3/5/10/30/60 秒） | 已实现并持久化到本机 |
+| 日志中心：Application 真实事件读取、关键字/级别过滤、详情、CSV 导出 | 已实现；平台真实事件通道测试通过 |
 | 插件页：侧栏「插件」位于「概览」上方；已安装 / 发现、启停、本地安装、可选包、详情与移除 | 已实现；Rust 9 项插件测试通过 |
-| 六个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
+| 七个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
 | 真实窗口启动 | **已通过**：release + `custom-protocol`，窗口标题 `青衫工具箱`，真实硬件数据渲染 |
 
-集成测试覆盖：系统快照、当前进程可见、拒绝结束自身进程、Windows 服务枚举、网络接口、DNS 解析、关闭端口检测。应用层测试覆盖：参数转发、自进程保护、输入校验、错误传播、服务动作、提权流程。
+集成测试覆盖：系统快照、当前进程可见、拒绝结束自身进程、Windows 服务枚举、网络接口、DNS 解析、关闭端口检测、Application 事件日志真实查询。应用层测试覆盖：参数转发、自进程保护、输入校验、错误传播、服务动作、提权流程、日志查询校验与导出边界。
 
 ---
 
@@ -182,6 +187,9 @@ cd ../..
 | `network_interfaces` | — | `NetworkInterface[]` |
 | `network_check_port` | `host`, `port`, `timeoutMs?` | `PortCheckResult` |
 | `network_resolve` | `host` | `DnsLookupResult` |
+| `log_sources` | — | `LogSource[]` |
+| `logs_query` | `query: LogQuery` | `LogBatch` |
+| `logs_export` | `entries: LogEntry[]` | `LogExport`（CSV 路径与条数） |
 | `app_info` | — | `AppInfo` |
 | `is_elevated` | — | `boolean` |
 | `plugin_catalog` | — | `PluginCatalog` |

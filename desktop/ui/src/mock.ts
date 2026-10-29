@@ -1,6 +1,11 @@
 import type {
   AppInfo,
   DnsLookupResult,
+  LogBatch,
+  LogEntry,
+  LogExport,
+  LogQuery,
+  LogSource,
   NetworkInterface,
   PluginCatalog,
   PluginInfo,
@@ -225,8 +230,8 @@ export async function mockResolve(host: string): Promise<DnsLookupResult> {
 export function mockAppInfo(): AppInfo {
   return {
     name: "青衫工具箱",
-    version: "0.3.0",
-    coreVersion: "0.3.0",
+    version: "0.4.0",
+    coreVersion: "0.4.0",
     buildProfile: "debug",
     platform: "windows-gnu",
     isElevated: true,
@@ -486,4 +491,186 @@ export async function mockRescanPlugins(): Promise<PluginCatalog> {
 
 export function mockOpenPluginDirectory(): string {
   return mockPluginCatalog().directory;
+}
+
+const logSourceSeed: LogSource[] = [
+  {
+    id: "application",
+    name: "应用程序",
+    kind: "eventlog",
+    description: "Windows Application 通道，含应用崩溃与安装事件",
+    available: true,
+  },
+  {
+    id: "system",
+    name: "系统",
+    kind: "eventlog",
+    description: "Windows System 通道，含驱动、服务与内核事件",
+    available: true,
+  },
+  {
+    id: "security",
+    name: "安全",
+    kind: "eventlog",
+    description: "Windows Security 通道，读取需要管理员权限",
+    available: true,
+  },
+];
+
+function logTime(minutesAgo: number): string {
+  return new Date(Date.now() - minutesAgo * 60_000).toISOString();
+}
+
+const logSeed: LogEntry[] = [
+  {
+    id: "application-1000",
+    timestamp: logTime(4),
+    level: "error",
+    channel: "Application",
+    provider: "Application Error",
+    eventId: 1000,
+    message: "demo.exe · 0xc0000005 · 0x0000000000001234",
+    computer: "OPS-WS-042",
+    user: "S-1-5-21-1004",
+    fields: [
+      { name: "Faulting application", value: "demo.exe" },
+      { name: "Exception code", value: "0xc0000005" },
+      { name: "Fault offset", value: "0x0000000000001234" },
+    ],
+  },
+  {
+    id: "system-7036",
+    timestamp: logTime(12),
+    level: "information",
+    channel: "System",
+    provider: "Service Control Manager",
+    eventId: 7036,
+    message: "Docker Desktop Service 服务已进入正在运行状态。",
+    computer: "OPS-WS-042",
+    user: "S-1-5-18",
+    fields: [
+      { name: "Service", value: "Docker Desktop Service" },
+      { name: "State", value: "running" },
+    ],
+  },
+  {
+    id: "system-7000",
+    timestamp: logTime(28),
+    level: "error",
+    channel: "System",
+    provider: "Service Control Manager",
+    eventId: 7000,
+    message: "Windows Update 服务启动失败，错误 1053。",
+    computer: "OPS-WS-042",
+    user: "S-1-5-18",
+    fields: [
+      { name: "Service", value: "wuauserv" },
+      { name: "Error", value: "1053" },
+    ],
+  },
+  {
+    id: "application-1026",
+    timestamp: logTime(41),
+    level: "warning",
+    channel: "Application",
+    provider: ".NET Runtime",
+    eventId: 1026,
+    message: "托管运行时检测到未处理的异常，进程已终止。",
+    computer: "OPS-WS-042",
+    user: null,
+    fields: [
+      { name: "Application", value: "OpsAgent.exe" },
+      { name: "Exception", value: "System.Net.Http.HttpRequestException" },
+    ],
+  },
+  {
+    id: "security-4624",
+    timestamp: logTime(55),
+    level: "information",
+    channel: "Security",
+    provider: "Microsoft-Windows-Security-Auditing",
+    eventId: 4624,
+    message: "已成功登录帐户。",
+    computer: "OPS-WS-042",
+    user: "S-1-5-21-1004",
+    fields: [
+      { name: "Logon type", value: "3" },
+      { name: "Account", value: "OPS-WS-042\\ops" },
+    ],
+  },
+  {
+    id: "system-1074",
+    timestamp: logTime(74),
+    level: "information",
+    channel: "System",
+    provider: "User32",
+    eventId: 1074,
+    message: "系统已由用户启动关机流程。",
+    computer: "OPS-WS-042",
+    user: "S-1-5-21-1004",
+    fields: [
+      { name: "Process", value: "explorer.exe" },
+      { name: "Reason", value: "其他 (计划内)" },
+    ],
+  },
+  {
+    id: "application-11707",
+    timestamp: logTime(96),
+    level: "verbose",
+    channel: "Application",
+    provider: "MsiInstaller",
+    eventId: 11707,
+    message: "产品 Qingshan Toolbox 安装成功。",
+    computer: "OPS-WS-042",
+    user: "S-1-5-21-1004",
+    fields: [
+      { name: "Product", value: "Qingshan Toolbox" },
+      { name: "Version", value: "0.3.0" },
+    ],
+  },
+  {
+    id: "system-6008",
+    timestamp: logTime(130),
+    level: "warning",
+    channel: "System",
+    provider: "EventLog",
+    eventId: 6008,
+    message: "上一次系统关机是意外的。",
+    computer: "OPS-WS-042",
+    user: null,
+    fields: [{ name: "Last shutdown", value: "2026-10-29T22:31:12Z" }],
+  },
+];
+
+export function mockLogSources(): LogSource[] {
+  return logSourceSeed;
+}
+
+export function mockQueryLogs(query: LogQuery): LogBatch {
+  const keyword = query.keyword.trim().toLowerCase();
+  const matched = logSeed.filter(
+    (entry) =>
+      (!query.level || entry.level === query.level) &&
+      (!keyword ||
+        [entry.message, entry.provider, entry.channel, entry.computer, String(entry.eventId)]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword)),
+  );
+  const entries = matched.slice(0, query.limit);
+  return {
+    source: query.source,
+    entries,
+    scanned: logSeed.length,
+    total: matched.length,
+    truncated: matched.length > entries.length,
+  };
+}
+
+export function mockExportLogs(entries: LogEntry[]): LogExport {
+  if (entries.length === 0) throw new Error("没有可导出的日志");
+  return {
+    path: `C:\\Users\\青衫\\Downloads\\qingshan-logs-${Date.now()}.csv`,
+    count: entries.length,
+  };
 }

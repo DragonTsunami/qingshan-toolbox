@@ -3,6 +3,7 @@ import {
   ClusterOutlined,
   DashboardOutlined,
   DeploymentUnitOutlined,
+  FileTextOutlined,
   GlobalOutlined,
   SafetyCertificateFilled,
   SettingOutlined,
@@ -25,6 +26,7 @@ const NAV_ITEMS: Array<{ key: PageKey; label: string; icon: React.ReactNode; hin
   { key: "processes", label: "进程管理", icon: <DeploymentUnitOutlined />, hint: "资源与终止" },
   { key: "services", label: "服务管理", icon: <ClusterOutlined />, hint: "启停与重启" },
   { key: "network", label: "网络诊断", icon: <GlobalOutlined />, hint: "端口与 DNS" },
+  { key: "logs", label: "日志中心", icon: <FileTextOutlined />, hint: "事件检索与导出" },
   { key: "settings", label: "设置", icon: <SettingOutlined />, hint: "权限与关于" },
 ];
 
@@ -77,7 +79,7 @@ export default function Sidebar({ page, onNavigate, snapshot, info, onElevate }:
       </div>
 
       <div className="sidebar-footer">
-        <span>v{info?.version ?? "0.3.0"}</span>
+        <span>v{info?.version ?? "0.4.0"}</span>
         <span className="footer-dot" />
         <span>Rust · Tauri</span>
       </div>

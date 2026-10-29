@@ -8,6 +8,7 @@ import OverviewPage from "./pages/Overview";
 import ProcessesPage from "./pages/Processes";
 import ServicesPage from "./pages/Services";
 import NetworkPage from "./pages/Network";
+import LogsPage from "./pages/Logs";
 import SettingsPage from "./pages/Settings";
 import { appInfo, relaunchAsAdmin, setWindowTheme, systemSnapshot } from "./api";
 import {
@@ -24,6 +25,7 @@ const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
   processes: { title: "进程管理", subtitle: "查看资源占用并安全地结束进程" },
   services: { title: "服务管理", subtitle: "控制系统服务的启动、停止与重启" },
   network: { title: "网络诊断", subtitle: "接口、端口连通性与 DNS 解析" },
+  logs: { title: "日志中心", subtitle: "Windows 事件日志的检索、详情与导出" },
   settings: { title: "设置", subtitle: "应用信息、权限与后续能力" },
 };
 
@@ -118,6 +120,13 @@ function App() {
         return <ServicesPage elevated={snapshot?.isElevated ?? false} />;
       case "network":
         return <NetworkPage />;
+      case "logs":
+        return (
+          <LogsPage
+            elevated={snapshot?.isElevated ?? false}
+            onElevate={elevate}
+          />
+        );
       case "settings":
         return (
           <SettingsPage

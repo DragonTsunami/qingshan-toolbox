@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   applyServiceAction,
   checkPort,
+  exportLogs,
   isDesktopRuntime,
   listProcesses,
   installPlugin,
   listServices,
+  logSources,
   openPluginDirectory,
   pluginCatalog,
   pluginMarket,
+  queryLogs,
   removePlugin,
   resolveHost,
   rescanPlugins,
@@ -87,5 +90,25 @@ describe("browser mock contract", () => {
 
     const after = await removePlugin("qingshan.disk-cleanup");
     expect(after.plugins.some((plugin) => plugin.id === "qingshan.disk-cleanup")).toBe(false);
+  });
+
+  it("reads and filters Windows event logs", async () => {
+    const sources = await logSources();
+    expect(sources.map((source) => source.id)).toEqual(["application", "system", "security"]);
+
+    const batch = await queryLogs({
+      source: "application",
+      level: "error",
+      keyword: "",
+      limit: 100,
+    });
+    expect(batch.source).toBe("application");
+    expect(batch.entries.length).toBeGreaterThan(0);
+    expect(batch.entries.every((entry) => entry.level === "error")).toBe(true);
+    expect(batch.total).toBeGreaterThanOrEqual(batch.entries.length);
+
+    const exported = await exportLogs(batch.entries);
+    expect(exported.count).toBe(batch.entries.length);
+    expect(exported.path).toContain("qingshan-logs-");
   });
 });

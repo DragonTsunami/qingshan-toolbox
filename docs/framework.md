@@ -1,6 +1,6 @@
 # 框架阶段与验收标准
 
-> 当前原则：**只做框架，不做内容。** 在框架验收清单全部通过之前，不新增业务页面、不接入真实日志/清理/资产能力，也不开始网页端实现。
+> 当前原则：**框架基线已冻结，阶段 2 按路线图增量交付。** 分层、命令契约与测试门禁保持稳定；新增业务能力必须先补领域模型、应用层校验与 Mock 测试，再进入 UI。
 
 ## 1. 阶段范围
 
@@ -13,9 +13,9 @@
 - React 应用外壳：主题、布局、路由、错误边界、API 封装
 - 构建、测试、CI、文档与本地工具链
 
-**不在本阶段**：日志中心、磁盘清理、启动项、资产上报、远程协助、网页端 Terraform/Ansible/CI 集成。
+**不在框架基线内**：磁盘清理、启动项、资产上报、远程协助、网页端 Terraform/Ansible/CI 集成。日志中心已作为阶段 2 的首个增量能力接入。
 
-当前六个页面（插件/概览/进程/服务/网络/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统；不继续扩展功能。
+当前七个页面（插件/概览/进程/服务/网络/日志中心/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统。
 
 ## 2. 依赖规则
 
@@ -46,16 +46,16 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | --- | --- | --- | --- |
 | 契约测试 | `devops-core/tests/contract.rs` | camelCase 字段、枚举字符串、错误码、AppInfo | 5 / 5 |
 | 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 11 / 11 |
-| 组件单测 | `devops-app` 内部 | `OpsService: Send + Sync` | 1 / 1 |
+| 组件/日志单测 | `devops-app` 内部 | `OpsService: Send + Sync`、日志查询校验/转发、空导出 | 4 / 4 |
 | 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、市场、安装/移除、路径安装、非法 id/URL | 9 / 9 |
-| 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS | 7 / 7 |
+| 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS、Application 事件日志查询 | 11 / 11 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |
-| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件 Mock API 契约（目录/市场/安装/移除） | 14 / 14 |
-| 视觉冒烟 | `docs/images` | 六个页面（含独立插件页：已安装/发现/详情/添加）× 浅色/深色截图 | 通过 |
+| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件/日志 Mock API 契约 | 15 / 15 |
+| 视觉冒烟 | `docs/images` | 七个页面（含独立插件页、日志中心）× 浅色/深色截图 | 通过 |
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 
-总计 Rust 33 项测试（5 + 11 + 1 + 9 + 7），前端 14 项测试。
+总计 Rust 40 项测试（5 + 11 + 4 + 9 + 11），前端 15 项测试。
 
 ## 4. 验收清单
 

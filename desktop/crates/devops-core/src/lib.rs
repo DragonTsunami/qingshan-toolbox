@@ -2,10 +2,12 @@
 //! backend. Nothing in this crate may depend on Tauri, sysinfo or Windows APIs.
 
 pub mod error;
+pub mod logs;
 pub mod models;
 pub mod traits;
 
 pub use error::{OpsError, OpsResult};
+pub use logs::*;
 pub use models::*;
 pub use traits::*;
 

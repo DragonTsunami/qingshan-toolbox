@@ -1,7 +1,7 @@
 //! Integration tests that exercise the real Windows adapters. They are read-only
 //! (no services are started/stopped and no processes are killed).
 
-use devops_core::ServiceStatus;
+use devops_core::{LogQuery, ServiceStatus};
 use devops_platform::DesktopPlatform;
 
 fn platform() -> DesktopPlatform {
@@ -82,4 +82,24 @@ fn closed_port_is_reported_as_closed() {
         .expect("port check");
     assert!(!result.open);
     assert!(result.error.is_some());
+}
+
+#[test]
+fn event_log_query_reads_application_channel() {
+    let batch = platform()
+        .logs
+        .query(&LogQuery {
+            source: "application".into(),
+            level: None,
+            keyword: String::new(),
+            limit: 5,
+        })
+        .expect("application event log query");
+    assert!(
+        !batch.entries.is_empty(),
+        "expected recent application events"
+    );
+    assert!(batch.scanned >= batch.entries.len());
+    assert_eq!(batch.source, "application");
+    assert!(batch.entries.iter().all(|entry| !entry.channel.is_empty()));
 }

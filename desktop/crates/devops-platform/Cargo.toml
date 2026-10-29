@@ -12,3 +12,4 @@ sysinfo.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows.workspace = true
+quick-xml = "0.42"

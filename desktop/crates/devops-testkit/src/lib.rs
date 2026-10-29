@@ -8,7 +8,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use devops_core::{
-    DnsLookupResult, Elevation, NetworkInterface, NetworkProbe, OpsError, OpsResult,
+    DnsLookupResult, Elevation, LogBatch, LogCenter, LogEntry, LogExport, LogField, LogLevel,
+    LogQuery, LogSource, LogSourceKind, NetworkInterface, NetworkProbe, OpsError, OpsResult,
     PortCheckResult, ProcessControl, ProcessInfo, ServiceAction, ServiceControl, ServiceInfo,
     ServiceStatus, SystemProbe, SystemSnapshot,
 };
@@ -127,6 +128,50 @@ pub fn sample_dns_result() -> DnsLookupResult {
         latency_ms: 4,
         error: None,
     }
+}
+
+pub fn sample_logs() -> Vec<LogEntry> {
+    vec![
+        LogEntry {
+            id: "Application-1000-20261030010203".into(),
+            timestamp: "2026-10-30T01:02:03.0000000Z".into(),
+            level: LogLevel::Error,
+            channel: "Application".into(),
+            provider: "Application Error".into(),
+            event_id: 1000,
+            message: "demo.exe 崩溃，异常代码 0xc0000005".into(),
+            computer: "OPS-MOCK".into(),
+            user: Some("S-1-5-18".into()),
+            fields: vec![LogField {
+                name: "异常代码".into(),
+                value: "0xc0000005".into(),
+            }],
+        },
+        LogEntry {
+            id: "System-7036-20261030010100".into(),
+            timestamp: "2026-10-30T01:01:00.0000000Z".into(),
+            level: LogLevel::Information,
+            channel: "System".into(),
+            provider: "Service Control Manager".into(),
+            event_id: 7036,
+            message: "Windows Update 服务进入运行状态".into(),
+            computer: "OPS-MOCK".into(),
+            user: None,
+            fields: Vec::new(),
+        },
+        LogEntry {
+            id: "Application-1001-20261030010000".into(),
+            timestamp: "2026-10-30T01:00:00.0000000Z".into(),
+            level: LogLevel::Warning,
+            channel: "Application".into(),
+            provider: "Windows Error Reporting".into(),
+            event_id: 1001,
+            message: "Windows 错误报告队列已满".into(),
+            computer: "OPS-MOCK".into(),
+            user: None,
+            fields: Vec::new(),
+        },
+    ]
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +380,96 @@ impl NetworkProbe for MockNetwork {
     }
 }
 
+pub struct MockLogs {
+    entries: Vec<LogEntry>,
+    queries: Mutex<Vec<LogQuery>>,
+    exports: Mutex<Vec<usize>>,
+    pub fail: bool,
+}
+
+impl MockLogs {
+    pub fn new() -> Self {
+        Self {
+            entries: sample_logs(),
+            queries: Mutex::new(Vec::new()),
+            exports: Mutex::new(Vec::new()),
+            fail: false,
+        }
+    }
+
+    pub fn query_calls(&self) -> Vec<LogQuery> {
+        self.queries.lock().expect("mock lock").clone()
+    }
+
+    pub fn export_calls(&self) -> Vec<usize> {
+        self.exports.lock().expect("mock lock").clone()
+    }
+}
+
+impl Default for MockLogs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl LogCenter for MockLogs {
+    fn sources(&self) -> OpsResult<Vec<LogSource>> {
+        Ok(vec![
+            LogSource {
+                id: "application".into(),
+                name: "应用程序".into(),
+                kind: LogSourceKind::EventLog,
+                description: "mock application log".into(),
+                available: true,
+            },
+            LogSource {
+                id: "system".into(),
+                name: "系统".into(),
+                kind: LogSourceKind::EventLog,
+                description: "mock system log".into(),
+                available: true,
+            },
+        ])
+    }
+
+    fn query(&self, query: &LogQuery) -> OpsResult<LogBatch> {
+        if self.fail {
+            return Err(OpsError::Platform("mock log query failure".into()));
+        }
+        self.queries.lock().expect("mock lock").push(query.clone());
+        let keyword = query.keyword.trim().to_lowercase();
+        let matched: Vec<LogEntry> = self
+            .entries
+            .iter()
+            .filter(|entry| {
+                query
+                    .level
+                    .map(|level| entry.level == level)
+                    .unwrap_or(true)
+                    && (keyword.is_empty() || entry.message.to_lowercase().contains(&keyword))
+            })
+            .cloned()
+            .collect();
+        let total = matched.len();
+        let entries = matched.into_iter().take(query.limit).collect();
+        Ok(LogBatch {
+            source: query.source.clone(),
+            entries,
+            scanned: self.entries.len(),
+            total,
+            truncated: total > query.limit,
+        })
+    }
+
+    fn export(&self, entries: &[LogEntry]) -> OpsResult<LogExport> {
+        self.exports.lock().expect("mock lock").push(entries.len());
+        Ok(LogExport {
+            path: "C:\\Mock\\logs.csv".into(),
+            count: entries.len(),
+        })
+    }
+}
+
 #[derive(Default)]
 pub struct MockElevation {
     elevated: AtomicBool,
@@ -377,6 +512,7 @@ pub struct MockAdapters {
     pub services: Arc<MockServices>,
     pub network: Arc<MockNetwork>,
     pub elevation: Arc<MockElevation>,
+    pub logs: Arc<MockLogs>,
 }
 
 impl MockAdapters {
@@ -387,6 +523,7 @@ impl MockAdapters {
             services: Arc::new(MockServices::new()),
             network: Arc::new(MockNetwork::new()),
             elevation: Arc::new(MockElevation::new(false)),
+            logs: Arc::new(MockLogs::new()),
         }
     }
 }

@@ -2,6 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   AppInfo,
   DnsLookupResult,
+  LogBatch,
+  LogEntry,
+  LogExport,
+  LogQuery,
+  LogSource,
   NetworkInterface,
   PluginCatalog,
   PluginMarketEntry,
@@ -13,13 +18,16 @@ import type {
 } from "./types";
 import {
   mockAppInfo,
+  mockExportLogs,
   mockInterfaces,
   mockInstallPlugin,
   mockInstallPluginFromPath,
+  mockLogSources,
   mockOpenPluginDirectory,
   mockPluginCatalog,
   mockPluginMarket,
   mockProcesses,
+  mockQueryLogs,
   mockRemovePlugin,
   mockRescanPlugins,
   mockServices,
@@ -104,6 +112,21 @@ export async function relaunchAsAdmin(): Promise<void> {
 export async function setWindowTheme(dark: boolean): Promise<void> {
   if (!isDesktopRuntime) return;
   await call<void>("set_window_theme", { dark });
+}
+
+export async function logSources(): Promise<LogSource[]> {
+  if (!isDesktopRuntime) return mockLogSources();
+  return call<LogSource[]>("log_sources");
+}
+
+export async function queryLogs(query: LogQuery): Promise<LogBatch> {
+  if (!isDesktopRuntime) return mockQueryLogs(query);
+  return call<LogBatch>("logs_query", { query });
+}
+
+export async function exportLogs(entries: LogEntry[]): Promise<LogExport> {
+  if (!isDesktopRuntime) return mockExportLogs(entries);
+  return call<LogExport>("logs_export", { entries });
 }
 
 export async function pluginCatalog(): Promise<PluginCatalog> {

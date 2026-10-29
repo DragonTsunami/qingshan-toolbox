@@ -19,8 +19,8 @@
                             │ Tauri IPC（白名单命令）
 ┌───────────────────────────▼──────────────────────────────┐
 │  桌面壳层 (src-tauri)                                    │
-│  commands.rs  —— IPC 参数适配、插件命令、错误转换       │
-│  state.rs     —— 注入 OpsService + PluginStore           │
+│  commands.rs  —— IPC 参数适配、插件/日志命令、错误转换  │
+│  state.rs     —— 注入 OpsService + PluginStore + LogService │
 │  window       —— 主题、WebView2 数据目录                 │
 └───────────────────────────┬──────────────────────────────┘
                             │ 用例调用
@@ -31,14 +31,14 @@
                             │ trait objects
 ┌───────────────────────────▼──────────────────────────────┐
 │  领域层 (devops-core)                                    │
-│  models.rs   —— SystemSnapshot / ProcessInfo / ...       │
-│  traits.rs   —— SystemProbe / ProcessControl / ...       │
+│  models.rs   —— SystemSnapshot / ProcessInfo / LogEntry   │
+│  traits.rs   —— SystemProbe / ProcessControl / LogCenter  │
 │  error.rs    —— OpsError / OpsResult                     │
 └───────────────────────────┬──────────────────────────────┘
                             │ 实现
 ┌───────────────────────────▼──────────────────────────────┐
 │  平台层 (devops-platform)                                │
-│  Windows：sysinfo、Win32 Service API、UAC、TCP/DNS        │
+│  Windows：sysinfo、Win32 Service API、UAC、TCP/DNS、wevtutil 事件日志 │
 │  未来：Linux / macOS / 远端 Agent                         │
 └──────────────────────────────────────────────────────────┘
 
@@ -79,7 +79,21 @@ Button onClick
   → message.success + 刷新列表
 ```
 
-阻塞型系统调用（服务枚举/启停、网络探测）统一放在 `spawn_blocking`，避免阻塞 Tauri 主线程；快照与进程列表保持同步命令，由前端节流刷新。
+日志查询使用同一条链路：
+
+```text
+LogsPage 查询
+  → queryLogs({source, level, keyword, limit})   // ui/src/api.ts
+  → invoke("logs_query", { query })              // Tauri IPC
+  → commands::logs_query                         // spawn_blocking
+  → LogService::query                            // 校验 limit/keyword
+  → LogCenter::query                             // trait
+  → wevtutil qe <Channel> /rd:true /f:xml        // 只读，无任意 Shell
+  → quick-xml 解析 → LogBatch (camelCase JSON)
+  → 表格 / 详情 Drawer / CSV 导出
+```
+
+阻塞型系统调用（服务枚举/启停、网络探测、事件日志读取）统一放在 `spawn_blocking`，避免阻塞 Tauri 主线程；快照与进程列表保持同步命令，由前端节流刷新。
 
 ## 4.1 测试边界
 
@@ -87,7 +101,7 @@ Button onClick
 | --- | --- |
 | `devops-core` | 序列化契约、枚举、错误码（`tests/contract.rs`） |
 | `devops-app` | 注入 `devops-testkit` Mock，验证参数转发、校验、守卫与错误传播 |
-| `devops-platform` | 真实 Windows 集成测试（快照/进程/服务/网络） |
+| `devops-platform` | 真实 Windows 集成测试（快照/进程/服务/网络/事件日志） |
 | `src-tauri` | 不设 Rust 单测；命令层保持极薄，窗口行为由 E2E 覆盖 |
 | UI | `tsc` + Vitest + 构建 + 截图冒烟 |
 

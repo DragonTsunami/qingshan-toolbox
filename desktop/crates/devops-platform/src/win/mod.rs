@@ -1,4 +1,5 @@
 pub mod elevation;
+pub mod logs;
 pub mod network;
 pub mod process;
 pub mod service;
@@ -10,6 +11,7 @@ pub struct WindowsPlatform {
     pub services: service::ServiceControlImpl,
     pub network: network::NetworkProbeImpl,
     pub elevation: elevation::ElevationImpl,
+    pub logs: logs::LogCenterImpl,
 }
 
 impl WindowsPlatform {
@@ -20,6 +22,7 @@ impl WindowsPlatform {
             services: service::ServiceControlImpl,
             network: network::NetworkProbeImpl,
             elevation: elevation::ElevationImpl,
+            logs: logs::LogCenterImpl,
         }
     }
 }

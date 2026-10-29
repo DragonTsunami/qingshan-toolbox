@@ -19,7 +19,8 @@
 
 优先级 P0：
 
-- 日志中心：Windows Event Log（Application/System/Security）、应用日志文件、关键字过滤、导出
+- [x] 日志中心：Windows Event Log Application/System/Security、关键字/级别过滤、事件详情、CSV 导出
+- [ ] 日志中心扩展：应用日志文件、更多通道与实时跟随
 - 磁盘清理：临时文件、回收站、浏览器缓存、Windows Update 缓存，带预估与白名单
 - 启动项与计划任务：查看、禁用/启用、下次运行时间
 - 软件清单：已安装程序、版本、安装日期、卸载入口（需确认）

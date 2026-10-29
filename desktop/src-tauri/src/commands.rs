@@ -2,8 +2,8 @@ use std::path::Path;
 use std::process::Command;
 
 use devops_core::{
-    AppInfo, DnsLookupResult, NetworkInterface, PortCheckResult, ProcessInfo, ServiceAction,
-    ServiceInfo, SystemSnapshot,
+    AppInfo, DnsLookupResult, LogBatch, LogEntry, LogExport, LogQuery, LogSource, NetworkInterface,
+    PortCheckResult, ProcessInfo, ServiceAction, ServiceInfo, SystemSnapshot,
 };
 use devops_plugins::{PluginCatalog, PluginMarketEntry};
 use tauri::{AppHandle, State};
@@ -92,6 +92,36 @@ pub async fn network_resolve(
 ) -> Result<DnsLookupResult, String> {
     let service = state.service.clone();
     tauri::async_runtime::spawn_blocking(move || service.resolve(&host))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn log_sources(state: State<'_, AppState>) -> Result<Vec<LogSource>, String> {
+    let logs = state.logs.clone();
+    tauri::async_runtime::spawn_blocking(move || logs.sources())
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn logs_query(state: State<'_, AppState>, query: LogQuery) -> Result<LogBatch, String> {
+    let logs = state.logs.clone();
+    tauri::async_runtime::spawn_blocking(move || logs.query(query))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn logs_export(
+    state: State<'_, AppState>,
+    entries: Vec<LogEntry>,
+) -> Result<LogExport, String> {
+    let logs = state.logs.clone();
+    tauri::async_runtime::spawn_blocking(move || logs.export(&entries))
         .await
         .map_err(to_message)?
         .map_err(to_message)
