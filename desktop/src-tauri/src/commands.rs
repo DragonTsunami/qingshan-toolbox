@@ -5,7 +5,7 @@ use devops_core::{
     AppInfo, DnsLookupResult, NetworkInterface, PortCheckResult, ProcessInfo, ServiceAction,
     ServiceInfo, SystemSnapshot,
 };
-use devops_plugins::PluginCatalog;
+use devops_plugins::{PluginCatalog, PluginMarketEntry};
 use tauri::{AppHandle, State};
 
 use crate::state::AppState;
@@ -150,6 +150,49 @@ pub fn plugin_set_enabled(
         .lock()
         .map_err(|_| "插件状态锁不可用".to_string())?
         .set_enabled(&id, enabled)
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_market(state: State<'_, AppState>) -> Result<Vec<PluginMarketEntry>, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .market()
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_install(state: State<'_, AppState>, id: String) -> Result<PluginCatalog, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .install(&id)
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_install_from_path(
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<PluginCatalog, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .install_from_path(&path)
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn plugin_remove(state: State<'_, AppState>, id: String) -> Result<PluginCatalog, String> {
+    state
+        .plugins
+        .lock()
+        .map_err(|_| "插件状态锁不可用".to_string())?
+        .remove(&id)
         .map_err(to_message)
 }
 

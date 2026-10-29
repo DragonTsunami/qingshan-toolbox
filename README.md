@@ -9,17 +9,19 @@
 
 > 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
 
-> 状态：v0.3.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；新增独立「插件」工作台入口。31 项 Rust 测试、13 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> 状态：v0.3.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；新增独立「插件」工作台入口，插件页按 DeepSeek Harness 的「已安装 / 发现」结构重做。33 项 Rust 测试、14 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
-> **阶段约定：只做框架，不做内容。** 在 [`docs/framework.md`](docs/framework.md) 的验收清单关闭前，不新增业务页面，也不开始网页端实现。现有五个页面仅作为框架参考实现。
+> **阶段约定：只做框架，不做内容。** 在 [`docs/framework.md`](docs/framework.md) 的验收清单关闭前，不新增业务页面，也不开始网页端实现。现有六个页面仅作为框架参考实现。
 
 > **打开桌面端**：双击桌面快捷方式 **青衫工具箱**，或运行 `C:\QingshanToolbox\QingshanToolbox.exe`。`http://127.0.0.1:1421` 只是前端预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
 
 ![青衫工具箱 概览](docs/images/overview.png)
 
-![插件页：工作台侧栏「概览」上方的独立入口](docs/images/plugins-page.png)
+![插件页：按 DSH 结构重做的插件管理](docs/images/plugins-page.png)
 
-更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png)
+![插件发现：官方可选插件与安装入口](docs/images/plugins-discover.png)
+
+更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png) · [插件详情](docs/images/plugins-detail.png) · [添加插件](docs/images/plugins-add.png)
 
 ---
 
@@ -31,7 +33,7 @@
 | 进程 | 列表、搜索、按 CPU/内存/名称排序、结束进程 | 自动刷新跟随全局间隔；支持强制终止；拦截对 青衫工具箱 自身的操作 |
 | 服务 | 枚举 Windows 服务、启停、重启、启动类型 | 操作后等待状态收敛（最长 20 秒）；需要管理员权限 |
 | 网络 | 接口、IP/MAC、流量、TCP 端口检测、DNS 解析 | 仅使用系统解析器与 TCP 握手，不执行任意命令 |
-| 插件 | 工作台侧栏独立「插件」页、启停、重新扫描、插件目录、外链 | 声明式 `plugin.json`，不执行第三方代码；内置健康巡检与版本入口 |
+| 插件 | 独立「插件」页：已安装 / 发现、启停、搜索筛选、添加本地插件、官方可选包安装、详情与移除 | 声明式 `plugin.json`，不执行第三方代码；插件页结构参考 DSH 插件管理 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
@@ -75,7 +77,7 @@ DeepSeek-Devops/
 │  │  ├─ devops-core/            # 领域模型、trait、错误（无平台/UI 依赖）
 │  │  ├─ devops-app/             # 应用服务层 OpsService（可注入、可测试）
 │  │  ├─ devops-testkit/         # 全能力 Mock 与 fixtures
-│  │  ├─ devops-plugins/         # 声明式插件清单、校验、启停与内置插件
+│  │  ├─ devops-plugins/         # 插件清单、市场、安装/移除、启停与内置包
 │  │  └─ devops-platform/        # Windows 适配器（sysinfo / Win32）
 │  ├─ src-tauri/                 # Tauri 壳、命令层、能力声明
 │  └─ ui/                        # React 控制台（Vite + Vitest）
@@ -152,13 +154,13 @@ cd ../..
 | --- | --- |
 | `cargo check`（全 workspace，含 Tauri 2.12） | 通过 |
 | `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（6.7 MB） |
-| `cargo test --workspace` | 31 / 31 通过（core 5 + app 12 + platform 7 + plugins 7） |
+| `cargo test --workspace` | 33 / 33 通过（core 5 + app 12 + platform 7 + plugins 9） |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 通过 |
 | `cargo fmt --all -- --check` | 通过 |
 | 前端 `tsc --noEmit && vite build` | 通过 |
-| 前端 `npm test`（Vitest） | 13 / 13 通过 |
+| 前端 `npm test`（Vitest） | 14 / 14 通过 |
 | 刷新间隔选择（1/3/5/10/30/60 秒） | 已实现并持久化到本机 |
-| 插件页：侧栏「插件」位于「概览」上方；内置健康巡检 / 版本入口、启停、扫描 | 已实现；Rust 7 项插件测试通过 |
+| 插件页：侧栏「插件」位于「概览」上方；已安装 / 发现、启停、本地安装、可选包、详情与移除 | 已实现；Rust 9 项插件测试通过 |
 | 六个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
 | 真实窗口启动 | **已通过**：release + `custom-protocol`，窗口标题 `青衫工具箱`，真实硬件数据渲染 |
 
@@ -184,6 +186,10 @@ cd ../..
 | `is_elevated` | — | `boolean` |
 | `plugin_catalog` | — | `PluginCatalog` |
 | `plugin_rescan` | — | `PluginCatalog` |
+| `plugin_market` | — | `PluginMarketEntry[]` |
+| `plugin_install` | `id` | `PluginCatalog`（官方可选包） |
+| `plugin_install_from_path` | `path` | `PluginCatalog`（本地文件夹） |
+| `plugin_remove` | `id` | `PluginCatalog`（内置插件不可移除） |
 | `plugin_set_enabled` | `id`, `enabled` | `PluginCatalog` |
 | `plugin_open_directory` | — | `string`（插件目录） |
 | `open_external_url` | `url` | `void`（仅 http(s)） |
@@ -234,6 +240,7 @@ cd ../..
 - 无自动更新、代码签名与安装包流水线（后续接入 Tauri bundler + 企业签名）。
 - 当前 release 从含中文的仓库路径直接启动不稳定，交付使用 ASCII 安装目录 `C:\QingshanToolbox`（桌面快捷方式已指向该目录）。
 - 窗口级 E2E 已手动验证，但尚未接入自动化 UI 测试。
+- 插件页复刻 DSH 的「已安装 / 发现」信息架构、行式卡片与安装管理流程；DSH 的 Cordis / Electron 运行时、remote npm / Git 安装、pnpm 输出没有接入。当前只支持安全的声明式 bundle：官方可选包与本地文件夹安装。
 - 前端产物约 1 MB（Ant Design），后续按路由拆包。
 - WebView2 默认数据目录为 `%LOCALAPPDATA%`；便携/受控终端可用环境变量 `QINGSHAN_WEBVIEW_DATA` 重定向。若默认 profile 被残留实例锁住，启动时会自动改用同级 `-2` 目录，避免窗口静默失败。
 

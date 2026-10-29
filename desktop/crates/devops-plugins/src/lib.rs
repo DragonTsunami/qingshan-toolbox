@@ -28,6 +28,22 @@ const BUILTINS: &[(&str, &str)] = &[
     ),
 ];
 
+/// Official optional bundles. They are listed in the market but only written
+/// into the plugin directory when the user installs them.
+const OPTIONAL: &[(&str, &str)] = &[
+    (
+        "qingshan.disk-cleanup",
+        include_str!("../optional/disk-cleanup.json"),
+    ),
+    (
+        "qingshan.event-log",
+        include_str!("../optional/event-log.json"),
+    ),
+];
+
+const MAX_PLUGIN_FILES: usize = 256;
+const MAX_PLUGIN_BYTES: u64 = 10 * 1024 * 1024;
+
 const PLUGIN_README: &str = r#"# 青衫工具箱插件目录
 
 每个插件一个文件夹：`<插件 id>/plugin.json`。插件只声明概览卡片，不执行第三方代码。
@@ -69,6 +85,8 @@ pub enum PluginError {
     Json(#[from] serde_json::Error),
     #[error("插件不存在: {0}")]
     NotFound(String),
+    #[error("插件校验失败: {0}")]
+    Invalid(String),
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -199,6 +217,8 @@ pub struct PluginManifest {
     #[serde(default)]
     pub icon: Option<String>,
     #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
     pub enabled_by_default: bool,
     #[serde(default)]
     pub contributes: Contributions,
@@ -227,6 +247,13 @@ impl PluginManifest {
             validate_url(homepage)?;
         }
 
+        if self.tags.len() > 6 {
+            return Err("插件标签最多 6 个".into());
+        }
+        for tag in &self.tags {
+            validate_text("插件标签", tag, 24, false)?;
+        }
+
         if self.contributes.overview.len() > MAX_WIDGETS {
             return Err(format!("单插件最多 {MAX_WIDGETS} 个概览卡片"));
         }
@@ -253,6 +280,7 @@ pub struct PluginView {
     pub author: String,
     pub icon: Option<String>,
     pub homepage: Option<String>,
+    pub tags: Vec<String>,
     pub enabled: bool,
     pub builtin: bool,
     pub path: String,
@@ -265,6 +293,24 @@ pub struct PluginCatalog {
     pub directory: String,
     pub plugins: Vec<PluginView>,
     pub warnings: Vec<String>,
+}
+
+/// One entry in the bundled plugin market. The desktop app ships its catalog
+/// with the binary, so discovery works offline; installing an entry writes its
+/// manifest into the plugin directory.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginMarketEntry {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub description: String,
+    pub author: String,
+    pub homepage: Option<String>,
+    pub icon: Option<String>,
+    pub tags: Vec<String>,
+    pub installed: bool,
+    pub official: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -317,6 +363,114 @@ impl PluginStore {
         let mut overrides = self.read_overrides(&mut warnings)?;
         overrides.insert(id.to_string(), enabled);
         self.write_overrides(&overrides)?;
+        self.catalog()
+    }
+
+    pub fn market(&self) -> Result<Vec<PluginMarketEntry>, PluginError> {
+        let catalog = self.catalog()?;
+        let mut entries = Vec::new();
+
+        for &(id, json) in BUILTINS.iter().chain(OPTIONAL.iter()) {
+            let manifest: PluginManifest = serde_json::from_str(json)?;
+            entries.push(PluginMarketEntry {
+                id: manifest.id,
+                name: manifest.name,
+                version: manifest.version,
+                description: manifest.description,
+                author: manifest.author,
+                homepage: manifest.homepage,
+                icon: manifest.icon,
+                tags: manifest.tags,
+                installed: catalog.plugins.iter().any(|plugin| plugin.id == id),
+                official: true,
+            });
+        }
+
+        entries.sort_by(|left, right| {
+            left.installed
+                .cmp(&right.installed)
+                .then_with(|| left.name.cmp(&right.name))
+        });
+        Ok(entries)
+    }
+
+    /// Install a catalog entry. Installed optional bundles are a no-op, and
+    /// built-ins are always present, so only unknown ids fail.
+    pub fn install(&self, id: &str) -> Result<PluginCatalog, PluginError> {
+        if BUILTINS.iter().any(|(builtin_id, _)| *builtin_id == id) {
+            return self.catalog();
+        }
+        let Some((_, json)) = OPTIONAL.iter().find(|(plugin_id, _)| *plugin_id == id) else {
+            return Err(PluginError::NotFound(id.to_string()));
+        };
+        let manifest: PluginManifest = serde_json::from_str(json)?;
+        manifest.validate().map_err(PluginError::Invalid)?;
+
+        let directory = self.root.join(&manifest.id);
+        if directory.exists() {
+            return self.catalog();
+        }
+        fs::create_dir_all(&directory)?;
+        let written = fs::write(directory.join("plugin.json"), json);
+        if let Err(error) = written {
+            let _ = fs::remove_dir_all(&directory);
+            return Err(error.into());
+        }
+        self.catalog()
+    }
+
+    /// Copy a local bundle into the plugin directory. The source must contain a
+    /// valid `plugin.json`; the id, not the source folder name, decides the
+    /// destination. Partial copies are removed on failure.
+    pub fn install_from_path(&self, path: &str) -> Result<PluginCatalog, PluginError> {
+        let source = PathBuf::from(path.trim());
+        let source = source.canonicalize()?;
+        if !source.is_dir() {
+            return Err(PluginError::Invalid("插件来源必须是文件夹".into()));
+        }
+        if source.starts_with(&self.root) {
+            return Err(PluginError::Invalid("插件来源不能位于插件目录内".into()));
+        }
+
+        let manifest_path = source.join("plugin.json");
+        let manifest = read_manifest(&manifest_path)?;
+        manifest.validate().map_err(PluginError::Invalid)?;
+        if BUILTINS.iter().any(|(id, _)| *id == manifest.id) {
+            return Err(PluginError::Invalid("不能覆盖内置插件".into()));
+        }
+
+        let destination = self.root.join(&manifest.id);
+        if destination.exists() {
+            return Err(PluginError::Invalid(format!("插件 {} 已安装", manifest.id)));
+        }
+
+        copy_bundle(&source, &destination, &mut CopyBudget::default())?;
+        if let Err(error) = self.catalog() {
+            let _ = fs::remove_dir_all(&destination);
+            return Err(error);
+        }
+        self.catalog()
+    }
+
+    /// Remove an externally installed plugin. Built-ins are managed by the app
+    /// and cannot be removed.
+    pub fn remove(&self, id: &str) -> Result<PluginCatalog, PluginError> {
+        validate_id("插件 id", id).map_err(PluginError::Invalid)?;
+        if BUILTINS.iter().any(|(builtin_id, _)| *builtin_id == id) {
+            return Err(PluginError::Invalid("内置插件不能移除".into()));
+        }
+
+        let directory = self.root.join(id);
+        if !directory.is_dir() {
+            return Err(PluginError::NotFound(id.to_string()));
+        }
+        fs::remove_dir_all(directory)?;
+
+        let mut warnings = Vec::new();
+        let mut overrides = self.read_overrides(&mut warnings)?;
+        if overrides.remove(id).is_some() {
+            self.write_overrides(&overrides)?;
+        }
         self.catalog()
     }
 
@@ -443,6 +597,7 @@ impl PluginStore {
             author: manifest.author,
             icon: manifest.icon,
             homepage: manifest.homepage,
+            tags: manifest.tags,
             enabled: manifest.enabled_by_default,
             builtin,
             path: manifest_path.display().to_string(),
@@ -481,6 +636,65 @@ impl PluginStore {
         fs::rename(temporary, &self.state_file)?;
         Ok(())
     }
+}
+
+#[derive(Default)]
+struct CopyBudget {
+    files: usize,
+    bytes: u64,
+}
+
+fn read_manifest(path: &Path) -> Result<PluginManifest, PluginError> {
+    let metadata = fs::metadata(path)?;
+    if metadata.len() > MAX_MANIFEST_BYTES {
+        return Err(PluginError::Invalid(format!(
+            "插件清单超过 {} KB",
+            MAX_MANIFEST_BYTES / 1024
+        )));
+    }
+    let text = fs::read_to_string(path)?;
+    let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
+    let manifest: PluginManifest = serde_json::from_str(text)?;
+    Ok(manifest)
+}
+
+fn copy_bundle(
+    source: &Path,
+    destination: &Path,
+    budget: &mut CopyBudget,
+) -> Result<(), PluginError> {
+    fs::create_dir_all(destination)?;
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_symlink() {
+            continue;
+        }
+        let target = destination.join(entry.file_name());
+        if file_type.is_dir() {
+            copy_bundle(&entry.path(), &target, budget)?;
+            continue;
+        }
+        if !file_type.is_file() {
+            continue;
+        }
+
+        budget.files += 1;
+        if budget.files > MAX_PLUGIN_FILES {
+            return Err(PluginError::Invalid(format!(
+                "插件文件数不能超过 {MAX_PLUGIN_FILES}"
+            )));
+        }
+        budget.bytes += entry.metadata()?.len();
+        if budget.bytes > MAX_PLUGIN_BYTES {
+            return Err(PluginError::Invalid(format!(
+                "插件总大小不能超过 {} MB",
+                MAX_PLUGIN_BYTES / 1024 / 1024
+            )));
+        }
+        fs::copy(entry.path(), target)?;
+    }
+    Ok(())
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

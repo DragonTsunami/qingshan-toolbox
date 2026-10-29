@@ -4,6 +4,7 @@ import type {
   NetworkInterface,
   PluginCatalog,
   PluginInfo,
+  PluginMarketEntry,
   PortCheckResult,
   ProcessInfo,
   ServiceInfo,
@@ -241,6 +242,7 @@ const pluginSeed: PluginInfo[] = [
     author: "青衫工具箱",
     icon: "pulse",
     homepage: "https://github.com/DragonTsunami/qingshan-toolbox",
+    tags: ["监控", "内置"],
     enabled: true,
     builtin: true,
     path: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins\\qingshan.health-check\\plugin.json",
@@ -268,6 +270,7 @@ const pluginSeed: PluginInfo[] = [
     author: "青衫工具箱",
     icon: "link",
     homepage: "https://github.com/DragonTsunami/qingshan-toolbox",
+    tags: ["文档", "内置"],
     enabled: false,
     builtin: true,
     path: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins\\qingshan.release-links\\plugin.json",
@@ -298,14 +301,80 @@ const pluginSeed: PluginInfo[] = [
   },
 ];
 
+const optionalSeed: PluginInfo[] = [
+  {
+    id: "qingshan.disk-cleanup",
+    name: "磁盘清理清单",
+    version: "0.1.0",
+    description: "把常见临时文件位置整理成巡检清单，打开目录后自行确认清理。",
+    author: "青衫工具箱",
+    icon: "shield",
+    homepage: null,
+    tags: ["运维", "清理"],
+    enabled: false,
+    builtin: false,
+    path: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins\\qingshan.disk-cleanup\\plugin.json",
+    widgets: [
+      {
+        id: "cleanup",
+        title: "磁盘清理清单",
+        kind: "checklist",
+        body: "只列出位置，不自动删除文件。",
+        items: ["检查用户临时目录", "检查 Windows 更新缓存", "检查旧安装包"],
+        links: [],
+        health: null,
+      },
+    ],
+  },
+  {
+    id: "qingshan.event-log",
+    name: "事件日志入口",
+    version: "0.1.0",
+    description: "把 Windows 事件查看器与常用排障文档放到插件页。",
+    author: "青衫工具箱",
+    icon: "link",
+    homepage: "https://learn.microsoft.com/windows-server/administration/windows-commands/wevtutil",
+    tags: ["运维", "日志"],
+    enabled: false,
+    builtin: false,
+    path: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins\\qingshan.event-log\\plugin.json",
+    widgets: [
+      {
+        id: "event-log-links",
+        title: "事件日志入口",
+        kind: "links",
+        body: "打开事件查看器或查看微软官方文档。",
+        items: [],
+        links: [
+          {
+            label: "事件查看器文档",
+            url: "https://learn.microsoft.com/windows-server/administration/windows-commands/eventvwr",
+          },
+          {
+            label: "wevtutil 命令",
+            url: "https://learn.microsoft.com/windows-server/administration/windows-commands/wevtutil",
+          },
+        ],
+        health: null,
+      },
+    ],
+  },
+];
+
 const pluginOverrides: Record<string, boolean> = {};
+const installedOptional: PluginInfo[] = [];
+
+function allPlugins(): PluginInfo[] {
+  return [...pluginSeed, ...installedOptional];
+}
 
 export function mockPluginCatalog(): PluginCatalog {
   return {
     directory: "C:\\Users\\青衫\\AppData\\Roaming\\com.qingshan.toolbox\\plugins",
-    plugins: pluginSeed.map((plugin) => ({
+    plugins: allPlugins().map((plugin) => ({
       ...plugin,
       enabled: pluginOverrides[plugin.id] ?? plugin.enabled,
+      tags: [...plugin.tags],
       widgets: plugin.widgets.map((widget) => ({
         ...widget,
         items: [...widget.items],
@@ -321,10 +390,93 @@ export async function mockSetPluginEnabled(
   id: string,
   enabled: boolean,
 ): Promise<PluginCatalog> {
-  if (!pluginSeed.some((plugin) => plugin.id === id)) {
+  if (!allPlugins().some((plugin) => plugin.id === id)) {
     throw new Error(`未找到插件: ${id}`);
   }
   pluginOverrides[id] = enabled;
+  return mockPluginCatalog();
+}
+
+export function mockPluginMarket(): PluginMarketEntry[] {
+  const installed = new Set(allPlugins().map((plugin) => plugin.id));
+  return [...pluginSeed, ...optionalSeed].map((plugin) => ({
+    id: plugin.id,
+    name: plugin.name,
+    version: plugin.version,
+    description: plugin.description,
+    author: plugin.author,
+    homepage: plugin.homepage,
+    icon: plugin.icon,
+    tags: [...plugin.tags],
+    installed: installed.has(plugin.id),
+    official: true,
+  }));
+}
+
+export async function mockInstallPlugin(id: string): Promise<PluginCatalog> {
+  const optional = optionalSeed.find((plugin) => plugin.id === id);
+  if (!optional) {
+    if (allPlugins().some((plugin) => plugin.id === id)) return mockPluginCatalog();
+    throw new Error(`未找到插件: ${id}`);
+  }
+  if (!installedOptional.some((plugin) => plugin.id === id)) {
+    installedOptional.push({
+      ...optional,
+      enabled: true,
+      widgets: optional.widgets.map((widget) => ({
+        ...widget,
+        items: [...widget.items],
+        links: widget.links.map((link) => ({ ...link })),
+        health: widget.health ? { ...widget.health } : null,
+      })),
+    });
+  }
+  return mockPluginCatalog();
+}
+
+export async function mockInstallPluginFromPath(path: string): Promise<PluginCatalog> {
+  if (!path.trim()) throw new Error("插件路径不能为空");
+  const id = "local.demo";
+  if (allPlugins().some((plugin) => plugin.id === id)) {
+    throw new Error("插件 local.demo 已安装");
+  }
+  installedOptional.push({
+    id,
+    name: "本地示例插件",
+    version: "0.1.0",
+    description: `从 ${path.trim()} 安装的本地插件。`,
+    author: "本地",
+    icon: "note",
+    homepage: null,
+    tags: ["本地"],
+    enabled: true,
+    builtin: false,
+    path: `${path.trim().replace(/[\\/]+$/, "")}\\plugin.json`,
+    widgets: [
+      {
+        id: "local",
+        title: "本地插件",
+        kind: "note",
+        body: "浏览器预览中的本地安装占位实现。",
+        items: [],
+        links: [],
+        health: null,
+      },
+    ],
+  });
+  return mockPluginCatalog();
+}
+
+export async function mockRemovePlugin(id: string): Promise<PluginCatalog> {
+  const index = installedOptional.findIndex((plugin) => plugin.id === id);
+  if (index < 0) {
+    if (pluginSeed.some((plugin) => plugin.id === id)) {
+      throw new Error("内置插件不能移除");
+    }
+    throw new Error(`未找到插件: ${id}`);
+  }
+  installedOptional.splice(index, 1);
+  delete pluginOverrides[id];
   return mockPluginCatalog();
 }
 

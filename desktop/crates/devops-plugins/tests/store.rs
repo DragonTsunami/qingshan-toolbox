@@ -209,3 +209,56 @@ fn non_http_link_is_rejected() {
         .iter()
         .any(|warning| warning.contains("https://")));
 }
+
+#[test]
+fn market_install_and_remove_round_trip() {
+    let root = TempRoot::new("market");
+    let store = PluginStore::new(&root.0);
+
+    let market = store.market().unwrap();
+    let optional = market
+        .iter()
+        .find(|plugin| plugin.id == "qingshan.disk-cleanup")
+        .expect("optional plugin should be listed");
+    assert!(!optional.installed);
+    assert!(optional.official);
+
+    let catalog = store.install("qingshan.disk-cleanup").unwrap();
+    assert!(catalog
+        .plugins
+        .iter()
+        .any(|plugin| plugin.id == "qingshan.disk-cleanup"));
+    assert!(root.0.join("qingshan.disk-cleanup/plugin.json").exists());
+
+    let catalog = store.remove("qingshan.disk-cleanup").unwrap();
+    assert!(!catalog
+        .plugins
+        .iter()
+        .any(|plugin| plugin.id == "qingshan.disk-cleanup"));
+    assert!(!root.0.join("qingshan.disk-cleanup").exists());
+    assert!(store.remove("qingshan.health-check").is_err());
+}
+
+#[test]
+fn installs_external_bundle_from_path() {
+    let root = TempRoot::new("install-root");
+    let source = TempRoot::new("install-source");
+    write_manifest(&source.0, "com.example.hello", EXTERNAL_MANIFEST);
+    let store = PluginStore::new(&root.0);
+
+    let catalog = store
+        .install_from_path(
+            source
+                .0
+                .join("com.example.hello")
+                .to_str()
+                .expect("utf-8 path"),
+        )
+        .unwrap();
+    assert!(catalog
+        .plugins
+        .iter()
+        .any(|plugin| plugin.id == "com.example.hello"));
+    assert!(root.0.join("com.example.hello/plugin.json").exists());
+    assert!(root.0.join("com.example.hello/plugin.json").is_file());
+}

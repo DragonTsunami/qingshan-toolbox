@@ -4,9 +4,12 @@ import {
   checkPort,
   isDesktopRuntime,
   listProcesses,
+  installPlugin,
   listServices,
   openPluginDirectory,
   pluginCatalog,
+  pluginMarket,
+  removePlugin,
   resolveHost,
   rescanPlugins,
   setPluginEnabled,
@@ -71,5 +74,18 @@ describe("browser mock contract", () => {
 
     await setPluginEnabled("qingshan.release-links", false);
     expect(await openPluginDirectory()).toContain("plugins");
+  });
+
+  it("installs and removes an optional plugin from the market", async () => {
+    const market = await pluginMarket();
+    const entry = market.find((plugin) => plugin.id === "qingshan.disk-cleanup");
+    expect(entry?.installed).toBe(false);
+    expect(entry?.official).toBe(true);
+
+    const installed = await installPlugin("qingshan.disk-cleanup");
+    expect(installed.plugins.some((plugin) => plugin.id === "qingshan.disk-cleanup")).toBe(true);
+
+    const after = await removePlugin("qingshan.disk-cleanup");
+    expect(after.plugins.some((plugin) => plugin.id === "qingshan.disk-cleanup")).toBe(false);
   });
 });

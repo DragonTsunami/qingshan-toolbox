@@ -43,7 +43,7 @@
 └──────────────────────────────────────────────────────────┘
 
 devops-testkit —— 全部 trait 的 Mock，供 devops-app 测试注入
-devops-plugins —— 声明式插件清单、校验、启停状态；不依赖 Tauri / Win32 / 前端
+devops-plugins —— 声明式插件清单、市场、安装/移除、启停状态；不依赖 Tauri / Win32 / 前端
 ```
 
 关键约束：
@@ -54,7 +54,7 @@ devops-plugins —— 声明式插件清单、校验、启停状态；不依赖 
 4. UI 不得拼接命令字符串；只能调用已注册命令。
 5. 所有跨层数据结构实现 `Serialize + Deserialize`，字段统一 `camelCase`。
 6. 每个 `devops-core` trait 必须在 `devops-testkit` 有 Mock；新增命令必须补应用层测试。
-7. `devops-plugins` 只解析声明式 JSON；不得执行插件提供的 JS/Shell，外链仅允许 `http(s)`。
+7. `devops-plugins` 只解析声明式 JSON；不得执行插件提供的 JS/Shell，外链仅允许 `http(s)`；本地安装限制文件数、总大小并拒绝 symlink。
 
 ## 3. 为什么这样分层
 

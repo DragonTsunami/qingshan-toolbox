@@ -128,6 +128,7 @@ export interface PluginInfo {
   author: string;
   icon: string | null;
   homepage: string | null;
+  tags: string[];
   enabled: boolean;
   builtin: boolean;
   path: string;
@@ -138,6 +139,19 @@ export interface PluginCatalog {
   directory: string;
   plugins: PluginInfo[];
   warnings: string[];
+}
+
+export interface PluginMarketEntry {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  homepage: string | null;
+  icon: string | null;
+  tags: string[];
+  installed: boolean;
+  official: boolean;
 }
 
 export type PageKey =

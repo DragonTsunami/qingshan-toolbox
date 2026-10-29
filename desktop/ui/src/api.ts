@@ -4,6 +4,7 @@ import type {
   DnsLookupResult,
   NetworkInterface,
   PluginCatalog,
+  PluginMarketEntry,
   PortCheckResult,
   ProcessInfo,
   ServiceAction,
@@ -13,9 +14,13 @@ import type {
 import {
   mockAppInfo,
   mockInterfaces,
+  mockInstallPlugin,
+  mockInstallPluginFromPath,
   mockOpenPluginDirectory,
   mockPluginCatalog,
+  mockPluginMarket,
   mockProcesses,
+  mockRemovePlugin,
   mockRescanPlugins,
   mockServices,
   mockSetPluginEnabled,
@@ -117,6 +122,26 @@ export async function setPluginEnabled(
 ): Promise<PluginCatalog> {
   if (!isDesktopRuntime) return mockSetPluginEnabled(id, enabled);
   return call<PluginCatalog>("plugin_set_enabled", { id, enabled });
+}
+
+export async function pluginMarket(): Promise<PluginMarketEntry[]> {
+  if (!isDesktopRuntime) return mockPluginMarket();
+  return call<PluginMarketEntry[]>("plugin_market");
+}
+
+export async function installPlugin(id: string): Promise<PluginCatalog> {
+  if (!isDesktopRuntime) return mockInstallPlugin(id);
+  return call<PluginCatalog>("plugin_install", { id });
+}
+
+export async function installPluginFromPath(path: string): Promise<PluginCatalog> {
+  if (!isDesktopRuntime) return mockInstallPluginFromPath(path);
+  return call<PluginCatalog>("plugin_install_from_path", { path });
+}
+
+export async function removePlugin(id: string): Promise<PluginCatalog> {
+  if (!isDesktopRuntime) return mockRemovePlugin(id);
+  return call<PluginCatalog>("plugin_remove", { id });
 }
 
 export async function openPluginDirectory(): Promise<string> {

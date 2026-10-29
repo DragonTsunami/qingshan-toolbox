@@ -15,7 +15,7 @@
 
 **不在本阶段**：日志中心、磁盘清理、启动项、资产上报、远程协助、网页端 Terraform/Ansible/CI 集成。
 
-当前五个页面（概览/进程/服务/网络/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统；不继续扩展功能。
+当前六个页面（插件/概览/进程/服务/网络/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统；不继续扩展功能。
 
 ## 2. 依赖规则
 
@@ -47,15 +47,15 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | 契约测试 | `devops-core/tests/contract.rs` | camelCase 字段、枚举字符串、错误码、AppInfo | 5 / 5 |
 | 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 11 / 11 |
 | 组件单测 | `devops-app` 内部 | `OpsService: Send + Sync` | 1 / 1 |
-| 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、非法 id/URL | 7 / 7 |
+| 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、市场、安装/移除、路径安装、非法 id/URL | 9 / 9 |
 | 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS | 7 / 7 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |
-| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件 Mock API 契约 | 13 / 13 |
-| 视觉冒烟 | `docs/images` | 七个页面（含独立插件页）+ 插件管理 × 浅色/深色截图 | 通过 |
+| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件 Mock API 契约（目录/市场/安装/移除） | 14 / 14 |
+| 视觉冒烟 | `docs/images` | 六个页面（含独立插件页：已安装/发现/详情/添加）× 浅色/深色截图 | 通过 |
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 
-总计 Rust 31 项测试（5 + 11 + 1 + 7 + 7），前端 13 项测试。
+总计 Rust 33 项测试（5 + 11 + 1 + 9 + 7），前端 14 项测试。
 
 ## 4. 验收清单
 

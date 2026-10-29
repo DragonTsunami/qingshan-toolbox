@@ -111,7 +111,7 @@ function App() {
   const pageContent = useMemo(() => {
     switch (page) {
       case "plugins":
-        return <PluginsPage snapshot={snapshot} />;
+        return <PluginsPage />;
       case "processes":
         return <ProcessesPage refreshInterval={refreshInterval} />;
       case "services":
@@ -244,17 +244,19 @@ function App() {
             onElevate={elevate}
           />
           <div className="app-main">
-            <TopBar
-              title={PAGE_META[page].title}
-              subtitle={PAGE_META[page].subtitle}
-              snapshot={snapshot}
-              refreshing={refreshing}
-              refreshInterval={refreshInterval}
-              onRefreshIntervalChange={(seconds) =>
-                setRefreshInterval(normalizeRefreshInterval(seconds))
-              }
-              onRefresh={refresh}
-            />
+            {page !== "plugins" && (
+              <TopBar
+                title={PAGE_META[page].title}
+                subtitle={PAGE_META[page].subtitle}
+                snapshot={snapshot}
+                refreshing={refreshing}
+                refreshInterval={refreshInterval}
+                onRefreshIntervalChange={(seconds) =>
+                  setRefreshInterval(normalizeRefreshInterval(seconds))
+                }
+                onRefresh={refresh}
+              />
+            )}
             <main className="app-content">{pageContent}</main>
           </div>
         </div>
