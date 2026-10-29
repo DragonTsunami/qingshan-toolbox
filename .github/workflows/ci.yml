@@ -1,0 +1,76 @@
+name: framework-ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust-core:
+    name: Rust core & application (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+      - name: Format
+        run: cargo fmt --all --manifest-path desktop/Cargo.toml -- --check
+      - name: Clippy (core, app, testkit)
+        run: cargo clippy -p devops-core -p devops-app -p devops-testkit --all-targets --manifest-path desktop/Cargo.toml -- -D warnings
+      - name: Tests (core, app, testkit)
+        run: cargo test -p devops-core -p devops-app -p devops-testkit --manifest-path desktop/Cargo.toml
+
+  rust-windows:
+    name: Rust workspace & desktop shell (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/ui/package-lock.json
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop
+      - name: Build frontend
+        working-directory: desktop/ui
+        run: |
+          npm ci
+          npm run build
+      - name: Clippy (workspace)
+        run: cargo clippy --workspace --all-targets --manifest-path desktop/Cargo.toml -- -D warnings
+      - name: Tests (workspace, includes Win32 integration tests)
+        run: cargo test --workspace --manifest-path desktop/Cargo.toml
+      - name: Build desktop executable
+        run: cargo build --release --features custom-protocol --manifest-path desktop/src-tauri/Cargo.toml
+
+  ui:
+    name: Frontend typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/ui/package-lock.json
+      - name: Install
+        working-directory: desktop/ui
+        run: npm ci
+      - name: Typecheck & build
+        working-directory: desktop/ui
+        run: npm run build
+      - name: Unit tests
+        working-directory: desktop/ui
+        run: npm test

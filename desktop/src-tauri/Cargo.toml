@@ -1,0 +1,39 @@
+[package]
+name = "opsdeck"
+description = "青衫工具箱 — 企业桌面运维工作台"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+default-run = "opsdeck"
+
+[lib]
+name = "opsdeck_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+# The Tauri shell has no unit tests; behavior is covered by OpsService tests and
+# window-level E2E. A Rust test harness would need WebView2Loader at startup.
+test = false
+doctest = false
+
+[[bin]]
+name = "opsdeck"
+path = "src/main.rs"
+test = false
+
+[features]
+default = []
+# Enabled for distributable builds: embeds `frontendDist` instead of loading
+# `devUrl`. Tauri CLI normally injects this for `tauri build`; direct cargo
+# builds must pass `--features custom-protocol`.
+custom-protocol = ["tauri/custom-protocol"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde.workspace = true
+serde_json.workspace = true
+devops-core.workspace = true
+devops-platform.workspace = true
+devops-app.workspace = true

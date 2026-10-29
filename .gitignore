@@ -1,0 +1,30 @@
+# 本机工具链、构建产物与缓存（不进入版本库）
+.toolchain/
+target/
+smoke-target/
+desktop/target/
+desktop/dist/
+desktop/src-tauri/gen/
+
+# 前端
+desktop/ui/node_modules/
+desktop/ui/dist/
+desktop/ui/.tmp/
+desktop/ui/.vite/
+desktop/ui/coverage/
+web/node_modules/
+web/dist/
+web/.next/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 日志与本地环境
+*.log
+.env
+.env.*
+*.local
+*.tsbuildinfo
