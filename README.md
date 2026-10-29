@@ -1,5 +1,7 @@
 # 青衫工具箱 · 企业 DevOps 工作台
 
+[![framework-ci](https://github.com/DragonTsunami/qingshan-toolbox/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DragonTsunami/qingshan-toolbox/actions/workflows/ci.yml)
+
 青衫工具箱 是一个面向企业员工与运维团队的 DevOps 工具，规划为**桌面端 + 网页端**两种形态：
 
 - **桌面端（当前阶段）**：Rust + Tauri 2 构建的 Windows 桌面运维工作台，提供系统概览、进程管理、服务管理、网络诊断与权限模型。
