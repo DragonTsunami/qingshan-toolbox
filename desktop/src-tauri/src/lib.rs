@@ -30,14 +30,30 @@ pub fn run() {
                 });
             std::fs::create_dir_all(&data_dir)?;
 
-            WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("青衫工具箱")
-                .inner_size(1200.0, 800.0)
-                .min_inner_size(900.0, 600.0)
-                .maximized(true)
-                .center()
-                .data_directory(data_dir)
-                .build()?;
+            let build_window = |directory: PathBuf| {
+                WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                    .title("青衫工具箱")
+                    .inner_size(1200.0, 800.0)
+                    .min_inner_size(900.0, 600.0)
+                    .maximized(true)
+                    .center()
+                    .data_directory(directory)
+                    .build()
+                    .map(|_| ())
+            };
+
+            if let Err(primary_error) = build_window(data_dir.clone()) {
+                // A stale or still-running copy can keep the default WebView2
+                // profile locked. Retry with a sibling profile so the window
+                // still opens instead of failing silently.
+                let fallback_name = data_dir
+                    .file_name()
+                    .map(|name| format!("{}-2", name.to_string_lossy()))
+                    .unwrap_or_else(|| "qingshan-webview-2".to_string());
+                let fallback = data_dir.with_file_name(fallback_name);
+                std::fs::create_dir_all(&fallback)?;
+                build_window(fallback).map_err(|_| primary_error)?;
+            }
 
             Ok(())
         })

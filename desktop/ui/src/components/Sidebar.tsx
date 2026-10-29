@@ -1,6 +1,7 @@
 import {
-  AppstoreOutlined,
+  AppstoreAddOutlined,
   ClusterOutlined,
+  DashboardOutlined,
   DeploymentUnitOutlined,
   GlobalOutlined,
   SafetyCertificateFilled,
@@ -19,7 +20,8 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS: Array<{ key: PageKey; label: string; icon: React.ReactNode; hint: string }> = [
-  { key: "overview", label: "概览", icon: <AppstoreOutlined />, hint: "健康状态" },
+  { key: "plugins", label: "插件", icon: <AppstoreAddOutlined />, hint: "扩展工作台" },
+  { key: "overview", label: "概览", icon: <DashboardOutlined />, hint: "健康状态" },
   { key: "processes", label: "进程管理", icon: <DeploymentUnitOutlined />, hint: "资源与终止" },
   { key: "services", label: "服务管理", icon: <ClusterOutlined />, hint: "启停与重启" },
   { key: "network", label: "网络诊断", icon: <GlobalOutlined />, hint: "端口与 DNS" },

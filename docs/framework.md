@@ -51,7 +51,7 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS | 7 / 7 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |
 | 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件 Mock API 契约 | 13 / 13 |
-| 视觉冒烟 | `docs/images` | 六个页面 + 插件台/插件管理 × 浅色/深色截图 | 通过 |
+| 视觉冒烟 | `docs/images` | 七个页面（含独立插件页）+ 插件管理 × 浅色/深色截图 | 通过 |
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 

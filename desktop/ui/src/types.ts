@@ -140,4 +140,10 @@ export interface PluginCatalog {
   warnings: string[];
 }
 
-export type PageKey = "overview" | "processes" | "services" | "network" | "settings";
+export type PageKey =
+  | "plugins"
+  | "overview"
+  | "processes"
+  | "services"
+  | "network"
+  | "settings";

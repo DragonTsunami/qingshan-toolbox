@@ -9,7 +9,7 @@
 
 > 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
 
-> 状态：v0.3.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；新增声明式插件台。31 项 Rust 测试、13 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> 状态：v0.3.0，**当前处于框架冻结阶段**。Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；新增独立「插件」工作台入口。31 项 Rust 测试、13 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **阶段约定：只做框架，不做内容。** 在 [`docs/framework.md`](docs/framework.md) 的验收清单关闭前，不新增业务页面，也不开始网页端实现。现有五个页面仅作为框架参考实现。
 
@@ -17,7 +17,7 @@
 
 ![青衫工具箱 概览](docs/images/overview.png)
 
-![插件台：健康巡检、启停与插件管理](docs/images/plugin-overview.png)
+![插件页：工作台侧栏「概览」上方的独立入口](docs/images/plugins-page.png)
 
 更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png)
 
@@ -31,7 +31,7 @@
 | 进程 | 列表、搜索、按 CPU/内存/名称排序、结束进程 | 自动刷新跟随全局间隔；支持强制终止；拦截对 青衫工具箱 自身的操作 |
 | 服务 | 枚举 Windows 服务、启停、重启、启动类型 | 操作后等待状态收敛（最长 20 秒）；需要管理员权限 |
 | 网络 | 接口、IP/MAC、流量、TCP 端口检测、DNS 解析 | 仅使用系统解析器与 TCP 握手，不执行任意命令 |
-| 插件 | 概览插件台、启停、重新扫描、插件目录、外链 | 声明式 `plugin.json`，不执行第三方代码；内置健康巡检与版本入口 |
+| 插件 | 工作台侧栏独立「插件」页、启停、重新扫描、插件目录、外链 | 声明式 `plugin.json`，不执行第三方代码；内置健康巡检与版本入口 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
@@ -158,7 +158,7 @@ cd ../..
 | 前端 `tsc --noEmit && vite build` | 通过 |
 | 前端 `npm test`（Vitest） | 13 / 13 通过 |
 | 刷新间隔选择（1/3/5/10/30/60 秒） | 已实现并持久化到本机 |
-| 插件台：内置健康巡检 / 版本入口、启停、扫描 | 已实现；Rust 7 项插件测试通过 |
+| 插件页：侧栏「插件」位于「概览」上方；内置健康巡检 / 版本入口、启停、扫描 | 已实现；Rust 7 项插件测试通过 |
 | 六个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
 | 真实窗口启动 | **已通过**：release + `custom-protocol`，窗口标题 `青衫工具箱`，真实硬件数据渲染 |
 
@@ -235,7 +235,7 @@ cd ../..
 - 当前 release 从含中文的仓库路径直接启动不稳定，交付使用 ASCII 安装目录 `C:\QingshanToolbox`（桌面快捷方式已指向该目录）。
 - 窗口级 E2E 已手动验证，但尚未接入自动化 UI 测试。
 - 前端产物约 1 MB（Ant Design），后续按路由拆包。
-- WebView2 默认数据目录为 `%LOCALAPPDATA%`；便携/受控终端可用环境变量 `QINGSHAN_WEBVIEW_DATA` 重定向（本机脚本已指向 `.toolchain/webview2`）。
+- WebView2 默认数据目录为 `%LOCALAPPDATA%`；便携/受控终端可用环境变量 `QINGSHAN_WEBVIEW_DATA` 重定向。若默认 profile 被残留实例锁住，启动时会自动改用同级 `-2` 目录，避免窗口静默失败。
 
 ## 9. License
 

@@ -3,6 +3,7 @@ import { ConfigProvider, App as AntApp, theme as antdTheme } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
+import PluginsPage from "./pages/Plugins";
 import OverviewPage from "./pages/Overview";
 import ProcessesPage from "./pages/Processes";
 import ServicesPage from "./pages/Services";
@@ -18,6 +19,7 @@ import {
 import type { AppInfo, PageKey, SystemSnapshot } from "./types";
 
 const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
+  plugins: { title: "插件", subtitle: "声明式扩展工作台能力" },
   overview: { title: "概览", subtitle: "本机健康状态与关键指标" },
   processes: { title: "进程管理", subtitle: "查看资源占用并安全地结束进程" },
   services: { title: "服务管理", subtitle: "控制系统服务的启动、停止与重启" },
@@ -108,6 +110,8 @@ function App() {
 
   const pageContent = useMemo(() => {
     switch (page) {
+      case "plugins":
+        return <PluginsPage snapshot={snapshot} />;
       case "processes":
         return <ProcessesPage refreshInterval={refreshInterval} />;
       case "services":
