@@ -1,5 +1,6 @@
 //! Extracts the shell icon of an installed application and returns it as a PNG
-//! data URL. Icons are rendered at 32×32 so the software shelf stays light.
+//! data URL. Icons are rendered at 64×64 so the 32 CSS-px tile stays sharp on
+//! scaled displays.
 
 use std::ffi::c_void;
 use std::io::Cursor;
@@ -15,11 +16,12 @@ use windows::Win32::Graphics::Gdi::{
 };
 use windows::Win32::UI::Shell::ExtractIconExW;
 use windows::Win32::UI::WindowsAndMessaging::{
-    DestroyIcon, DrawIconEx, GetIconInfo, LoadImageW, DI_NORMAL, HICON, ICONINFO, IMAGE_ICON,
-    LR_LOADFROMFILE,
+    DestroyIcon, DrawIconEx, GetIconInfo, LoadImageW, PrivateExtractIconsW, DI_NORMAL, HICON,
+    ICONINFO, IMAGE_ICON, LR_LOADFROMFILE,
 };
 
-const SIZE: i32 = 32;
+/// Render at 64 px so the 32 CSS-px tile remains sharp at 150–200% scaling.
+const SIZE: i32 = 64;
 
 pub fn icon_data_url(display_icon: &str) -> Option<String> {
     let (path, index) = parse_display_icon(display_icon)?;
@@ -69,12 +71,38 @@ fn parse_display_icon(value: &str) -> Option<(PathBuf, i32)> {
 }
 
 fn load_icon(path: &Path, index: i32) -> Option<HICON> {
-    let wide: Vec<u16> = path
-        .as_os_str()
-        .to_string_lossy()
-        .encode_utf16()
-        .chain(std::iter::once(0))
-        .collect();
+    let text = path.as_os_str().to_string_lossy();
+    let mut wide = [0u16; 260];
+    let mut length = 0usize;
+    for unit in text.encode_utf16() {
+        if length + 1 >= wide.len() {
+            break;
+        }
+        wide[length] = unit;
+        length += 1;
+    }
+    if length == 0 || length + 1 >= wide.len() {
+        return None;
+    }
+
+    // PrivateExtractIconsW can render any requested size; ExtractIconExW only
+    // returns the system large icon (32 px at 100% DPI), which looked blurry
+    // on scaled displays.
+    let mut high_res = HICON::default();
+    let count = unsafe {
+        PrivateExtractIconsW(
+            &wide,
+            index,
+            SIZE,
+            SIZE,
+            Some(std::slice::from_mut(&mut high_res)),
+            None,
+            0,
+        )
+    };
+    if count > 0 && !high_res.0.is_null() {
+        return Some(high_res);
+    }
 
     if path
         .extension()
@@ -175,7 +203,7 @@ fn render_in_dc(icon: HICON, memory: HDC, info: &ICONINFO) -> Option<Vec<u8>> {
         },
         ..Default::default()
     };
-    let stride = 4usize;
+    let stride = (((SIZE + 31) / 32) * 4) as usize;
     let mut mask = vec![0u8; stride * SIZE as usize];
     let mask_lines = unsafe {
         GetDIBits(
