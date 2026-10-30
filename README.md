@@ -1,18 +1,34 @@
-# 青衫工具箱 · 企业 DevOps 工作台
+# 青衫工具箱 · Windows 桌面运维工作台
+
+> 把 Windows 日常运维，收进一个桌面工作台。
 
 [![framework-ci](https://github.com/DragonTsunami/qingshan-toolbox/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DragonTsunami/qingshan-toolbox/actions/workflows/ci.yml)
 
-青衫工具箱 是一个面向企业员工与运维团队的 DevOps 工具，规划为**桌面端 + 网页端**两种形态：
+青衫工具箱是一个用 **Rust + Tauri 2 + React** 构建的 Windows 桌面运维工具，面向企业员工、IT 支持与运维同学。它不试图替代任务管理器，而是把日常排障最常打开的入口集中到一个界面里：看健康、查进程、管服务、翻日志、清缓存、盘软件，减少在多个系统工具之间来回切换。
 
-- **桌面端（当前阶段）**：Rust + Tauri 2 构建的 Windows 桌面运维工作台，提供系统概览、进程管理、服务管理、网络诊断、日志中心与权限模型。
-- **网页端（后续阶段）**：统一处理 Terraform、Ansible、GitHub Actions、Jenkins、Dockerfile、Shell 脚本与 Git 数据记录，形成可审计的 DevOps 控制面。
+当前是 **v0.6.0 桌面版**，规划为桌面端 + 网页端两种形态：桌面端负责本机运维与诊断，网页端后续承载 Terraform、Ansible、GitHub Actions、Jenkins、Dockerfile、Shell 与 Git 记录。
 
-> 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
+## 它适合谁
 
-> 状态：v0.6.0，**桌面个人版能力补齐中**。在阶段 2 P0（日志中心、磁盘清理、启动项与计划任务、软件清单）之上，新增健康诊断（电池/磁盘 SMART/显卡）、诊断报告导出、托盘常驻与单实例、崩溃日志、GitHub Release 更新检查；安装器与代码签名仍受证书/构建工具限制。54 项 Rust 测试、16 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+- 经常帮同事处理「电脑卡、网断了、服务起不来、C 盘满了」的 IT / 运维同学。
+- 需要快速确认本机健康状态、磁盘 SMART、显卡与电池信息的开发者。
+- 想把常用 Windows 运维入口收进一个干净工具，而不是记一堆命令的人。
 
-> **阶段约定：框架冻结，按路线图增量交付。** 框架验收清单见 [`docs/framework.md`](docs/framework.md)；阶段 2 剩余 P1（远程协助、网络进阶、性能采样、资产上报）与网页端尚未开始。
+## 当前版本能做什么
 
+- **一眼看健康**：主机、CPU、内存、磁盘、运行时间；健康诊断页汇总电池、磁盘 SMART、显卡与采样时间。
+- **排障三件套**：进程结束、Windows 服务启停/重启、TCP 端口与 DNS 诊断。
+- **日志与清理**：事件日志检索/详情/CSV 导出；临时文件、浏览器缓存、崩溃转储、更新缓存、回收站白名单清理。
+- **启动项与计划任务**：查看、启停，系统级操作按 UAC 权限收敛。
+- **软件清单**：软件 / 驱动 / 运行库 / 其他四类，真实图标、版本、最近使用、安装位置；有卸载命令的调用程序自带卸载器。
+- **诊断报告**：把硬件与系统摘要导出为 Markdown，方便贴到工单或发给同事；只在本机生成，不上传。
+- **桌面体验**：浅色/深色主题、关闭到托盘、单实例、崩溃日志、GitHub Release 更新检查。
+
+> 设计原则：**本地优先、只读优先、危险操作白名单化**。诊断报告不含日志正文、文件内容或凭据；插件是声明式的，不执行第三方代码；卸载只调用程序自带卸载器，不直接删文件。
+
+> **状态**：v0.6.0 开发版，安装器与代码签名仍在收尾；正式安装包会通过 GitHub Releases 发布。当前 54 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+
+> **如果这个项目对你有帮助，欢迎点一个 Star ⭐ 收藏。** 使用中遇到问题、想要某个能力，或者只是觉得哪里不顺手，都欢迎到 [Issues](https://github.com/DragonTsunami/qingshan-toolbox/issues) 反馈；你的反馈会直接影响下一步路线图。
 
 > **打开桌面端**：双击桌面快捷方式 **青衫工具箱**，或运行 `C:\QingshanToolbox\QingshanToolbox.exe`。`http://127.0.0.1:1421` 只是前端预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
 
