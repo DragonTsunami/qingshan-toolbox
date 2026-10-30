@@ -220,7 +220,23 @@ fn classify_kind(name: &str, uninstall_string: &str) -> SoftwareKind {
         "bluetooth driver",
     ];
     if DRIVER_MARKERS.iter().any(|marker| name.contains(marker)) {
-        SoftwareKind::Driver
+        return SoftwareKind::Driver;
+    }
+    const RUNTIME_MARKERS: [&str; 11] = [
+        ".net",
+        "dotnet",
+        "asp.net",
+        "runtime",
+        "redistributable",
+        "visual c++",
+        "vc++",
+        "webview2",
+        "java",
+        "jre",
+        "jdk",
+    ];
+    if RUNTIME_MARKERS.iter().any(|marker| name.contains(marker)) {
+        SoftwareKind::Runtime
     } else {
         SoftwareKind::Application
     }
@@ -379,6 +395,21 @@ mod tests {
         assert_eq!(
             classify_kind("Intel Computing Improvement Program", ""),
             SoftwareKind::Application
+        );
+        assert_eq!(
+            classify_kind("Microsoft .NET Runtime - 10.0.7 (x64)", ""),
+            SoftwareKind::Runtime
+        );
+        assert_eq!(
+            classify_kind(
+                "Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.44.35211",
+                ""
+            ),
+            SoftwareKind::Runtime
+        );
+        assert_eq!(
+            classify_kind("Microsoft Edge WebView2 Runtime", ""),
+            SoftwareKind::Runtime
         );
     }
 }

@@ -12,6 +12,7 @@ pub enum SoftwareScope {
 pub enum SoftwareKind {
     Application,
     Driver,
+    Runtime,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

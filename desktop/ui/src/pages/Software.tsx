@@ -51,8 +51,9 @@ export default function SoftwarePage() {
   };
 
   const keyword = search.trim().toLowerCase();
-  const applicationCount = apps.filter((app) => app.kind !== "driver").length;
+  const applicationCount = apps.filter((app) => app.kind === "application").length;
   const driverCount = apps.filter((app) => app.kind === "driver").length;
+  const runtimeCount = apps.filter((app) => app.kind === "runtime").length;
   const sectionApps = useMemo(
     () => apps.filter((app) => app.kind === kind),
     [apps, kind],
@@ -68,6 +69,7 @@ export default function SoftwarePage() {
       ),
     [sectionApps, keyword],
   );
+  const kindName = kind === "driver" ? "驱动" : kind === "runtime" ? "运行库" : "软件";
 
   return (
     <div className="page-stack maintenance-page">
@@ -81,7 +83,13 @@ export default function SoftwarePage() {
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder={kind === "driver" ? "搜索驱动、发布者或版本" : "搜索软件、发布者或版本"}
+              placeholder={
+                kind === "driver"
+                  ? "搜索驱动、发布者或版本"
+                  : kind === "runtime"
+                    ? "搜索运行库、发布者或版本"
+                    : "搜索软件、发布者或版本"
+              }
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               style={{ width: 260 }}
@@ -120,6 +128,15 @@ export default function SoftwarePage() {
           >
             驱动 <span className="software-tab-count">{driverCount}</span>
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={kind === "runtime"}
+            className={kind === "runtime" ? "software-tab active" : "software-tab"}
+            onClick={() => setKind("runtime")}
+          >
+            运行库 <span className="software-tab-count">{runtimeCount}</span>
+          </button>
         </div>
 
         {loading ? (
@@ -127,9 +144,7 @@ export default function SoftwarePage() {
         ) : filtered.length === 0 ? (
           <Empty
             description={
-              keyword
-                ? `没有匹配的${kind === "driver" ? "驱动" : "软件"}`
-                : `未发现已安装的${kind === "driver" ? "驱动" : "软件"}`
+              keyword ? `没有匹配的${kindName}` : `未发现已安装的${kindName}`
             }
           />
         ) : (
@@ -194,9 +209,9 @@ export default function SoftwarePage() {
         )}
 
         <div className="maint-footnote">
-          共 {sectionApps.length} 个{kind === "driver" ? "驱动" : "软件"}，当前显示{" "}
-          {filtered.length} 个。最近使用来自 Windows UserAssist 或程序文件访问时间，系统未记录时
-          显示「未记录」。卸载会调用程序自带的卸载器，可能需要管理员权限；完成后请刷新列表。
+          共 {sectionApps.length} 个{kindName}，当前显示 {filtered.length} 个。最近使用来自 Windows
+          UserAssist 或程序文件访问时间，系统未记录时显示「未记录」。卸载会调用程序自带的卸载器，
+          可能需要管理员权限；完成后请刷新列表。
         </div>
       </section>
 
