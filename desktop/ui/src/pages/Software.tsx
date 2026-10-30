@@ -77,7 +77,7 @@ export default function SoftwarePage() {
         <div className="panel-head">
           <div>
             <h2>软件与驱动</h2>
-            <p>软件和驱动分开展示；卸载会调用程序自带的卸载器。</p>
+            <p>软件、驱动和运行库分开展示；卸载会调用程序自带的卸载器。</p>
           </div>
           <div className="panel-actions">
             <Input
