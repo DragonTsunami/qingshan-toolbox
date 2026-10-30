@@ -30,7 +30,7 @@
 
 > **如果这个项目对你有帮助，欢迎点一个 Star ⭐ 收藏。** 使用中遇到问题、想要某个能力，或者只是觉得哪里不顺手，都欢迎到 [Issues](https://github.com/DragonTsunami/qingshan-toolbox/issues) 反馈；你的反馈会直接影响下一步路线图。
 
-> **打开桌面端**：双击桌面快捷方式 **青衫工具箱**，或运行 `C:\QingshanToolbox\QingshanToolbox.exe`。`http://127.0.0.1:1421` 只是前端预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
+> **获取桌面端**：正式安装包发布后从 [Releases](https://github.com/DragonTsunami/qingshan-toolbox/releases) 下载；发布前可按下方「构建」章节从源码运行。`http://127.0.0.1:1421` 只是前端预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
 
 ![青衫工具箱 概览](docs/images/overview.png)
 
