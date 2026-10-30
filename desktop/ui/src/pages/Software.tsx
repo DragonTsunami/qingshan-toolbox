@@ -100,18 +100,27 @@ export default function SoftwarePage() {
                     <span>最近使用</span>
                     <strong>{formatLastUsed(app.lastUsed)}</strong>
                   </div>
-                  <div className="software-fact software-fact-location">
+                  <div className="software-location">
                     <span>安装位置</span>
-                    <strong title={app.installLocation || "未记录"}>
+                    <span className="software-location-path" title={app.installLocation || "未记录"}>
                       {app.installLocation || "未记录"}
+                    </span>
+                  </div>
+                  <div className="software-fact">
+                    <span>安装日期</span>
+                    <strong>{formatDate(app.installDate)}</strong>
+                  </div>
+                  <div className="software-fact">
+                    <span>环境</span>
+                    <strong>
+                      {app.registryView || "—"}-bit ·{" "}
+                      {app.scope === "user" ? "当前用户" : "所有用户"}
                     </strong>
                   </div>
                 </div>
                 <div className="software-foot">
-                  <span>安装于 {formatDate(app.installDate)}</span>
-                  <span>
-                    {app.registryView || "—"}-bit · {app.scope === "user" ? "当前用户" : "所有用户"}
-                  </span>
+                  <span>只读注册表</span>
+                  <span>卸载请用「应用和功能」</span>
                 </div>
               </article>
             ))}
