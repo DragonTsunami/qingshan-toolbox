@@ -282,6 +282,7 @@ export interface InstalledApp {
   scope: SoftwareScope;
   registryView: string;
   icon?: string | null;
+  lastUsed?: number | null;
 }
 
 export type PageKey =

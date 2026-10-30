@@ -21,4 +21,6 @@ pub struct InstalledApp {
     pub registry_view: String,
     /// PNG data URL extracted from DisplayIcon, when one is available.
     pub icon: Option<String>,
+    /// Last observed launch/access time, as a Unix timestamp in seconds.
+    pub last_used: Option<u64>,
 }

@@ -37,6 +37,11 @@ pub fn icon_data_url(display_icon: &str) -> Option<String> {
     ))
 }
 
+/// Resolve a registry DisplayIcon value to the underlying executable/icon path.
+pub(crate) fn display_icon_path(display_icon: &str) -> Option<PathBuf> {
+    parse_display_icon(display_icon).map(|(path, _)| path)
+}
+
 fn parse_display_icon(value: &str) -> Option<(PathBuf, i32)> {
     let value = value.trim();
     if value.is_empty() {

@@ -1,4 +1,6 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use devops_core::{InstalledApp, OpsResult, SoftwareInventory, SoftwareScope};
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
@@ -14,6 +16,7 @@ impl SoftwareInventory for SoftwareInventoryImpl {
     fn list(&self) -> OpsResult<Vec<InstalledApp>> {
         let mut apps = Vec::new();
         let mut seen = HashSet::new();
+        let last_used = user_assist_last_used();
 
         for (root, scope) in [
             (HKEY_LOCAL_MACHINE, SoftwareScope::Machine),
@@ -35,7 +38,7 @@ impl SoftwareInventory for SoftwareInventoryImpl {
                     let Ok(key) = registry::open_view(root, &path, view, false) else {
                         continue;
                     };
-                    if let Some(app) = read_app(key, &key_name, scope, view) {
+                    if let Some(app) = read_app(key, &key_name, scope, view, &last_used) {
                         let identity = format!(
                             "{}|{}|{}",
                             app.name.to_lowercase(),
@@ -62,6 +65,7 @@ fn read_app(
     key_name: &str,
     scope: SoftwareScope,
     view: u32,
+    last_used: &HashMap<String, u64>,
 ) -> Option<InstalledApp> {
     let name = registry::read_string(key, "DisplayName")
         .ok()
@@ -101,18 +105,147 @@ fn read_app(
         SoftwareScope::User => "user",
     };
 
+    let display_icon = text("DisplayIcon");
+    let install_location = text("InstallLocation");
     Some(InstalledApp {
         id: format!("{scope_label}:{view}:{key_name}"),
         name,
         version: text("DisplayVersion"),
         publisher: text("Publisher"),
         install_date: text("InstallDate"),
-        install_location: text("InstallLocation"),
+        install_location: install_location.clone(),
         uninstall_string: text("UninstallString"),
         scope,
         registry_view: format!("{view}-bit"),
-        icon: crate::win::icons::icon_data_url(&text("DisplayIcon")),
+        icon: crate::win::icons::icon_data_url(&display_icon),
+        last_used: last_used_for(&display_icon, &install_location, last_used),
     })
+}
+
+/// Best-effort last-use timestamp. Windows does not expose a reliable
+/// per-application launch time to standard users; UserAssist covers launches
+/// performed through Explorer, and the executable access time is a fallback.
+fn last_used_for(
+    display_icon: &str,
+    install_location: &str,
+    last_used: &HashMap<String, u64>,
+) -> Option<u64> {
+    let icon_path = crate::win::icons::display_icon_path(display_icon);
+    if let Some(path) = icon_path.as_deref() {
+        let lower = path.to_string_lossy().to_lowercase();
+        if let Some(value) = last_used.get(&lower) {
+            return Some(*value);
+        }
+        if let Some(name) = path.file_name().and_then(|name| name.to_str()) {
+            if let Some(value) = last_used.get(&name.to_lowercase()) {
+                return Some(*value);
+            }
+        }
+    }
+
+    if !install_location.trim().is_empty() {
+        let base = install_location
+            .trim()
+            .trim_end_matches(['\\', '/'])
+            .to_lowercase();
+        let prefix = format!("{base}\\");
+        let matched = last_used
+            .iter()
+            .filter(|(key, _)| key.starts_with(&prefix) && key.ends_with(".exe"))
+            .map(|(_, value)| *value)
+            .max();
+        if matched.is_some() {
+            return matched;
+        }
+    }
+
+    let path = icon_path?;
+    std::fs::metadata(path)
+        .ok()
+        .and_then(|metadata| metadata.accessed().ok())
+        .and_then(unix_seconds)
+        .filter(|seconds| *seconds > 946684800)
+}
+
+fn user_assist_last_used() -> HashMap<String, u64> {
+    const KEYS: [&str; 2] = [
+        r"Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}\Count",
+        r"Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\Count",
+    ];
+
+    let mut result: HashMap<String, u64> = HashMap::new();
+    for path in KEYS {
+        let Ok(key) = registry::open(HKEY_CURRENT_USER, path, false) else {
+            continue;
+        };
+        let values = registry::enum_binary_values(key).unwrap_or_default();
+        registry::close(key);
+
+        for (encoded_name, data) in values {
+            let decoded = rot13(&encoded_name);
+            let Some(path) = decoded
+                .split_once("}\\")
+                .map(|(_, value)| value)
+                .or_else(|| {
+                    if decoded.starts_with('{') {
+                        None
+                    } else {
+                        Some(decoded.as_str())
+                    }
+                })
+            else {
+                continue;
+            };
+            let lower = path.to_lowercase();
+            if !lower.ends_with(".exe") {
+                continue;
+            }
+            let Some(seconds) = filetime_at(&data, 60) else {
+                continue;
+            };
+            let Some(name) = Path::new(&lower)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .map(str::to_string)
+            else {
+                continue;
+            };
+
+            for key in [lower, name] {
+                result
+                    .entry(key)
+                    .and_modify(|current| *current = (*current).max(seconds))
+                    .or_insert(seconds);
+            }
+        }
+    }
+    result
+}
+
+fn filetime_at(data: &[u8], offset: usize) -> Option<u64> {
+    let bytes = data.get(offset..offset + 8)?;
+    let filetime = u64::from_le_bytes(bytes.try_into().ok()?);
+    if filetime < 116_444_736_000_000_000 {
+        return None;
+    }
+    Some(filetime / 10_000_000 - 11_644_473_600)
+}
+
+fn unix_seconds(time: SystemTime) -> Option<u64> {
+    time.duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|value| value.as_secs())
+}
+
+fn rot13(value: &str) -> String {
+    value
+        .chars()
+        .map(|character| match character {
+            'A'..='Z' => char::from(b'A' + (character as u8 - b'A' + 13) % 26),
+            'a'..='z' => char::from(b'a' + (character as u8 - b'a' + 13) % 26),
+            _ => character,
+        })
+        .collect()
 }
 
 #[cfg(test)]

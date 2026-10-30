@@ -217,13 +217,14 @@
 
 .software-card {
   min-width: 0;
-  padding: 14px;
+  min-height: 210px;
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--panel);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   transition:
     border-color 0.16s ease,
     background 0.16s ease;
@@ -288,29 +289,34 @@
   text-overflow: ellipsis;
 }
 
-.software-meta {
+.software-facts {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
 }
 
-.software-version {
+.software-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.software-fact span {
+  color: var(--muted);
+}
+
+.software-fact strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--font-code);
-  font-size: 12px;
+  font-weight: 500;
   color: var(--text-2);
-}
-
-.software-meta .ant-tag {
-  margin: 0;
-  flex: none;
-  font-size: 11px;
-  color: var(--muted);
 }
 
 .software-foot {
@@ -318,6 +324,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   color: var(--muted);

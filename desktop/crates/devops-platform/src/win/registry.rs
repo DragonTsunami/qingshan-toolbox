@@ -204,6 +204,47 @@ pub fn enum_values(key: HKEY) -> OpsResult<Vec<(String, String)>> {
     Ok(values)
 }
 
+pub fn enum_binary_values(key: HKEY) -> OpsResult<Vec<(String, Vec<u8>)>> {
+    let mut index = 0u32;
+    let mut values = Vec::new();
+    loop {
+        let mut name = vec![0u16; 512];
+        let mut name_len = name.len() as u32;
+        let mut kind_raw = 0u32;
+        let mut data = vec![0u8; 8192];
+        let mut data_len = data.len() as u32;
+        let status = unsafe {
+            RegEnumValueW(
+                key,
+                index,
+                windows::core::PWSTR(name.as_mut_ptr()),
+                &mut name_len,
+                None,
+                Some(&mut kind_raw),
+                Some(data.as_mut_ptr()),
+                Some(&mut data_len),
+            )
+        };
+        if status == ERROR_NO_MORE_ITEMS {
+            break;
+        }
+        if status == ERROR_MORE_DATA {
+            index += 1;
+            continue;
+        }
+        if status != ERROR_SUCCESS {
+            return Err(status_error("枚举注册表值", status));
+        }
+        name.truncate(name_len as usize);
+        data.truncate(data_len as usize);
+        if kind_raw == REG_BINARY.0 {
+            values.push((decode_wide(&name), data));
+        }
+        index += 1;
+    }
+    Ok(values)
+}
+
 pub fn enum_subkeys(key: HKEY) -> OpsResult<Vec<String>> {
     let mut index = 0u32;
     let mut names = Vec::new();

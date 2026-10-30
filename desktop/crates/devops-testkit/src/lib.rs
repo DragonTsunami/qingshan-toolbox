@@ -670,6 +670,7 @@ impl MockSoftware {
                 scope: SoftwareScope::Machine,
                 registry_view: "64".into(),
                 icon: None,
+                last_used: None,
             }],
         }
     }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Empty, Input, Skeleton, Tag } from "antd";
+import { Alert, Button, Empty, Input, Skeleton } from "antd";
 import { AppstoreOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { openAppsFeatures, softwareList } from "../api";
 import type { InstalledApp } from "../types";
@@ -91,13 +91,21 @@ export default function SoftwarePage() {
                     <span title={app.publisher}>{app.publisher || "未知发布者"}</span>
                   </div>
                 </div>
-                <div className="software-meta">
-                  <span className="software-version">{app.version || "—"}</span>
-                  <Tag bordered={false}>{app.registryView || "—"}-bit</Tag>
+                <div className="software-facts">
+                  <div className="software-fact">
+                    <span>当前版本</span>
+                    <strong>{app.version || "—"}</strong>
+                  </div>
+                  <div className="software-fact">
+                    <span>最近使用</span>
+                    <strong>{formatLastUsed(app.lastUsed)}</strong>
+                  </div>
                 </div>
                 <div className="software-foot">
-                  <span>{formatDate(app.installDate)}</span>
-                  <span>{app.scope === "user" ? "当前用户" : "所有用户"}</span>
+                  <span>安装于 {formatDate(app.installDate)}</span>
+                  <span>
+                    {app.registryView || "—"}-bit · {app.scope === "user" ? "当前用户" : "所有用户"}
+                  </span>
                 </div>
               </article>
             ))}
@@ -105,8 +113,9 @@ export default function SoftwarePage() {
         )}
 
         <div className="maint-footnote">
-          共 {apps.length} 个已安装程序，当前显示 {filtered.length} 个。此页面不提供卸载按钮，避免绕过 Windows
-          安装器；请使用「应用和功能」。
+          共 {apps.length} 个已安装程序，当前显示 {filtered.length} 个。最近使用来自 Windows
+          UserAssist 或程序文件访问时间，系统未记录时显示「未记录」。此页面不提供卸载按钮，避免绕过
+          Windows 安装器；请使用「应用和功能」。
         </div>
       </section>
     </div>
@@ -123,6 +132,16 @@ function SoftwareIcon({ app }: { app: InstalledApp }) {
     );
   }
   return <span className="software-icon">{app.name.slice(0, 1).toUpperCase()}</span>;
+}
+
+function formatLastUsed(seconds?: number | null): string {
+  if (!seconds) return "未记录";
+  const diff = Math.max(0, Math.floor(Date.now() / 1000) - seconds);
+  if (diff < 3600) return "1 小时内";
+  if (diff < 86_400) return `${Math.floor(diff / 3600)} 小时前`;
+  if (diff < 86_400 * 30) return `${Math.floor(diff / 86_400)} 天前`;
+  if (diff < 86_400 * 365) return `${Math.floor(diff / (86_400 * 30))} 个月前`;
+  return `${Math.floor(diff / (86_400 * 365))} 年前`;
 }
 
 function formatDate(value: string): string {
