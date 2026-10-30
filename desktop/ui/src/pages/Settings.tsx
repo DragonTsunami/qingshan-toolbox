@@ -1,15 +1,18 @@
+import { useState } from "react";
 import {
   CheckCircleFilled,
   CodeOutlined,
   DesktopOutlined,
   ExportOutlined,
   MoonOutlined,
+  ReloadOutlined,
   SafetyCertificateFilled,
   SunOutlined,
   ThunderboltFilled,
 } from "@ant-design/icons";
 import { Button, Descriptions, Switch, Tag, Timeline } from "antd";
-import type { AppInfo, SystemSnapshot } from "../types";
+import type { AppInfo, SystemSnapshot, UpdateCheck } from "../types";
+import { updateCheck } from "../api";
 import { formatBytes, formatUptime } from "../format";
 
 interface SettingsProps {
@@ -22,6 +25,22 @@ interface SettingsProps {
 
 export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onElevate }: SettingsProps) {
   const elevated = snapshot?.isElevated ?? info?.isElevated ?? false;
+  const [update, setUpdate] = useState<UpdateCheck | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
+  const handleCheckUpdate = async () => {
+    setChecking(true);
+    setUpdateError("");
+    try {
+      setUpdate(await updateCheck());
+    } catch (error) {
+      setUpdate(null);
+      setUpdateError(String(error));
+    } finally {
+      setChecking(false);
+    }
+  };
 
   return (
     <div className="page-stack settings-page">
@@ -36,8 +55,8 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
           </div>
           <Descriptions column={1} size="small" className="settings-descriptions" colon={false}>
             <Descriptions.Item label="产品名称">{info?.name ?? "青衫工具箱"}</Descriptions.Item>
-            <Descriptions.Item label="应用版本">{info?.version ?? "0.5.0"}</Descriptions.Item>
-            <Descriptions.Item label="领域层版本">{info?.coreVersion ?? "0.5.0"}</Descriptions.Item>
+            <Descriptions.Item label="应用版本">{info?.version ?? "0.6.0"}</Descriptions.Item>
+            <Descriptions.Item label="领域层版本">{info?.coreVersion ?? "0.6.0"}</Descriptions.Item>
             <Descriptions.Item label="构建类型">
               <Tag bordered={false}>{info?.buildProfile ?? "debug"}</Tag>
             </Descriptions.Item>
@@ -142,6 +161,38 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
       <section className="panel">
         <div className="panel-head">
           <div>
+            <h3>版本更新</h3>
+            <p>检查 GitHub 最新 Release，不会自动下载或执行安装</p>
+          </div>
+          <Tag bordered={false}>{info?.version ?? "0.6.0"}</Tag>
+        </div>
+        <div className="update-row">
+          <div>
+            <strong>
+              {update
+                ? update.available
+                  ? `发现新版本 ${update.latestVersion}`
+                  : "当前已是最新版本"
+                : "尚未检查更新"}
+            </strong>
+            <p>
+              {update
+                ? update.available
+                  ? "请前往 Release 页面查看说明并手动下载。"
+                  : `当前 ${update.currentVersion}，发布通道暂无更新。`
+                : "检查最多等待 12 秒；网络不可用时只提示错误，不影响其他功能。"}
+            </p>
+          </div>
+          <Button icon={<ReloadOutlined />} loading={checking} onClick={handleCheckUpdate}>
+            检查更新
+          </Button>
+        </div>
+        {updateError ? <div className="diagnostics-error">{updateError}</div> : null}
+      </section>
+
+      <section className="panel">
+        <div className="panel-head">
+          <div>
             <h3>演进路线</h3>
             <p>桌面端从“单机运维台”走向“企业运维中枢”</p>
           </div>
@@ -154,8 +205,17 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
               color: "green",
               children: (
                 <>
-                  <strong>阶段 1 · 框架与单机能力（当前）</strong>
+                  <strong>阶段 1 · 框架与单机能力（已完成）</strong>
                   <p>Rust + Tauri 框架、系统概览、进程/服务/网络诊断、权限模型。</p>
+                </>
+              ),
+            },
+            {
+              color: "green",
+              children: (
+                <>
+                  <strong>阶段 2 · 桌面运维增强（已完成）</strong>
+                  <p>日志采集与检索、磁盘清理、启动项、计划任务、软件清单、声明式插件。</p>
                 </>
               ),
             },
@@ -163,17 +223,8 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
               color: "blue",
               children: (
                 <>
-                  <strong>阶段 2 · 桌面运维增强</strong>
-                  <p>日志采集与检索、磁盘清理、启动项、计划任务、软件清单、远程协助入口。</p>
-                </>
-              ),
-            },
-            {
-              color: "gray",
-              children: (
-                <>
-                  <strong>阶段 3 · 资产与策略</strong>
-                  <p>本机资产上报、补丁与合规基线、离线缓存、企业统一策略下发。</p>
+                  <strong>阶段 3 · 个人版体验（当前）</strong>
+                  <p>健康诊断、诊断报告、托盘常驻与单实例、崩溃日志、GitHub Release 更新检查。</p>
                 </>
               ),
             },

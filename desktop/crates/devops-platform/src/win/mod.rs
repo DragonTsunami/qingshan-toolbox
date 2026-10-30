@@ -1,4 +1,5 @@
 pub mod cleanup;
+pub mod diagnostics;
 pub mod elevation;
 pub mod icons;
 pub mod logs;
@@ -20,6 +21,7 @@ pub struct WindowsPlatform {
     pub cleanup: cleanup::CleanupImpl,
     pub startup: startup::StartupManagerImpl,
     pub software: software::SoftwareInventoryImpl,
+    pub diagnostics: diagnostics::DiagnosticsImpl,
 }
 
 impl WindowsPlatform {
@@ -34,6 +36,7 @@ impl WindowsPlatform {
             cleanup: cleanup::CleanupImpl,
             startup: startup::StartupManagerImpl,
             software: software::SoftwareInventoryImpl,
+            diagnostics: diagnostics::DiagnosticsImpl,
         }
     }
 }

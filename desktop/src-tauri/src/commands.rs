@@ -3,8 +3,9 @@ use std::process::Command;
 
 use devops_core::{
     AppInfo, CleanupReport, CleanupScan, DnsLookupResult, InstalledApp, LogBatch, LogEntry,
-    LogExport, LogQuery, LogSource, NetworkInterface, PortCheckResult, ProcessInfo, ScheduledTask,
-    ServiceAction, ServiceInfo, StartupItem, SystemSnapshot,
+    LogExport, LogQuery, LogSource, NetworkInterface, PortCheckResult, ProcessInfo,
+    QuickActionResult, ScheduledTask, ServiceAction, ServiceInfo, StartupItem, SystemDiagnostics,
+    SystemSnapshot,
 };
 use devops_plugins::{PluginCatalog, PluginMarketEntry};
 use tauri::{AppHandle, State};
@@ -206,6 +207,57 @@ pub async fn software_list(state: State<'_, AppState>) -> Result<Vec<InstalledAp
 pub async fn software_uninstall(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let maintenance = state.maintenance.clone();
     tauri::async_runtime::spawn_blocking(move || maintenance.uninstall_software(&id))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn diagnostics_read(state: State<'_, AppState>) -> Result<SystemDiagnostics, String> {
+    let diagnostics = state.diagnostics.clone();
+    tauri::async_runtime::spawn_blocking(move || diagnostics.read())
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn diagnostics_actions(state: State<'_, AppState>) -> Vec<devops_core::QuickAction> {
+    state.diagnostics.quick_actions()
+}
+
+#[tauri::command]
+pub async fn diagnostics_run_action(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<QuickActionResult, String> {
+    let diagnostics = state.diagnostics.clone();
+    tauri::async_runtime::spawn_blocking(move || diagnostics.run_quick_action(&id))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn diagnostics_export(
+    state: State<'_, AppState>,
+    markdown: String,
+) -> Result<String, String> {
+    let diagnostics = state.diagnostics.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        diagnostics
+            .export_report(&markdown)
+            .map(|path| path.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(to_message)?
+    .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn update_check(app: AppHandle) -> Result<devops_app::update::UpdateCheck, String> {
+    let current = app.package_info().version.to_string();
+    tauri::async_runtime::spawn_blocking(move || devops_app::update::check_for_update(&current))
         .await
         .map_err(to_message)?
         .map_err(to_message)

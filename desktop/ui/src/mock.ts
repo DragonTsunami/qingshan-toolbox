@@ -16,10 +16,14 @@ import type {
   PluginMarketEntry,
   PortCheckResult,
   ProcessInfo,
+  QuickAction,
+  QuickActionResult,
   ScheduledTask,
   ServiceInfo,
   StartupItem,
+  SystemDiagnostics,
   SystemSnapshot,
+  UpdateCheck,
 } from "./types";
 
 const GB = 1024 ** 3;
@@ -236,11 +240,89 @@ export async function mockResolve(host: string): Promise<DnsLookupResult> {
 export function mockAppInfo(): AppInfo {
   return {
     name: "青衫工具箱",
-    version: "0.5.0",
-    coreVersion: "0.5.0",
+    version: "0.6.0",
+    coreVersion: "0.6.0",
     buildProfile: "debug",
     platform: "windows-gnu",
     isElevated: true,
+  };
+}
+
+export function mockDiagnostics(): SystemDiagnostics {
+  return {
+    collectedAt: new Date().toLocaleString("zh-CN"),
+    battery: {
+      name: "DELL 71JF4 3-cell",
+      chargePercent: 82,
+      status: "已接通电源",
+      estimatedMinutes: 186,
+    },
+    disks: [
+      {
+        name: "Samsung SSD 990 PRO 1TB",
+        mediaType: "SSD",
+        health: "Healthy",
+        operationalStatus: "OK",
+        sizeBytes: 1024 * GB,
+      },
+      {
+        name: "WDC WD20EZBX-00AYRA0",
+        mediaType: "HDD",
+        health: "Healthy",
+        operationalStatus: "OK",
+        sizeBytes: 2 * 1024 * GB,
+      },
+    ],
+    gpus: [
+      {
+        name: "NVIDIA GeForce RTX 4060 Laptop GPU",
+        driverVersion: "32.0.15.6094",
+        memoryBytes: 8 * 1024 * GB,
+      },
+      {
+        name: "Intel(R) UHD Graphics",
+        driverVersion: "31.0.101.5333",
+        memoryBytes: 128 * 1024 * 1024,
+      },
+    ],
+  };
+}
+
+export function mockDiagnosticActions(): QuickAction[] {
+  return [
+    {
+      id: "flush-dns",
+      name: "刷新 DNS 缓存",
+      description: "解决域名解析异常、网页打不开等常见问题",
+      requiresAdmin: false,
+    },
+    {
+      id: "open-network-settings",
+      name: "打开网络设置",
+      description: "查看适配器、代理、VPN 和 DNS 配置",
+      requiresAdmin: false,
+    },
+  ];
+}
+
+export function mockRunDiagnosticAction(id: string): QuickActionResult {
+  return {
+    action: id,
+    message: id === "flush-dns" ? "DNS 缓存已刷新" : "已打开 Windows 网络设置",
+  };
+}
+
+export function mockExportDiagnostics(markdown: string): string {
+  return `C:\\Users\\mock\\AppData\\Roaming\\com.qingshan.toolbox\\reports\\qingshan-diagnostics-${markdown.length}.md`;
+}
+
+export function mockUpdateCheck(): UpdateCheck {
+  return {
+    currentVersion: "0.6.0",
+    latestVersion: "0.6.0",
+    available: false,
+    releaseUrl: "https://github.com/DragonTsunami/qingshan-toolbox/releases/latest",
+    publishedAt: null,
   };
 }
 

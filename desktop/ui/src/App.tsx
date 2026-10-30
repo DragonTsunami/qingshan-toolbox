@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import PluginsPage from "./pages/Plugins";
 import OverviewPage from "./pages/Overview";
+import DiagnosticsPage from "./pages/Diagnostics";
 import ProcessesPage from "./pages/Processes";
 import ServicesPage from "./pages/Services";
 import NetworkPage from "./pages/Network";
@@ -25,6 +26,7 @@ import type { AppInfo, PageKey, SystemSnapshot } from "./types";
 const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
   plugins: { title: "插件", subtitle: "声明式扩展工作台能力" },
   overview: { title: "概览", subtitle: "本机健康状态与关键指标" },
+  diagnostics: { title: "健康诊断", subtitle: "电池、磁盘、显卡与快速修复" },
   processes: { title: "进程管理", subtitle: "查看资源占用并安全地结束进程" },
   services: { title: "服务管理", subtitle: "控制系统服务的启动、停止与重启" },
   network: { title: "网络诊断", subtitle: "接口、端口连通性与 DNS 解析" },
@@ -120,6 +122,8 @@ function App() {
     switch (page) {
       case "plugins":
         return <PluginsPage />;
+      case "diagnostics":
+        return <DiagnosticsPage snapshot={snapshot} />;
       case "processes":
         return <ProcessesPage refreshInterval={refreshInterval} />;
       case "services":

@@ -1555,6 +1555,39 @@ a {
   border-top: none;
 }
 
+.update-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 0 4px;
+}
+
+.update-row > div {
+  min-width: 0;
+}
+
+.update-row strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.update-row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .update-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .settings-icon {
   width: 30px;
   height: 30px;

@@ -1,4 +1,5 @@
 use crate::cleanup::{CleanupReport, CleanupScan};
+use crate::diagnostics::{QuickAction, QuickActionResult, SystemDiagnostics};
 use crate::error::OpsResult;
 use crate::logs::{LogBatch, LogEntry, LogExport, LogQuery, LogSource};
 use crate::models::{
@@ -69,4 +70,11 @@ pub trait SoftwareInventory: Send + Sync {
     /// Launch the application's own uninstaller. Implementations must resolve
     /// `id` against the current inventory; they must not accept a raw command.
     fn uninstall(&self, id: &str) -> OpsResult<()>;
+}
+
+/// Read-only local health plus a small allow-list of safe repair actions.
+pub trait Diagnostics: Send + Sync {
+    fn read(&self) -> OpsResult<SystemDiagnostics>;
+    fn quick_actions(&self) -> Vec<QuickAction>;
+    fn run_quick_action(&self, id: &str) -> OpsResult<QuickActionResult>;
 }

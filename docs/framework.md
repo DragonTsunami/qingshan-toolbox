@@ -15,7 +15,7 @@
 
 **不在框架基线内**：阶段 2 P1（远程协助、网络进阶、性能采样、资产上报）、网页端 Terraform/Ansible/CI 集成。日志中心、磁盘清理、启动项与计划任务、软件清单已作为阶段 2 P0 增量接入。
 
-当前十个页面（插件/概览/进程/服务/网络/日志中心/磁盘清理/启动项/软件清单/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统。
+当前十一个页面（插件/概览/健康诊断/进程/服务/网络/日志中心/磁盘清理/启动项/软件清单/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统。健康诊断、托盘/单实例、崩溃日志与更新检查属于 v0.6 个人版扩展，不改变分层契约。
 
 ## 2. 依赖规则
 
@@ -45,20 +45,20 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | 层级 | 位置 | 内容 | 当前结果 |
 | --- | --- | --- | --- |
 | 契约测试 | `devops-core/tests/contract.rs` | camelCase 字段、枚举字符串、错误码、AppInfo | 5 / 5 |
-| 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 11 / 11 |
+| 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 8 / 8 |
 | 运维用例测试 | `devops-app/tests/maintenance.rs` | 清理扫描/执行转发、启动项/计划任务启停、软件清单 | 3 / 3 |
-| 组件/日志单测 | `devops-app` 内部 | `OpsService: Send + Sync`、日志查询校验/转发、空导出 | 4 / 4 |
+| 组件/更新单测 | `devops-app` 内部 | `OpsService: Send + Sync`、日志查询校验/转发、诊断导出、更新版本比较 | 7 / 7 |
 | 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、市场、安装/移除、路径安装、非法 id/URL | 9 / 9 |
-| 平台单元测试 | `devops-platform` 内部 | 事件 XML 解析、关键字过滤、未知来源 | 4 / 4 |
+| 平台单元测试 | `devops-platform` 内部 | 事件 XML 解析、关键字过滤、未知来源、诊断 CIM 形状 | 11 / 11 |
 | 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS、Application 事件日志查询 | 8 / 8 |
 | 运维集成测试 | `devops-platform/tests/maintenance.rs` | 磁盘清理扫描、启动项/软件读取、计划任务受限提示 | 3 / 3 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |
-| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件/日志 Mock API 契约 | 15 / 15 |
-| 视觉冒烟 | `docs/images` | 十个页面（含插件页、日志中心、磁盘清理、启动项、软件清单）× 浅色/深色截图 | 通过 |
+| 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件/日志/诊断/更新 Mock API 契约 | 16 / 16 |
+| 视觉冒烟 | `docs/images` | 十一个页面（含健康诊断、插件页、日志中心、磁盘清理、启动项、软件清单）× 浅色/深色截图 | 通过 |
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 
-总计 Rust 49 项测试（core 5 + app 18 + platform 17 + plugins 9），前端 16 项测试。
+总计 Rust 54 项测试（覆盖 core / platform / app / plugins），前端 16 项测试。
 
 ## 4. 验收清单
 
@@ -76,6 +76,8 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 - [x] `cargo fmt --check` / `cargo clippy -D warnings`
 - [x] GitHub Actions：Linux core、Windows workspace、前端构建
 - [x] 视觉 token 文档与页面截图
+- [x] v0.6 健康诊断、诊断报告导出、托盘/单实例、崩溃日志、更新检查
+- [x] v0.6 版本 0.6.0 安装到 `C:\QingshanToolbox`，真实窗口与更新检查验证
 
 ### 待完成（内容开发前必须关闭）
 

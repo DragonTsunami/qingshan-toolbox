@@ -8,12 +8,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use devops_core::{
-    Cleanup, CleanupCategory, CleanupOutcome, CleanupReport, CleanupScan, CleanupTarget,
-    DnsLookupResult, Elevation, InstalledApp, LogBatch, LogCenter, LogEntry, LogExport, LogField,
-    LogLevel, LogQuery, LogSource, LogSourceKind, NetworkInterface, NetworkProbe, OpsError,
-    OpsResult, PortCheckResult, ProcessControl, ProcessInfo, ScheduledTask, ServiceAction,
+    BatteryInfo, Cleanup, CleanupCategory, CleanupOutcome, CleanupReport, CleanupScan,
+    CleanupTarget, Diagnostics, DiskHealth, DnsLookupResult, Elevation, GpuInfo, InstalledApp,
+    LogBatch, LogCenter, LogEntry, LogExport, LogField, LogLevel, LogQuery, LogSource,
+    LogSourceKind, NetworkInterface, NetworkProbe, OpsError, OpsResult, PortCheckResult,
+    ProcessControl, ProcessInfo, QuickAction, QuickActionResult, ScheduledTask, ServiceAction,
     ServiceControl, ServiceInfo, ServiceStatus, SoftwareInventory, SoftwareKind, SoftwareScope,
-    StartupItem, StartupLocation, StartupManager, StartupScope, SystemProbe, SystemSnapshot,
+    StartupItem, StartupLocation, StartupManager, StartupScope, SystemDiagnostics, SystemProbe,
+    SystemSnapshot,
 };
 
 // ---------------------------------------------------------------------------
@@ -697,6 +699,81 @@ impl Default for MockSoftware {
     }
 }
 
+/// Deterministic diagnostics fixture.
+pub struct MockDiagnostics {
+    pub calls: Mutex<Vec<String>>,
+    pub fail: bool,
+}
+
+impl MockDiagnostics {
+    pub fn new() -> Self {
+        Self {
+            calls: Mutex::new(Vec::new()),
+            fail: false,
+        }
+    }
+}
+
+impl Diagnostics for MockDiagnostics {
+    fn read(&self) -> OpsResult<SystemDiagnostics> {
+        if self.fail {
+            return Err(OpsError::Platform("mock diagnostics failure".into()));
+        }
+        self.calls.lock().unwrap().push("read".into());
+        Ok(SystemDiagnostics {
+            collected_at: "2026-01-01 00:00:00".into(),
+            battery: Some(BatteryInfo {
+                name: "Mock Battery".into(),
+                charge_percent: Some(72),
+                status: "已接通电源".into(),
+                estimated_minutes: Some(180),
+            }),
+            disks: vec![DiskHealth {
+                name: "Mock NVMe".into(),
+                media_type: "SSD".into(),
+                health: "Healthy".into(),
+                operational_status: "OK".into(),
+                size_bytes: 512 * 1024 * 1024 * 1024,
+            }],
+            gpus: vec![GpuInfo {
+                name: "Mock GPU".into(),
+                driver_version: "1.2.3".into(),
+                memory_bytes: 8 * 1024 * 1024 * 1024,
+            }],
+        })
+    }
+
+    fn quick_actions(&self) -> Vec<QuickAction> {
+        vec![QuickAction {
+            id: "flush-dns".into(),
+            name: "刷新 DNS 缓存".into(),
+            description: "mock".into(),
+            requires_admin: false,
+        }]
+    }
+
+    fn run_quick_action(&self, id: &str) -> OpsResult<QuickActionResult> {
+        self.calls.lock().unwrap().push(id.into());
+        if self.fail {
+            return Err(OpsError::Platform("mock action failure".into()));
+        }
+        if id == "flush-dns" {
+            Ok(QuickActionResult {
+                action: id.into(),
+                message: "DNS 缓存已刷新".into(),
+            })
+        } else {
+            Err(OpsError::InvalidInput(id.into()))
+        }
+    }
+}
+
+impl Default for MockDiagnostics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Bundle of mock adapters for tests that want the full capability set.
 pub struct MockAdapters {
     pub system: Arc<MockSystem>,
@@ -708,6 +785,7 @@ pub struct MockAdapters {
     pub cleanup: Arc<MockCleanup>,
     pub startup: Arc<MockStartup>,
     pub software: Arc<MockSoftware>,
+    pub diagnostics: Arc<MockDiagnostics>,
 }
 
 impl MockAdapters {
@@ -722,6 +800,7 @@ impl MockAdapters {
             cleanup: Arc::new(MockCleanup::new()),
             startup: Arc::new(MockStartup::new()),
             software: Arc::new(MockSoftware::new()),
+            diagnostics: Arc::new(MockDiagnostics::new()),
         }
     }
 }

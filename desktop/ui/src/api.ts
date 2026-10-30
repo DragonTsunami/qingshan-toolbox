@@ -15,15 +15,22 @@ import type {
   PluginMarketEntry,
   PortCheckResult,
   ProcessInfo,
+  QuickAction,
+  QuickActionResult,
   ScheduledTask,
   ServiceAction,
   ServiceInfo,
   StartupItem,
+  SystemDiagnostics,
   SystemSnapshot,
+  UpdateCheck,
 } from "./types";
 import {
   mockAppInfo,
   mockCleanupScan,
+  mockDiagnostics,
+  mockDiagnosticActions,
+  mockExportDiagnostics,
   mockExportLogs,
   mockInterfaces,
   mockInstallPlugin,
@@ -38,6 +45,7 @@ import {
   mockRemovePlugin,
   mockRescanPlugins,
   mockRunCleanup,
+  mockRunDiagnosticAction,
   mockScheduledTasks,
   mockServices,
   mockSetPluginEnabled,
@@ -48,6 +56,7 @@ import {
   mockCheckPort,
   mockResolve,
   mockUninstallSoftware,
+  mockUpdateCheck,
 } from "./mock";
 
 /** The UI also runs in a plain browser (`npm run dev`) for design work. */
@@ -242,4 +251,29 @@ export async function openExternalUrl(url: string): Promise<void> {
     return;
   }
   await call<void>("open_external_url", { url });
+}
+
+export async function diagnosticsRead(): Promise<SystemDiagnostics> {
+  if (!isDesktopRuntime) return mockDiagnostics();
+  return call<SystemDiagnostics>("diagnostics_read");
+}
+
+export async function diagnosticsActions(): Promise<QuickAction[]> {
+  if (!isDesktopRuntime) return mockDiagnosticActions();
+  return call<QuickAction[]>("diagnostics_actions");
+}
+
+export async function runDiagnosticAction(id: string): Promise<QuickActionResult> {
+  if (!isDesktopRuntime) return mockRunDiagnosticAction(id);
+  return call<QuickActionResult>("diagnostics_run_action", { id });
+}
+
+export async function exportDiagnostics(markdown: string): Promise<string> {
+  if (!isDesktopRuntime) return mockExportDiagnostics(markdown);
+  return call<string>("diagnostics_export", { markdown });
+}
+
+export async function updateCheck(): Promise<UpdateCheck> {
+  if (!isDesktopRuntime) return mockUpdateCheck();
+  return call<UpdateCheck>("update_check");
 }

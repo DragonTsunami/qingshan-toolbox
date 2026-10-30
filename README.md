@@ -9,7 +9,7 @@
 
 > 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
 
-> 状态：v0.5.0，**阶段 2 P0（桌面运维增强）已完成**。日志中心、磁盘清理、启动项与计划任务、软件清单全部接入；Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；插件页按 DeepSeek Harness 的「已安装 / 发现」结构实现。49 项 Rust 测试、16 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> 状态：v0.6.0，**桌面个人版能力补齐中**。在阶段 2 P0（日志中心、磁盘清理、启动项与计划任务、软件清单）之上，新增健康诊断（电池/磁盘 SMART/显卡）、诊断报告导出、托盘常驻与单实例、崩溃日志、GitHub Release 更新检查；安装器与代码签名仍受证书/构建工具限制。54 项 Rust 测试、16 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **阶段约定：框架冻结，按路线图增量交付。** 框架验收清单见 [`docs/framework.md`](docs/framework.md)；阶段 2 剩余 P1（远程协助、网络进阶、性能采样、资产上报）与网页端尚未开始。
 
@@ -23,6 +23,8 @@
 ![插件发现：官方可选插件与安装入口](docs/images/plugins-discover.png)
 
 ![日志中心：事件通道检索与导出](docs/images/logs-page.png)
+
+![健康诊断：电池、磁盘 SMART、显卡与快速修复](docs/images/diagnostics.png)
 
 ![磁盘清理：白名单扫描与安全释放](docs/images/cleanup-page.png)
 
@@ -53,11 +55,15 @@
 | 启动项 | Run 注册表与启动文件夹、启用状态、启停 | 通过 StartupApproved 写回；系统级项目需要管理员权限 |
 | 计划任务 | 任务列表、状态、启停 | 优先读取任务计划服务，受限环境回退任务文件；系统任务需管理员权限 |
 | 软件清单 | 软件、驱动、运行库、其他四个 Tab；四列紧凑卡片展示，优先显示真实 Windows 图标，并列出当前版本、最近使用、安装位置；注册表无卸载命令的项目归入「其他」，有卸载命令的卡片可启动程序自带卸载器 | 驱动/运行库按注册表名称与安装器识别，可能有个别归类偏差；卸载需管理员权限，青衫工具箱不直接删除文件 |
+| 健康诊断 | 电池、磁盘 SMART/运行状态、显卡、采样时间；刷新 DNS 缓存、打开网络设置两个白名单动作；Markdown 诊断报告预览与导出 | 报告只含硬件与系统摘要，不含日志正文、文件内容或凭据；导出到 `%APPDATA%\com.qingshan.toolbox\reports` |
+| 托盘与单实例 | 关闭窗口隐藏到托盘、托盘菜单显示/退出、重复启动聚焦已有窗口 | 单实例使用本机命名互斥量，避免重复 WebView2 数据目录 |
+| 更新检查 | 设置页检查 GitHub 最新 Release，显示当前/最新版本，不自动下载执行 | 通过系统 `curl.exe` 访问 GitHub API；网络失败只提示错误 |
+| 崩溃记录 | 未捕获 panic 写入 `%APPDATA%\com.qingshan.toolbox\logs\panic-*.log` | 包含位置、信息与回溯，不上传 |
 | 插件 | 独立「插件」页：已安装 / 发现、启停、搜索筛选、添加本地插件、官方可选包安装、详情与移除 | 声明式 `plugin.json`，不执行第三方代码；插件页结构参考 DSH 插件管理 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
-**尚未实现（见路线图）**：远程协助、网络进阶、性能采样、资产上报、网页端。
+**尚未实现（见路线图）**：远程协助、网络进阶、资产上报、网页端；v0.6 的 NSIS 安装包、代码签名、自动下载更新仍受本机工具/证书限制。
 
 
 ---
@@ -95,11 +101,11 @@ DeepSeek-Devops/
 ├─ desktop/
 │  ├─ Cargo.toml                 # Rust workspace
 │  ├─ crates/
-│  │  ├─ devops-core/            # 领域模型、trait、错误（无平台/UI 依赖）
-│  │  ├─ devops-app/             # 应用服务层 OpsService（可注入、可测试）
+│  │  ├─ devops-core/            # 领域模型、trait、诊断模型、错误（无平台/UI 依赖）
+│  │  ├─ devops-app/             # 应用服务层 OpsService、诊断报告、更新检查（可注入、可测试）
 │  │  ├─ devops-testkit/         # 全能力 Mock 与 fixtures
 │  │  ├─ devops-plugins/         # 插件清单、市场、安装/移除、启停与内置包
-│  │  └─ devops-platform/        # Windows 适配器（sysinfo / Win32 / Event Log）
+│  │  └─ devops-platform/        # Windows 适配器（sysinfo / Win32 / Event Log / CIM 诊断）
 │  ├─ src-tauri/                 # Tauri 壳、命令层、能力声明
 │  └─ ui/                        # React 控制台（Vite + Vitest）
 ├─ docs/
@@ -175,19 +181,24 @@ cd ../..
 | 验证项 | 结果 |
 | --- | --- |
 | `cargo check`（全 workspace，含 Tauri 2.12） | 通过 |
-| `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（7.4 MB，v0.5.0） |
+| `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（7.9 MB，v0.6.0） |
 | `cargo test --workspace` | 48 / 48 通过（core 5 + app 18 + platform 16 + plugins 9） |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 通过 |
 | `cargo fmt --all -- --check` | 通过 |
 | 前端 `tsc --noEmit && vite build` | 通过 |
-| 前端 `npm test`（Vitest） | 15 / 15 通过 |
+| 前端 `npm test`（Vitest） | 16 / 16 通过 |
+| 健康诊断：电池/磁盘/显卡采样、CIM 回退 | 已实现；真实机器读取 3 磁盘/3 显卡 |
+| 诊断报告：Markdown 导出、空报告/2MB 限制 | 已实现；真实写入 reports 目录 |
+| 托盘 / 单实例 | 已实现；第二次启动退出并聚焦已有窗口，关闭窗口隐藏到托盘 |
+| 更新检查 | 已实现；真实 GitHub API 返回「当前已是最新版本」 |
+| 崩溃日志 | 已实现；panic hook 写入 `logs/panic-*.log` |
 | 刷新间隔选择（1/3/5/10/30/60 秒） | 已实现并持久化到本机 |
 | 日志中心：Application 真实事件读取、关键字/级别过滤、详情、CSV 导出 | 已实现；平台真实事件通道测试通过 |
 | 磁盘清理：白名单扫描、id 清理、回收站 | 已实现；真实扫描测试通过 |
 | 启动项 / 软件清单：注册表读取与启停 | 已实现；真实读取测试通过；系统项目需管理员 |
 | 计划任务：列表、状态、启停 | 已实现；受限会话可能返回权限提示，页面会显式提示 |
 | 插件页：侧栏「插件」位于「概览」上方；已安装 / 发现、启停、本地安装、可选包、详情与移除 | 已实现；Rust 9 项插件测试通过 |
-| 十个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
+| 十一个页面 / 两套主题 UI 渲染 | 已截图（`docs/images`） |
 | 真实窗口启动 | **已通过**：release + `custom-protocol`，窗口标题 `青衫工具箱`，真实硬件数据渲染 |
 
 集成测试覆盖：系统快照、当前进程可见、拒绝结束自身进程、Windows 服务枚举、网络接口、DNS 解析、关闭端口检测、Application 事件日志真实查询。应用层测试覆盖：参数转发、自进程保护、输入校验、错误传播、服务动作、提权流程、日志查询校验与导出边界。
@@ -218,7 +229,13 @@ cd ../..
 | `scheduled_tasks` | — | `ScheduledTask[]` |
 | `task_set_enabled` | `id`, `enabled` | `ScheduledTask[]` |
 | `software_list` | — | `InstalledApp[]` |
+| `software_uninstall` | `id` | `void`（按 id 查注册表卸载命令，系统级走 UAC） |
 | `open_apps_features` | — | `void`（打开 Windows「应用和功能」） |
+| `diagnostics_read` | — | `SystemDiagnostics`（电池/磁盘/显卡/采样时间） |
+| `diagnostics_actions` | — | `QuickAction[]` |
+| `diagnostics_run_action` | `id` | `QuickActionResult`（仅白名单动作） |
+| `diagnostics_export` | `markdown` | `string`（报告文件路径，≤2MB） |
+| `update_check` | — | `UpdateCheck`（GitHub Release，不自动下载） |
 | `app_info` | — | `AppInfo` |
 | `is_elevated` | — | `boolean` |
 | `plugin_catalog` | — | `PluginCatalog` |

@@ -287,9 +287,58 @@ export interface InstalledApp {
   lastUsed?: number | null;
 }
 
+export interface BatteryInfo {
+  name: string;
+  chargePercent: number | null;
+  status: string;
+  estimatedMinutes: number | null;
+}
+
+export interface DiskHealth {
+  name: string;
+  mediaType: string;
+  health: string;
+  operationalStatus: string;
+  sizeBytes: number;
+}
+
+export interface GpuInfo {
+  name: string;
+  driverVersion: string;
+  memoryBytes: number;
+}
+
+export interface SystemDiagnostics {
+  collectedAt: string;
+  battery: BatteryInfo | null;
+  disks: DiskHealth[];
+  gpus: GpuInfo[];
+}
+
+export interface QuickAction {
+  id: string;
+  name: string;
+  description: string;
+  requiresAdmin: boolean;
+}
+
+export interface QuickActionResult {
+  action: string;
+  message: string;
+}
+
+export interface UpdateCheck {
+  currentVersion: string;
+  latestVersion: string | null;
+  available: boolean;
+  releaseUrl: string | null;
+  publishedAt: string | null;
+}
+
 export type PageKey =
   | "plugins"
   | "overview"
+  | "diagnostics"
   | "processes"
   | "services"
   | "network"

@@ -8,12 +8,14 @@
 use std::sync::Arc;
 
 use devops_core::{
-    Cleanup, CleanupReport, CleanupScan, DnsLookupResult, Elevation, InstalledApp, LogBatch,
-    LogCenter, LogEntry, LogExport, LogQuery, LogSource, NetworkInterface, NetworkProbe, OpsError,
-    OpsResult, PortCheckResult, ProcessControl, ProcessInfo, ScheduledTask, ServiceAction,
-    ServiceControl, ServiceInfo, SoftwareInventory, StartupItem, StartupManager, SystemProbe,
-    SystemSnapshot,
+    Cleanup, CleanupReport, CleanupScan, Diagnostics, DnsLookupResult, Elevation, InstalledApp,
+    LogBatch, LogCenter, LogEntry, LogExport, LogQuery, LogSource, NetworkInterface, NetworkProbe,
+    OpsError, OpsResult, PortCheckResult, ProcessControl, ProcessInfo, QuickAction,
+    QuickActionResult, ScheduledTask, ServiceAction, ServiceControl, ServiceInfo,
+    SoftwareInventory, StartupItem, StartupManager, SystemDiagnostics, SystemProbe, SystemSnapshot,
 };
+
+pub mod update;
 
 /// Disk cleanup use cases; deletion is strictly id-based and never path-based.
 #[derive(Clone)]
@@ -137,6 +139,60 @@ impl LogService {
     }
 }
 
+/// System diagnostics and allow-listed quick repairs.
+#[derive(Clone)]
+pub struct DiagnosticsService {
+    diagnostics: Arc<dyn Diagnostics>,
+    report_dir: std::path::PathBuf,
+}
+
+impl DiagnosticsService {
+    pub fn new(diagnostics: Arc<dyn Diagnostics>, report_dir: std::path::PathBuf) -> Self {
+        Self {
+            diagnostics,
+            report_dir,
+        }
+    }
+
+    pub fn read(&self) -> OpsResult<SystemDiagnostics> {
+        self.diagnostics.read()
+    }
+
+    pub fn quick_actions(&self) -> Vec<QuickAction> {
+        self.diagnostics.quick_actions()
+    }
+
+    pub fn run_quick_action(&self, id: &str) -> OpsResult<QuickActionResult> {
+        let id = id.trim();
+        if id.is_empty() {
+            return Err(OpsError::InvalidInput("修复动作标识不能为空".into()));
+        }
+        self.diagnostics.run_quick_action(id)
+    }
+
+    pub fn export_report(&self, markdown: &str) -> OpsResult<std::path::PathBuf> {
+        let body = markdown.trim();
+        if body.is_empty() {
+            return Err(OpsError::InvalidInput("诊断报告内容为空".into()));
+        }
+        if body.len() > 2 * 1024 * 1024 {
+            return Err(OpsError::InvalidInput("诊断报告过大".into()));
+        }
+        std::fs::create_dir_all(&self.report_dir)
+            .map_err(|error| OpsError::Platform(format!("无法创建报告目录: {error}")))?;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_secs())
+            .unwrap_or(0);
+        let path = self
+            .report_dir
+            .join(format!("qingshan-diagnostics-{stamp}.md"));
+        std::fs::write(&path, format!("{body}\n"))
+            .map_err(|error| OpsError::Platform(format!("无法写入诊断报告: {error}")))?;
+        Ok(path)
+    }
+}
+
 /// Composed use cases for the desktop client.
 #[derive(Clone)]
 pub struct OpsService {
@@ -228,7 +284,7 @@ impl OpsService {
 mod tests {
     use super::*;
     use devops_core::LogLevel;
-    use devops_testkit::MockLogs;
+    use devops_testkit::{MockDiagnostics, MockLogs};
 
     #[test]
     fn service_is_send_and_sync() {
@@ -270,5 +326,36 @@ mod tests {
     fn log_export_rejects_empty() {
         let service = LogService::new(Arc::new(MockLogs::new()));
         assert!(service.export(&[]).is_err());
+    }
+
+    #[test]
+    fn diagnostics_export_writes_markdown_and_rejects_empty() {
+        let directory = std::env::temp_dir().join(format!(
+            "qingshan-diagnostics-test-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        let service = DiagnosticsService::new(Arc::new(MockDiagnostics::new()), directory.clone());
+        let path = service
+            .export_report("# 诊断报告\n\n- 主机: test")
+            .expect("export");
+        assert!(path.starts_with(&directory));
+        assert_eq!(
+            std::fs::read_to_string(&path).expect("report"),
+            "# 诊断报告\n\n- 主机: test\n"
+        );
+        assert!(service.export_report("  ").is_err());
+        let _ = std::fs::remove_dir_all(directory);
+    }
+
+    #[test]
+    fn diagnostics_quick_action_rejects_blank_id() {
+        let service =
+            DiagnosticsService::new(Arc::new(MockDiagnostics::new()), std::env::temp_dir());
+        assert!(service.run_quick_action(" ").is_err());
+        assert!(!service.quick_actions().is_empty());
+        assert_eq!(service.read().expect("read").gpus.len(), 1);
     }
 }
