@@ -100,6 +100,12 @@ export default function SoftwarePage() {
                     <span>最近使用</span>
                     <strong>{formatLastUsed(app.lastUsed)}</strong>
                   </div>
+                  <div className="software-fact software-fact-location">
+                    <span>安装位置</span>
+                    <strong title={app.installLocation || "未记录"}>
+                      {app.installLocation || "未记录"}
+                    </strong>
+                  </div>
                 </div>
                 <div className="software-foot">
                   <span>安装于 {formatDate(app.installDate)}</span>
