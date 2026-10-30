@@ -669,6 +669,7 @@ impl MockSoftware {
                 uninstall_string: String::new(),
                 scope: SoftwareScope::Machine,
                 registry_view: "64".into(),
+                icon: None,
             }],
         }
     }

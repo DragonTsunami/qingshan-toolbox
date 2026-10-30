@@ -7,7 +7,9 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+base64.workspace = true
 devops-core.workspace = true
+image = { version = "0.25", default-features = false, features = ["png"] }
 serde_json.workspace = true
 sysinfo.workspace = true
 

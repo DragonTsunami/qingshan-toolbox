@@ -281,6 +281,7 @@ export interface InstalledApp {
   uninstallString: string;
   scope: SoftwareScope;
   registryView: string;
+  icon?: string | null;
 }
 
 export type PageKey =

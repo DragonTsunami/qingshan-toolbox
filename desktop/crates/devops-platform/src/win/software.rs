@@ -111,6 +111,7 @@ fn read_app(
         uninstall_string: text("UninstallString"),
         scope,
         registry_view: format!("{view}-bit"),
+        icon: crate::win::icons::icon_data_url(&text("DisplayIcon")),
     })
 }
 

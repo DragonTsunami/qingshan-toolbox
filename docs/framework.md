@@ -58,7 +58,7 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 
-总计 Rust 47 项测试（core 5 + app 18 + platform 15 + plugins 9），前端 15 项测试。
+总计 Rust 48 项测试（core 5 + app 18 + platform 16 + plugins 9），前端 15 项测试。
 
 ## 4. 验收清单
 

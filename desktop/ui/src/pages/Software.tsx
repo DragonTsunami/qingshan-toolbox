@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Empty, Input, Skeleton, Table, Tag } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import { Alert, Button, Empty, Input, Skeleton, Tag } from "antd";
 import { AppstoreOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
 import { openAppsFeatures, softwareList } from "../api";
 import type { InstalledApp } from "../types";
@@ -41,55 +40,6 @@ export default function SoftwarePage() {
     [apps, keyword],
   );
 
-  const columns: ColumnsType<InstalledApp> = [
-    {
-      title: "应用",
-      dataIndex: "name",
-      render: (_, app) => (
-        <div className="maint-primary">
-          <strong>{app.name}</strong>
-          <span>{app.publisher || "未知发布者"}</span>
-        </div>
-      ),
-    },
-    {
-      title: "版本",
-      dataIndex: "version",
-      width: 150,
-      render: (value: string) => <span className="maint-mono">{value || "—"}</span>,
-    },
-    {
-      title: "安装日期",
-      dataIndex: "installDate",
-      width: 130,
-      render: (value: string) => <span className="maint-muted">{formatDate(value)}</span>,
-    },
-    {
-      title: "范围",
-      dataIndex: "scope",
-      width: 110,
-      render: (value: InstalledApp["scope"]) => (
-        <Tag bordered={false}>{value === "user" ? "当前用户" : "所有用户"}</Tag>
-      ),
-    },
-    {
-      title: "架构",
-      dataIndex: "registryView",
-      width: 100,
-      render: (value: string) => <span className="maint-muted">{value || "—"}</span>,
-    },
-    {
-      title: "安装位置",
-      dataIndex: "installLocation",
-      ellipsis: true,
-      render: (value: string) => (
-        <span className="maint-muted" title={value}>
-          {value || "—"}
-        </span>
-      ),
-    },
-  ];
-
   return (
     <div className="page-stack maintenance-page">
       <section className="panel">
@@ -123,26 +73,56 @@ export default function SoftwarePage() {
         {error && <Alert type="error" showIcon message="读取失败" description={error} />}
 
         {loading ? (
-          <Skeleton active paragraph={{ rows: 7 }} />
+          <Skeleton active paragraph={{ rows: 6 }} />
         ) : filtered.length === 0 ? (
           <Empty description={keyword ? "没有匹配的软件" : "未发现已安装软件"} />
         ) : (
-          <Table
-            rowKey="id"
-            size="middle"
-            columns={columns}
-            dataSource={filtered}
-            pagination={{ pageSize: 14, showSizeChanger: false }}
-            scroll={{ x: 980 }}
-          />
+          <div className="software-grid">
+            {filtered.map((app) => (
+              <article
+                className="software-card"
+                key={app.id}
+                title={app.installLocation || app.name}
+              >
+                <div className="software-card-head">
+                  <SoftwareIcon app={app} />
+                  <div className="software-heading">
+                    <strong title={app.name}>{app.name}</strong>
+                    <span title={app.publisher}>{app.publisher || "未知发布者"}</span>
+                  </div>
+                </div>
+                <div className="software-meta">
+                  <span className="software-version">{app.version || "—"}</span>
+                  <Tag bordered={false}>{app.registryView || "—"}-bit</Tag>
+                </div>
+                <div className="software-foot">
+                  <span>{formatDate(app.installDate)}</span>
+                  <span>{app.scope === "user" ? "当前用户" : "所有用户"}</span>
+                </div>
+              </article>
+            ))}
+          </div>
         )}
 
         <div className="maint-footnote">
-          共 {apps.length} 个已安装程序。此页面不提供卸载按钮，避免绕过 Windows 安装器；请使用「应用和功能」。
+          共 {apps.length} 个已安装程序，当前显示 {filtered.length} 个。此页面不提供卸载按钮，避免绕过 Windows
+          安装器；请使用「应用和功能」。
         </div>
       </section>
     </div>
   );
+}
+
+function SoftwareIcon({ app }: { app: InstalledApp }) {
+  const [failed, setFailed] = useState(false);
+  if (app.icon && !failed) {
+    return (
+      <span className="software-icon software-icon-image">
+        <img src={app.icon} alt="" loading="lazy" onError={() => setFailed(true)} />
+      </span>
+    );
+  }
+  return <span className="software-icon">{app.name.slice(0, 1).toUpperCase()}</span>;
 }
 
 function formatDate(value: string): string {

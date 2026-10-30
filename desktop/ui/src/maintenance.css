@@ -208,6 +208,142 @@
   line-height: 1.7;
 }
 
+/* Software inventory: six compact cards per row on desktop. */
+.software-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.software-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.software-card:hover {
+  border-color: var(--border-strong);
+  background: var(--panel-muted);
+}
+
+.software-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.software-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--panel-muted);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.software-icon-image {
+  background: transparent;
+}
+
+.software-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.software-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.software-heading strong {
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.software-heading span {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.software-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.software-version {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.software-meta .ant-tag {
+  margin: 0;
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.software-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .software-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .software-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .software-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .cleanup-summary {
     grid-template-columns: repeat(2, minmax(120px, 1fr));

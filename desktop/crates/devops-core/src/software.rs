@@ -19,4 +19,6 @@ pub struct InstalledApp {
     pub uninstall_string: String,
     pub scope: SoftwareScope,
     pub registry_view: String,
+    /// PNG data URL extracted from DisplayIcon, when one is available.
+    pub icon: Option<String>,
 }

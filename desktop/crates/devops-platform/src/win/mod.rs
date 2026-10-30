@@ -1,5 +1,6 @@
 pub mod cleanup;
 pub mod elevation;
+pub mod icons;
 pub mod logs;
 pub mod network;
 pub mod process;
