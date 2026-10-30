@@ -213,6 +213,12 @@
   gap: 26px;
   margin: 2px 0 18px;
   border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.software-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .software-tab {
@@ -226,6 +232,7 @@
   color: var(--muted);
   font-size: 14px;
   line-height: 1.4;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -432,6 +439,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  min-width: 0;
   margin-top: auto;
   padding-top: 8px;
   border-top: 1px solid var(--border);
@@ -441,7 +449,14 @@
   white-space: nowrap;
 }
 
+.software-foot > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .software-uninstall {
+  flex: none;
   height: 32px !important;
   min-width: 104px;
   padding: 0 14px !important;
@@ -460,6 +475,61 @@
 .software-uninstall.ant-btn-primary:not(:disabled):hover {
   background: #b42318 !important;
   border-color: #b42318 !important;
+}
+
+@media (max-width: 760px) {
+  .maintenance-page .panel {
+    padding: 16px;
+  }
+
+  .maintenance-page .panel-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .maintenance-page .panel-head h2 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .maintenance-page .panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .maintenance-page .panel-actions .ant-input-affix-wrapper {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  .maintenance-page .panel-actions .ant-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .software-tabs {
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 861px) {
+  .software-foot {
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .software-uninstall {
+    height: 28px !important;
+    min-width: 84px;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+  }
 }
 
 @media (max-width: 1180px) {
