@@ -141,8 +141,8 @@ export default function SoftwarePage() {
                   <Tooltip title={app.uninstallString ? "启动程序自带卸载器" : "系统未提供卸载命令"}>
                     <span>
                       <Button
-                        size="small"
-                        type="text"
+                        size="middle"
+                        type="primary"
                         danger
                         icon={<DeleteOutlined />}
                         disabled={!app.uninstallString}

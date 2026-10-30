@@ -359,10 +359,24 @@
 }
 
 .software-uninstall {
-  height: 22px !important;
-  padding: 0 6px !important;
-  font-size: 11px !important;
-  margin-right: -6px;
+  height: 32px !important;
+  min-width: 104px;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(180, 35, 24, 0.18);
+}
+
+.software-uninstall.ant-btn-primary:not(:disabled) {
+  background: #d92d20;
+  border-color: #d92d20;
+}
+
+.software-uninstall.ant-btn-primary:not(:disabled):hover {
+  background: #b42318 !important;
+  border-color: #b42318 !important;
 }
 
 @media (max-width: 1180px) {
