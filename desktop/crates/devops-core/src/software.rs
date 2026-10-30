@@ -13,6 +13,7 @@ pub enum SoftwareKind {
     Application,
     Driver,
     Runtime,
+    Other,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

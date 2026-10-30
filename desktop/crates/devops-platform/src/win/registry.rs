@@ -8,8 +8,8 @@ use windows::Win32::Foundation::{
 };
 use windows::Win32::System::Registry::{
     RegCloseKey, RegCreateKeyExW, RegEnumKeyExW, RegEnumValueW, RegOpenKeyExW, RegQueryValueExW,
-    RegSetValueExW, HKEY, KEY_READ, KEY_WRITE, REG_BINARY, REG_OPTION_NON_VOLATILE, REG_SZ,
-    REG_VALUE_TYPE,
+    RegSetValueExW, HKEY, KEY_READ, KEY_WRITE, REG_BINARY, REG_EXPAND_SZ, REG_OPTION_NON_VOLATILE,
+    REG_SZ, REG_VALUE_TYPE,
 };
 
 fn wide(value: &str) -> Vec<u16> {
@@ -107,7 +107,7 @@ pub fn read_string(key: HKEY, name: &str) -> OpsResult<Option<String>> {
         return Err(status_error("读取注册表值", status));
     }
     data.truncate(size as usize);
-    if kind == REG_SZ {
+    if kind == REG_SZ || kind == REG_EXPAND_SZ {
         Ok(Some(decode_utf16(&data)))
     } else {
         Ok(None)

@@ -28,11 +28,13 @@
 
 ![启动项与计划任务](docs/images/startup-page.png)
 
-![软件清单：软件、驱动、运行库分开](docs/images/software-page.png)
+![软件清单：软件、驱动、运行库、其他](docs/images/software-page.png)
 
 ![驱动列表](docs/images/software-drivers.png)
 
 ![运行库列表](docs/images/software-runtimes.png)
+
+![其他：无卸载命令的项目（当前机器为 0）](docs/images/software-other.png)
 
 更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png) · [插件详情](docs/images/plugins-detail.png) · [添加插件](docs/images/plugins-add.png)
 
@@ -50,7 +52,7 @@
 | 磁盘清理 | 临时文件、浏览器缓存、崩溃转储、Windows Update 缓存、回收站扫描与清理 | 固定白名单，按 id 清理；不触碰个人文档；系统目录需要管理员权限 |
 | 启动项 | Run 注册表与启动文件夹、启用状态、启停 | 通过 StartupApproved 写回；系统级项目需要管理员权限 |
 | 计划任务 | 任务列表、状态、启停 | 优先读取任务计划服务，受限环境回退任务文件；系统任务需管理员权限 |
-| 软件清单 | 软件、驱动、运行库分成三个 Tab；四列紧凑卡片展示，优先显示真实 Windows 图标，并列出当前版本、最近使用、安装位置；每张卡片可启动程序自带卸载器 | 驱动/运行库按注册表名称与安装器识别，可能有个别归类偏差；卸载需管理员权限，青衫工具箱不直接删除文件 |
+| 软件清单 | 软件、驱动、运行库、其他四个 Tab；四列紧凑卡片展示，优先显示真实 Windows 图标，并列出当前版本、最近使用、安装位置；注册表无卸载命令的项目归入「其他」，有卸载命令的卡片可启动程序自带卸载器 | 驱动/运行库按注册表名称与安装器识别，可能有个别归类偏差；卸载需管理员权限，青衫工具箱不直接删除文件 |
 | 插件 | 独立「插件」页：已安装 / 发现、启停、搜索筛选、添加本地插件、官方可选包安装、详情与移除 | 声明式 `plugin.json`，不执行第三方代码；插件页结构参考 DSH 插件管理 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |

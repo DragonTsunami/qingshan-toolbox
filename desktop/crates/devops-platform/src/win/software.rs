@@ -180,7 +180,7 @@ fn read_app(
     let display_icon = text("DisplayIcon");
     let install_location = text("InstallLocation");
     let uninstall_string = text("UninstallString");
-    let kind = classify_kind(&name, &uninstall_string);
+    let kind = effective_kind(&name, &uninstall_string);
     Some(InstalledApp {
         id: format!("{scope_label}:{view}:{key_name}"),
         kind,
@@ -195,6 +195,17 @@ fn read_app(
         icon: crate::win::icons::icon_data_url(&display_icon),
         last_used: last_used_for(&display_icon, &install_location, last_used),
     })
+}
+
+/// Entries without an uninstall command are separated from the three main
+/// categories: they cannot be managed from here and should not be mixed with
+/// applications, drivers, or runtimes.
+fn effective_kind(name: &str, uninstall_string: &str) -> SoftwareKind {
+    if uninstall_string.trim().is_empty() {
+        SoftwareKind::Other
+    } else {
+        classify_kind(name, uninstall_string)
+    }
 }
 
 /// Drivers rarely expose a stable registry marker. Prefer explicit driver
@@ -370,7 +381,7 @@ fn rot13(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::classify_kind;
+    use super::{classify_kind, effective_kind};
     use devops_core::SoftwareKind;
 
     #[test]
@@ -410,6 +421,21 @@ mod tests {
         assert_eq!(
             classify_kind("Microsoft Edge WebView2 Runtime", ""),
             SoftwareKind::Runtime
+        );
+        assert_eq!(
+            effective_kind("Microsoft .NET Runtime - 10.0.7 (x64)", ""),
+            SoftwareKind::Other
+        );
+        assert_eq!(
+            effective_kind(
+                "Microsoft .NET Runtime - 10.0.7 (x64)",
+                "C:\\Program Files\\dotnet\\uninstall.exe"
+            ),
+            SoftwareKind::Runtime
+        );
+        assert_eq!(
+            effective_kind("Intel(R) Graphics Software & Drivers", ""),
+            SoftwareKind::Other
         );
     }
 }

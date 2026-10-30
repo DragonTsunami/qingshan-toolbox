@@ -765,6 +765,8 @@ let softwareSeed: InstalledApp[] = [
   { id: "intel-dsa", kind: "driver", name: "Intel(R) Driver & Support Assistant", version: "25.2.0.6", publisher: "Intel Corporation", installDate: "2026-08-30", installLocation: "C:\\Program Files\\Intel\\Intel Driver && Support Assistant", uninstallString: "MsiExec.exe /X{2C633E0E-1F95-42CC-95D8-63C12DD9672F}", scope: "machine", registryView: "64-bit" },
   { id: "dotnet-runtime", kind: "runtime", name: "Microsoft .NET Runtime - 10.0.7 (x64)", version: "10.0.7", publisher: "Microsoft Corporation", installDate: "2026-09-10", installLocation: "C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App", uninstallString: "C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\10.0.7\\dotnet-runtime.exe uninstall", scope: "machine", registryView: "64-bit" },
   { id: "vcpp-redist", kind: "runtime", name: "Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.44.35211", version: "14.44.35211", publisher: "Microsoft Corporation", installDate: "2026-07-12", installLocation: "", uninstallString: "MsiExec.exe /X{9A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D}", scope: "machine", registryView: "64-bit" },
+  { id: "other-runtime", kind: "other", name: "Microsoft Windows Desktop Runtime - 10.0.7 (x64)", version: "10.0.7", publisher: "Microsoft Corporation", installDate: "2026-09-10", installLocation: "C:\\Program Files\\dotnet\\shared\\Microsoft.WindowsDesktop.App", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "other-oem", kind: "other", name: "OEM 系统组件", version: "1.0.0", publisher: "设备制造商", installDate: "2026-06-01", installLocation: "C:\\Program Files\\OEM", uninstallString: "", scope: "machine", registryView: "64-bit" },
 ];
 
 export function mockInstalledApps(): InstalledApp[] {
