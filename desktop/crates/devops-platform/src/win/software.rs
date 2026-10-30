@@ -2,7 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use devops_core::{InstalledApp, OpsError, OpsResult, SoftwareInventory, SoftwareScope};
+use devops_core::{
+    InstalledApp, OpsError, OpsResult, SoftwareInventory, SoftwareKind, SoftwareScope,
+};
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::GetLastError;
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
@@ -177,19 +179,51 @@ fn read_app(
 
     let display_icon = text("DisplayIcon");
     let install_location = text("InstallLocation");
+    let uninstall_string = text("UninstallString");
+    let kind = classify_kind(&name, &uninstall_string);
     Some(InstalledApp {
         id: format!("{scope_label}:{view}:{key_name}"),
+        kind,
         name,
         version: text("DisplayVersion"),
         publisher: text("Publisher"),
         install_date: text("InstallDate"),
         install_location: install_location.clone(),
-        uninstall_string: text("UninstallString"),
+        uninstall_string,
         scope,
         registry_view: format!("{view}-bit"),
         icon: crate::win::icons::icon_data_url(&display_icon),
         last_used: last_used_for(&display_icon, &install_location, last_used),
     })
+}
+
+/// Drivers rarely expose a stable registry marker. Prefer explicit driver
+/// installers and the driver-related product names that Windows registers.
+fn classify_kind(name: &str, uninstall_string: &str) -> SoftwareKind {
+    let name = name.to_lowercase();
+    let uninstall = uninstall_string.to_lowercase();
+    if uninstall.contains("pnputil") || uninstall.contains("infdefaultinstall") {
+        return SoftwareKind::Driver;
+    }
+    const DRIVER_MARKERS: [&str; 12] = [
+        "driver",
+        "graphics",
+        "chipset",
+        "display adapter",
+        "adrenalin",
+        "realtek",
+        "radeon",
+        "nvidia graphics",
+        "nvidia display",
+        "intel(r) graphics",
+        "intel® graphics",
+        "bluetooth driver",
+    ];
+    if DRIVER_MARKERS.iter().any(|marker| name.contains(marker)) {
+        SoftwareKind::Driver
+    } else {
+        SoftwareKind::Application
+    }
 }
 
 /// Best-effort last-use timestamp. Windows does not expose a reliable
@@ -320,8 +354,31 @@ fn rot13(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::classify_kind;
+    use devops_core::SoftwareKind;
+
     #[test]
     fn uninstall_path_is_stable() {
         assert!(super::UNINSTALL.contains("Uninstall"));
+    }
+
+    #[test]
+    fn driver_products_are_separated_from_applications() {
+        assert_eq!(
+            classify_kind("Intel(R) Graphics Software & Drivers", ""),
+            SoftwareKind::Driver
+        );
+        assert_eq!(
+            classify_kind("AMD Chipset Software", ""),
+            SoftwareKind::Driver
+        );
+        assert_eq!(
+            classify_kind("Google Chrome", ""),
+            SoftwareKind::Application
+        );
+        assert_eq!(
+            classify_kind("Intel Computing Improvement Program", ""),
+            SoftwareKind::Application
+        );
     }
 }

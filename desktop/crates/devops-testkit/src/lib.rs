@@ -12,8 +12,8 @@ use devops_core::{
     DnsLookupResult, Elevation, InstalledApp, LogBatch, LogCenter, LogEntry, LogExport, LogField,
     LogLevel, LogQuery, LogSource, LogSourceKind, NetworkInterface, NetworkProbe, OpsError,
     OpsResult, PortCheckResult, ProcessControl, ProcessInfo, ScheduledTask, ServiceAction,
-    ServiceControl, ServiceInfo, ServiceStatus, SoftwareInventory, SoftwareScope, StartupItem,
-    StartupLocation, StartupManager, StartupScope, SystemProbe, SystemSnapshot,
+    ServiceControl, ServiceInfo, ServiceStatus, SoftwareInventory, SoftwareKind, SoftwareScope,
+    StartupItem, StartupLocation, StartupManager, StartupScope, SystemProbe, SystemSnapshot,
 };
 
 // ---------------------------------------------------------------------------
@@ -661,6 +661,7 @@ impl MockSoftware {
         Self {
             apps: vec![InstalledApp {
                 id: "app:mock".into(),
+                kind: SoftwareKind::Application,
                 name: "Mock App".into(),
                 version: "1.0.0".into(),
                 publisher: "Testkit".into(),

@@ -7,10 +7,18 @@ pub enum SoftwareScope {
     Machine,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SoftwareKind {
+    Application,
+    Driver,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InstalledApp {
     pub id: String,
+    pub kind: SoftwareKind,
     pub name: String,
     pub version: String,
     pub publisher: String,

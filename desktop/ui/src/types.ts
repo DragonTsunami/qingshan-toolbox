@@ -270,9 +270,11 @@ export interface ScheduledTask {
 }
 
 export type SoftwareScope = "user" | "machine";
+export type SoftwareKind = "application" | "driver";
 
 export interface InstalledApp {
   id: string;
+  kind: SoftwareKind;
   name: string;
   version: string;
   publisher: string;

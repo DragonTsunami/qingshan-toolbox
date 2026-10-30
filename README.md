@@ -9,7 +9,7 @@
 
 > 源码仓库：<https://github.com/DragonTsunami/qingshan-toolbox>
 
-> 状态：v0.5.0，**阶段 2 P0（桌面运维增强）已完成**。日志中心、磁盘清理、启动项与计划任务、软件清单全部接入；Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；插件页按 DeepSeek Harness 的「已安装 / 发现」结构实现。48 项 Rust 测试、16 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> 状态：v0.5.0，**阶段 2 P0（桌面运维增强）已完成**。日志中心、磁盘清理、启动项与计划任务、软件清单全部接入；Rust 领域层 / 应用服务层 / Windows 适配层 / Tauri 命令层 / React 控制台已贯通；插件页按 DeepSeek Harness 的「已安装 / 发现」结构实现。49 项 Rust 测试、16 项前端测试通过。release 桌面窗口已在 `C:\QingshanToolbox` 真实启动验证，界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **阶段约定：框架冻结，按路线图增量交付。** 框架验收清单见 [`docs/framework.md`](docs/framework.md)；阶段 2 剩余 P1（远程协助、网络进阶、性能采样、资产上报）与网页端尚未开始。
 
@@ -28,7 +28,9 @@
 
 ![启动项与计划任务](docs/images/startup-page.png)
 
-![软件清单](docs/images/software-page.png)
+![软件清单：软件与驱动分开展示](docs/images/software-page.png)
+
+![驱动列表](docs/images/software-drivers.png)
 
 更多界面：[深色主题](docs/images/overview-dark.png) · [进程管理](docs/images/processes.png) · [服务管理](docs/images/services.png) · [网络诊断](docs/images/network.png) · [设置](docs/images/settings.png) · [插件详情](docs/images/plugins-detail.png) · [添加插件](docs/images/plugins-add.png)
 
@@ -46,7 +48,7 @@
 | 磁盘清理 | 临时文件、浏览器缓存、崩溃转储、Windows Update 缓存、回收站扫描与清理 | 固定白名单，按 id 清理；不触碰个人文档；系统目录需要管理员权限 |
 | 启动项 | Run 注册表与启动文件夹、启用状态、启停 | 通过 StartupApproved 写回；系统级项目需要管理员权限 |
 | 计划任务 | 任务列表、状态、启停 | 优先读取任务计划服务，受限环境回退任务文件；系统任务需管理员权限 |
-| 软件清单 | 四列紧凑卡片展示已安装程序，优先显示真实 Windows 图标，并列出当前版本、最近使用、安装位置；每张卡片可启动程序自带卸载器 | 只读注册表 Uninstall；卸载需管理员权限，青衫工具箱不直接删除文件 |
+| 软件清单 | 软件与驱动分成两个 Tab；四列紧凑卡片展示，优先显示真实 Windows 图标，并列出当前版本、最近使用、安装位置；每张卡片可启动程序自带卸载器 | 驱动按注册表名称与驱动安装器识别，可能有个别归类偏差；卸载需管理员权限，青衫工具箱不直接删除文件 |
 | 插件 | 独立「插件」页：已安装 / 发现、启停、搜索筛选、添加本地插件、官方可选包安装、详情与移除 | 声明式 `plugin.json`，不执行第三方代码；插件页结构参考 DSH 插件管理 |
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |

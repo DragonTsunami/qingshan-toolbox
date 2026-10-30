@@ -7,12 +7,13 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { openAppsFeatures, softwareList, uninstallSoftware } from "../api";
-import type { InstalledApp } from "../types";
+import type { InstalledApp, SoftwareKind } from "../types";
 import "../maintenance.css";
 
 export default function SoftwarePage() {
   const { message } = AntApp.useApp();
   const [apps, setApps] = useState<InstalledApp[]>([]);
+  const [kind, setKind] = useState<SoftwareKind>("application");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -50,16 +51,22 @@ export default function SoftwarePage() {
   };
 
   const keyword = search.trim().toLowerCase();
+  const applicationCount = apps.filter((app) => app.kind !== "driver").length;
+  const driverCount = apps.filter((app) => app.kind === "driver").length;
+  const sectionApps = useMemo(
+    () => apps.filter((app) => app.kind === kind),
+    [apps, kind],
+  );
   const filtered = useMemo(
     () =>
-      apps.filter(
+      sectionApps.filter(
         (app) =>
           !keyword ||
           app.name.toLowerCase().includes(keyword) ||
           app.publisher.toLowerCase().includes(keyword) ||
           app.version.toLowerCase().includes(keyword),
       ),
-    [apps, keyword],
+    [sectionApps, keyword],
   );
 
   return (
@@ -67,14 +74,14 @@ export default function SoftwarePage() {
       <section className="panel">
         <div className="panel-head">
           <div>
-            <h2>已安装程序</h2>
-            <p>汇总注册表中的已安装程序；卸载会调用程序自带的卸载器。</p>
+            <h2>软件与驱动</h2>
+            <p>软件和驱动分开展示；卸载会调用程序自带的卸载器。</p>
           </div>
           <div className="panel-actions">
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="搜索名称、发布者或版本"
+              placeholder={kind === "driver" ? "搜索驱动、发布者或版本" : "搜索软件、发布者或版本"}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               style={{ width: 260 }}
@@ -94,10 +101,37 @@ export default function SoftwarePage() {
 
         {error && <Alert type="error" showIcon message="读取失败" description={error} />}
 
+        <div className="software-tabs" role="tablist" aria-label="软件与驱动">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={kind === "application"}
+            className={kind === "application" ? "software-tab active" : "software-tab"}
+            onClick={() => setKind("application")}
+          >
+            软件 <span className="software-tab-count">{applicationCount}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={kind === "driver"}
+            className={kind === "driver" ? "software-tab active" : "software-tab"}
+            onClick={() => setKind("driver")}
+          >
+            驱动 <span className="software-tab-count">{driverCount}</span>
+          </button>
+        </div>
+
         {loading ? (
           <Skeleton active paragraph={{ rows: 6 }} />
         ) : filtered.length === 0 ? (
-          <Empty description={keyword ? "没有匹配的软件" : "未发现已安装软件"} />
+          <Empty
+            description={
+              keyword
+                ? `没有匹配的${kind === "driver" ? "驱动" : "软件"}`
+                : `未发现已安装的${kind === "driver" ? "驱动" : "软件"}`
+            }
+          />
         ) : (
           <div className="software-grid">
             {filtered.map((app) => (
@@ -160,9 +194,9 @@ export default function SoftwarePage() {
         )}
 
         <div className="maint-footnote">
-          共 {apps.length} 个已安装程序，当前显示 {filtered.length} 个。最近使用来自 Windows
-          UserAssist 或程序文件访问时间，系统未记录时显示「未记录」。卸载会调用程序自带的卸载器，
-          可能需要管理员权限；完成后请刷新列表。
+          共 {sectionApps.length} 个{kind === "driver" ? "驱动" : "软件"}，当前显示{" "}
+          {filtered.length} 个。最近使用来自 Windows UserAssist 或程序文件访问时间，系统未记录时
+          显示「未记录」。卸载会调用程序自带的卸载器，可能需要管理员权限；完成后请刷新列表。
         </div>
       </section>
 
