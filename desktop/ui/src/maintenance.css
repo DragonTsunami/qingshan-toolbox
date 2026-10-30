@@ -224,6 +224,7 @@
   background: var(--panel);
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 14px;
   transition:
     border-color 0.16s ease,
@@ -340,7 +341,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   color: var(--muted);
