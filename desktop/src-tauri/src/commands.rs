@@ -2,8 +2,9 @@ use std::path::Path;
 use std::process::Command;
 
 use devops_core::{
-    AppInfo, DnsLookupResult, LogBatch, LogEntry, LogExport, LogQuery, LogSource, NetworkInterface,
-    PortCheckResult, ProcessInfo, ServiceAction, ServiceInfo, SystemSnapshot,
+    AppInfo, CleanupReport, CleanupScan, DnsLookupResult, InstalledApp, LogBatch, LogEntry,
+    LogExport, LogQuery, LogSource, NetworkInterface, PortCheckResult, ProcessInfo, ScheduledTask,
+    ServiceAction, ServiceInfo, StartupItem, SystemSnapshot,
 };
 use devops_plugins::{PluginCatalog, PluginMarketEntry};
 use tauri::{AppHandle, State};
@@ -125,6 +126,87 @@ pub async fn logs_export(
         .await
         .map_err(to_message)?
         .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn cleanup_scan(state: State<'_, AppState>) -> Result<CleanupScan, String> {
+    let cleanup = state.cleanup.clone();
+    tauri::async_runtime::spawn_blocking(move || cleanup.scan())
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn cleanup_run(
+    state: State<'_, AppState>,
+    ids: Vec<String>,
+) -> Result<CleanupReport, String> {
+    let cleanup = state.cleanup.clone();
+    tauri::async_runtime::spawn_blocking(move || cleanup.clean(ids))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn startup_items(state: State<'_, AppState>) -> Result<Vec<StartupItem>, String> {
+    let maintenance = state.maintenance.clone();
+    tauri::async_runtime::spawn_blocking(move || maintenance.startup_items())
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn startup_set_enabled(
+    state: State<'_, AppState>,
+    id: String,
+    enabled: bool,
+) -> Result<Vec<StartupItem>, String> {
+    let maintenance = state.maintenance.clone();
+    tauri::async_runtime::spawn_blocking(move || maintenance.set_startup_enabled(&id, enabled))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn scheduled_tasks(state: State<'_, AppState>) -> Result<Vec<ScheduledTask>, String> {
+    let maintenance = state.maintenance.clone();
+    tauri::async_runtime::spawn_blocking(move || maintenance.scheduled_tasks())
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn task_set_enabled(
+    state: State<'_, AppState>,
+    id: String,
+    enabled: bool,
+) -> Result<Vec<ScheduledTask>, String> {
+    let maintenance = state.maintenance.clone();
+    tauri::async_runtime::spawn_blocking(move || maintenance.set_task_enabled(&id, enabled))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub async fn software_list(state: State<'_, AppState>) -> Result<Vec<InstalledApp>, String> {
+    let maintenance = state.maintenance.clone();
+    tauri::async_runtime::spawn_blocking(move || maintenance.software())
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
+pub fn open_apps_features() -> Result<(), String> {
+    let mut command = Command::new("control.exe");
+    command.arg("appwiz.cpl");
+    command.spawn().map(|_| ()).map_err(to_message)
 }
 
 #[tauri::command]

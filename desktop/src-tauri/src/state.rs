@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use devops_app::{LogService, OpsService};
+use devops_app::{CleanupService, LogService, MaintenanceService, OpsService};
 use devops_core::OpsResult;
 use devops_platform::DesktopPlatform;
 use devops_plugins::PluginStore;
@@ -11,6 +11,8 @@ use devops_plugins::PluginStore;
 pub struct AppState {
     pub service: OpsService,
     pub logs: LogService,
+    pub cleanup: CleanupService,
+    pub maintenance: MaintenanceService,
     pub plugins: Mutex<PluginStore>,
 }
 
@@ -26,6 +28,8 @@ impl AppState {
                 platform.elevation,
             ),
             logs: LogService::new(platform.logs),
+            cleanup: CleanupService::new(platform.cleanup),
+            maintenance: MaintenanceService::new(platform.startup, platform.software),
             plugins: Mutex::new(PluginStore::new(plugin_directory)),
         })
     }

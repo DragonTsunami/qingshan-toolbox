@@ -13,9 +13,9 @@
 - React 应用外壳：主题、布局、路由、错误边界、API 封装
 - 构建、测试、CI、文档与本地工具链
 
-**不在框架基线内**：磁盘清理、启动项、资产上报、远程协助、网页端 Terraform/Ansible/CI 集成。日志中心已作为阶段 2 的首个增量能力接入。
+**不在框架基线内**：阶段 2 P1（远程协助、网络进阶、性能采样、资产上报）、网页端 Terraform/Ansible/CI 集成。日志中心、磁盘清理、启动项与计划任务、软件清单已作为阶段 2 P0 增量接入。
 
-当前七个页面（插件/概览/进程/服务/网络/日志中心/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统。
+当前十个页面（插件/概览/进程/服务/网络/日志中心/磁盘清理/启动项/软件清单/设置）作为**框架参考实现**保留，用于验证命令链路和视觉系统。
 
 ## 2. 依赖规则
 
@@ -46,16 +46,19 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | --- | --- | --- | --- |
 | 契约测试 | `devops-core/tests/contract.rs` | camelCase 字段、枚举字符串、错误码、AppInfo | 5 / 5 |
 | 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 11 / 11 |
+| 运维用例测试 | `devops-app/tests/maintenance.rs` | 清理扫描/执行转发、启动项/计划任务启停、软件清单 | 3 / 3 |
 | 组件/日志单测 | `devops-app` 内部 | `OpsService: Send + Sync`、日志查询校验/转发、空导出 | 4 / 4 |
 | 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、市场、安装/移除、路径安装、非法 id/URL | 9 / 9 |
-| 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS、Application 事件日志查询 | 11 / 11 |
+| 平台单元测试 | `devops-platform` 内部 | 事件 XML 解析、关键字过滤、未知来源 | 4 / 4 |
+| 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS、Application 事件日志查询 | 8 / 8 |
+| 运维集成测试 | `devops-platform/tests/maintenance.rs` | 磁盘清理扫描、启动项/软件读取、计划任务受限提示 | 3 / 3 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |
 | 前端单测 | `desktop/ui/src/**/*.test.ts` | 格式化工具、刷新间隔、插件/日志 Mock API 契约 | 15 / 15 |
-| 视觉冒烟 | `docs/images` | 七个页面（含独立插件页、日志中心）× 浅色/深色截图 | 通过 |
+| 视觉冒烟 | `docs/images` | 十个页面（含插件页、日志中心、磁盘清理、启动项、软件清单）× 浅色/深色截图 | 通过 |
 | 窗口级 E2E（手动） | `C:\QingshanToolbox` | release + `custom-protocol`，真实窗口/真实硬件数据 | 通过 |
 | 自动化 E2E | 待补 | WebDriver/tauri-driver，IPC 往返与主题切换 | 未接入 |
 
-总计 Rust 40 项测试（5 + 11 + 4 + 9 + 11），前端 15 项测试。
+总计 Rust 47 项测试（core 5 + app 18 + platform 15 + plugins 9），前端 15 项测试。
 
 ## 4. 验收清单
 

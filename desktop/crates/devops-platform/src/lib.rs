@@ -5,7 +5,8 @@
 use std::sync::Arc;
 
 use devops_core::{
-    Elevation, LogCenter, NetworkProbe, OpsResult, ProcessControl, ServiceControl, SystemProbe,
+    Cleanup, Elevation, LogCenter, NetworkProbe, OpsResult, ProcessControl, ServiceControl,
+    SoftwareInventory, StartupManager, SystemProbe,
 };
 
 #[cfg(windows)]
@@ -19,6 +20,9 @@ pub struct DesktopPlatform {
     pub network: Arc<dyn NetworkProbe>,
     pub elevation: Arc<dyn Elevation>,
     pub logs: Arc<dyn LogCenter>,
+    pub cleanup: Arc<dyn Cleanup>,
+    pub startup: Arc<dyn StartupManager>,
+    pub software: Arc<dyn SoftwareInventory>,
 }
 
 impl DesktopPlatform {
@@ -32,6 +36,9 @@ impl DesktopPlatform {
             network: Arc::new(win.network),
             elevation: Arc::new(win.elevation),
             logs: Arc::new(win.logs),
+            cleanup: Arc::new(win.cleanup),
+            startup: Arc::new(win.startup),
+            software: Arc::new(win.software),
         })
     }
 

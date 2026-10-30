@@ -8,10 +8,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use devops_core::{
-    DnsLookupResult, Elevation, LogBatch, LogCenter, LogEntry, LogExport, LogField, LogLevel,
-    LogQuery, LogSource, LogSourceKind, NetworkInterface, NetworkProbe, OpsError, OpsResult,
-    PortCheckResult, ProcessControl, ProcessInfo, ServiceAction, ServiceControl, ServiceInfo,
-    ServiceStatus, SystemProbe, SystemSnapshot,
+    Cleanup, CleanupCategory, CleanupOutcome, CleanupReport, CleanupScan, CleanupTarget,
+    DnsLookupResult, Elevation, InstalledApp, LogBatch, LogCenter, LogEntry, LogExport, LogField,
+    LogLevel, LogQuery, LogSource, LogSourceKind, NetworkInterface, NetworkProbe, OpsError,
+    OpsResult, PortCheckResult, ProcessControl, ProcessInfo, ScheduledTask, ServiceAction,
+    ServiceControl, ServiceInfo, ServiceStatus, SoftwareInventory, SoftwareScope, StartupItem,
+    StartupLocation, StartupManager, StartupScope, SystemProbe, SystemSnapshot,
 };
 
 // ---------------------------------------------------------------------------
@@ -505,6 +507,185 @@ impl Elevation for MockElevation {
     }
 }
 
+/// Deterministic cleanup adapter. It never touches the filesystem.
+pub struct MockCleanup {
+    pub calls: Mutex<Vec<Vec<String>>>,
+    pub fail: AtomicBool,
+    target: CleanupTarget,
+}
+
+impl MockCleanup {
+    pub fn new() -> Self {
+        Self {
+            calls: Mutex::new(Vec::new()),
+            fail: AtomicBool::new(false),
+            target: CleanupTarget {
+                id: "mock.temp".into(),
+                name: "测试临时文件".into(),
+                path: "%TEMP%".into(),
+                category: CleanupCategory::Temp,
+                requires_admin: false,
+                available: true,
+                bytes: 1024,
+                files: 4,
+                note: "mock".into(),
+            },
+        }
+    }
+}
+
+impl Cleanup for MockCleanup {
+    fn scan(&self) -> OpsResult<CleanupScan> {
+        if self.fail.load(Ordering::SeqCst) {
+            return Err(OpsError::Platform("mock cleanup failure".into()));
+        }
+        let target = self.target.clone();
+        Ok(CleanupScan {
+            total_bytes: target.bytes,
+            total_files: target.files,
+            scanned_at: 0,
+            targets: vec![target],
+        })
+    }
+
+    fn clean(&self, ids: &[String]) -> OpsResult<CleanupReport> {
+        if self.fail.load(Ordering::SeqCst) {
+            return Err(OpsError::Platform("mock cleanup failure".into()));
+        }
+        self.calls.lock().unwrap().push(ids.to_vec());
+        let outcomes = ids
+            .iter()
+            .map(|id| CleanupOutcome {
+                id: id.clone(),
+                name: "测试临时文件".into(),
+                freed_bytes: 1024,
+                removed_files: 4,
+                errors: Vec::new(),
+            })
+            .collect();
+        Ok(CleanupReport {
+            outcomes,
+            freed_bytes: 1024 * ids.len() as u64,
+            removed_files: 4 * ids.len() as u64,
+            errors: Vec::new(),
+        })
+    }
+}
+
+impl Default for MockCleanup {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Deterministic startup/task adapter.
+pub struct MockStartup {
+    pub items: Mutex<Vec<StartupItem>>,
+    pub tasks: Mutex<Vec<ScheduledTask>>,
+    pub task_failure: AtomicBool,
+}
+
+impl MockStartup {
+    pub fn new() -> Self {
+        Self {
+            items: Mutex::new(vec![StartupItem {
+                id: "startup:user:mock".into(),
+                name: "Mock Startup".into(),
+                command: "mock.exe".into(),
+                location: StartupLocation::RegistryRun,
+                scope: StartupScope::User,
+                enabled: true,
+                editable: true,
+            }]),
+            tasks: Mutex::new(vec![ScheduledTask {
+                id: "task:mock".into(),
+                name: "Mock Task".into(),
+                path: "\\".into(),
+                state: "Ready".into(),
+                description: "mock".into(),
+                author: "testkit".into(),
+                enabled: true,
+            }]),
+            task_failure: AtomicBool::new(false),
+        }
+    }
+}
+
+impl StartupManager for MockStartup {
+    fn startup_items(&self) -> OpsResult<Vec<StartupItem>> {
+        Ok(self.items.lock().unwrap().clone())
+    }
+
+    fn set_startup_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<StartupItem>> {
+        let mut items = self.items.lock().unwrap();
+        let item = items
+            .iter_mut()
+            .find(|item| item.id == id)
+            .ok_or_else(|| OpsError::NotFound(id.into()))?;
+        item.enabled = enabled;
+        Ok(items.clone())
+    }
+
+    fn scheduled_tasks(&self) -> OpsResult<Vec<ScheduledTask>> {
+        if self.task_failure.load(Ordering::SeqCst) {
+            return Err(OpsError::Platform("mock task failure".into()));
+        }
+        Ok(self.tasks.lock().unwrap().clone())
+    }
+
+    fn set_task_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<ScheduledTask>> {
+        let mut tasks = self.tasks.lock().unwrap();
+        let task = tasks
+            .iter_mut()
+            .find(|task| task.id == id)
+            .ok_or_else(|| OpsError::NotFound(id.into()))?;
+        task.enabled = enabled;
+        task.state = if enabled { "Ready" } else { "Disabled" }.into();
+        Ok(tasks.clone())
+    }
+}
+
+impl Default for MockStartup {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Read-only software inventory fixture.
+pub struct MockSoftware {
+    apps: Vec<InstalledApp>,
+}
+
+impl MockSoftware {
+    pub fn new() -> Self {
+        Self {
+            apps: vec![InstalledApp {
+                id: "app:mock".into(),
+                name: "Mock App".into(),
+                version: "1.0.0".into(),
+                publisher: "Testkit".into(),
+                install_date: "20260101".into(),
+                install_location: r"C:\Program Files\Mock".into(),
+                uninstall_string: String::new(),
+                scope: SoftwareScope::Machine,
+                registry_view: "64".into(),
+            }],
+        }
+    }
+}
+
+impl SoftwareInventory for MockSoftware {
+    fn list(&self) -> OpsResult<Vec<InstalledApp>> {
+        Ok(self.apps.clone())
+    }
+}
+
+impl Default for MockSoftware {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Bundle of mock adapters for tests that want the full capability set.
 pub struct MockAdapters {
     pub system: Arc<MockSystem>,
@@ -513,6 +694,9 @@ pub struct MockAdapters {
     pub network: Arc<MockNetwork>,
     pub elevation: Arc<MockElevation>,
     pub logs: Arc<MockLogs>,
+    pub cleanup: Arc<MockCleanup>,
+    pub startup: Arc<MockStartup>,
+    pub software: Arc<MockSoftware>,
 }
 
 impl MockAdapters {
@@ -524,6 +708,9 @@ impl MockAdapters {
             network: Arc::new(MockNetwork::new()),
             elevation: Arc::new(MockElevation::new(false)),
             logs: Arc::new(MockLogs::new()),
+            cleanup: Arc::new(MockCleanup::new()),
+            startup: Arc::new(MockStartup::new()),
+            software: Arc::new(MockSoftware::new()),
         }
     }
 }

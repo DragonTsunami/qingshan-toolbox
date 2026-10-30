@@ -36,8 +36,8 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
           </div>
           <Descriptions column={1} size="small" className="settings-descriptions" colon={false}>
             <Descriptions.Item label="产品名称">{info?.name ?? "青衫工具箱"}</Descriptions.Item>
-            <Descriptions.Item label="应用版本">{info?.version ?? "0.4.0"}</Descriptions.Item>
-            <Descriptions.Item label="领域层版本">{info?.coreVersion ?? "0.4.0"}</Descriptions.Item>
+            <Descriptions.Item label="应用版本">{info?.version ?? "0.5.0"}</Descriptions.Item>
+            <Descriptions.Item label="领域层版本">{info?.coreVersion ?? "0.5.0"}</Descriptions.Item>
             <Descriptions.Item label="构建类型">
               <Tag bordered={false}>{info?.buildProfile ?? "debug"}</Tag>
             </Descriptions.Item>

@@ -1,9 +1,12 @@
+use crate::cleanup::{CleanupReport, CleanupScan};
 use crate::error::OpsResult;
 use crate::logs::{LogBatch, LogEntry, LogExport, LogQuery, LogSource};
 use crate::models::{
     DnsLookupResult, NetworkInterface, PortCheckResult, ProcessInfo, ServiceAction, ServiceInfo,
     SystemSnapshot,
 };
+use crate::software::InstalledApp;
+use crate::startup::{ScheduledTask, StartupItem};
 
 /// Read-only machine telemetry.
 pub trait SystemProbe: Send + Sync {
@@ -43,4 +46,24 @@ pub trait Elevation: Send + Sync {
     fn is_elevated(&self) -> bool;
     /// Relaunch the current executable with the Windows UAC prompt.
     fn relaunch_elevated(&self) -> OpsResult<()>;
+}
+
+/// Allow-listed disk cleanup. `scan` never mutates; `clean` only accepts ids
+/// produced by the current scan.
+pub trait Cleanup: Send + Sync {
+    fn scan(&self) -> OpsResult<CleanupScan>;
+    fn clean(&self, ids: &[String]) -> OpsResult<CleanupReport>;
+}
+
+/// User startup entries and scheduled tasks.
+pub trait StartupManager: Send + Sync {
+    fn startup_items(&self) -> OpsResult<Vec<StartupItem>>;
+    fn set_startup_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<StartupItem>>;
+    fn scheduled_tasks(&self) -> OpsResult<Vec<ScheduledTask>>;
+    fn set_task_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<ScheduledTask>>;
+}
+
+/// Read-only installed software inventory (registry Uninstall keys).
+pub trait SoftwareInventory: Send + Sync {
+    fn list(&self) -> OpsResult<Vec<InstalledApp>>;
 }

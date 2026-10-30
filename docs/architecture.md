@@ -19,26 +19,29 @@
                             │ Tauri IPC（白名单命令）
 ┌───────────────────────────▼──────────────────────────────┐
 │  桌面壳层 (src-tauri)                                    │
-│  commands.rs  —— IPC 参数适配、插件/日志命令、错误转换  │
-│  state.rs     —— 注入 OpsService + PluginStore + LogService │
+│  commands.rs  —— IPC 参数适配、插件/日志/运维命令、错误转换 │
+│  state.rs     —— OpsService + LogService + CleanupService + MaintenanceService + PluginStore │
 │  window       —— 主题、WebView2 数据目录                 │
 └───────────────────────────┬──────────────────────────────┘
                             │ 用例调用
 ┌───────────────────────────▼──────────────────────────────┐
 │  应用服务层 (devops-app)                                 │
-│  OpsService —— 编排、输入校验、自进程保护、提权流程      │
+│  OpsService / LogService / CleanupService / MaintenanceService │
+│  —— 编排、输入校验、自进程保护、提权流程                │
 └───────────────────────────┬──────────────────────────────┘
                             │ trait objects
 ┌───────────────────────────▼──────────────────────────────┐
 │  领域层 (devops-core)                                    │
-│  models.rs   —— SystemSnapshot / ProcessInfo / LogEntry   │
-│  traits.rs   —— SystemProbe / ProcessControl / LogCenter  │
+│  models/logs/cleanup/startup/software —— 领域模型         │
+│  traits.rs   —— SystemProbe / LogCenter / Cleanup /        │
+│                 StartupManager / SoftwareInventory        │
 │  error.rs    —— OpsError / OpsResult                     │
 └───────────────────────────┬──────────────────────────────┘
                             │ 实现
 ┌───────────────────────────▼──────────────────────────────┐
 │  平台层 (devops-platform)                                │
-│  Windows：sysinfo、Win32 Service API、UAC、TCP/DNS、wevtutil 事件日志 │
+│  Windows：sysinfo、Win32 Service API、UAC、TCP/DNS、      │
+│  wevtutil 事件日志、注册表启动项/软件、临时目录清理       │
 │  未来：Linux / macOS / 远端 Agent                         │
 └──────────────────────────────────────────────────────────┘
 

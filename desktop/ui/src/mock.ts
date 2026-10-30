@@ -1,6 +1,10 @@
 import type {
   AppInfo,
+  CleanupReport,
+  CleanupScan,
+  CleanupTarget,
   DnsLookupResult,
+  InstalledApp,
   LogBatch,
   LogEntry,
   LogExport,
@@ -12,7 +16,9 @@ import type {
   PluginMarketEntry,
   PortCheckResult,
   ProcessInfo,
+  ScheduledTask,
   ServiceInfo,
+  StartupItem,
   SystemSnapshot,
 } from "./types";
 
@@ -230,8 +236,8 @@ export async function mockResolve(host: string): Promise<DnsLookupResult> {
 export function mockAppInfo(): AppInfo {
   return {
     name: "青衫工具箱",
-    version: "0.4.0",
-    coreVersion: "0.4.0",
+    version: "0.5.0",
+    coreVersion: "0.5.0",
     buildProfile: "debug",
     platform: "windows-gnu",
     isElevated: true,
@@ -673,4 +679,90 @@ export function mockExportLogs(entries: LogEntry[]): LogExport {
     path: `C:\\Users\\青衫\\Downloads\\qingshan-logs-${Date.now()}.csv`,
     count: entries.length,
   };
+}
+
+let cleanupTargets: CleanupTarget[] = [
+  { id: "user-temp", name: "用户临时文件", path: "%TEMP%", category: "temp", requiresAdmin: false, available: true, bytes: 2.4 * GB, files: 12480, note: "应用解压与安装残留，可安全删除" },
+  { id: "windows-temp", name: "Windows 临时目录", path: "C:\\Windows\\Temp", category: "temp", requiresAdmin: true, available: true, bytes: 1.1 * GB, files: 4210, note: "系统级临时文件，需要管理员权限" },
+  { id: "edge-cache", name: "Edge 浏览器缓存", path: "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\Default\\Cache", category: "browser", requiresAdmin: false, available: true, bytes: 860 * 1024 ** 2, files: 9820, note: "不影响收藏、密码与登录状态" },
+  { id: "chrome-cache", name: "Chrome 浏览器缓存", path: "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\Default\\Cache", category: "browser", requiresAdmin: false, available: true, bytes: 420 * 1024 ** 2, files: 5110, note: "仅清理缓存，不清理用户数据" },
+  { id: "crash-dumps", name: "崩溃转储", path: "%LOCALAPPDATA%\\CrashDumps", category: "windows", requiresAdmin: false, available: true, bytes: 630 * 1024 ** 2, files: 14, note: "应用崩溃日志，排查完成后可删除" },
+  { id: "windows-update", name: "Windows Update 缓存", path: "C:\\Windows\\SoftwareDistribution\\Download", category: "windows", requiresAdmin: true, available: true, bytes: 3.2 * GB, files: 1830, note: "已安装更新的下载缓存" },
+  { id: "recycle-bin", name: "回收站", path: "回收站", category: "recycle", requiresAdmin: false, available: true, bytes: 4.8 * GB, files: 236, note: "清空后无法恢复，请确认" },
+];
+
+export function mockCleanupScan(): CleanupScan {
+  const targets = cleanupTargets.map((target) => ({ ...target }));
+  return {
+    targets,
+    totalBytes: targets.reduce((sum, target) => sum + target.bytes, 0),
+    totalFiles: targets.reduce((sum, target) => sum + target.files, 0),
+    scannedAt: Math.floor(Date.now() / 1000),
+  };
+}
+
+export function mockRunCleanup(ids: string[]): CleanupReport {
+  const selected = cleanupTargets.filter((target) => ids.includes(target.id));
+  const outcomes = selected.map((target) => ({
+    id: target.id,
+    name: target.name,
+    freedBytes: target.bytes,
+    removedFiles: target.files,
+    errors: [],
+  }));
+  cleanupTargets = cleanupTargets.map((target) =>
+    ids.includes(target.id) ? { ...target, bytes: 0, files: 0 } : target,
+  );
+  return {
+    outcomes,
+    freedBytes: outcomes.reduce((sum, outcome) => sum + outcome.freedBytes, 0),
+    removedFiles: outcomes.reduce((sum, outcome) => sum + outcome.removedFiles, 0),
+    errors: [],
+  };
+}
+
+let startupSeed: StartupItem[] = [
+  { id: "run:user:Code", name: "Visual Studio Code", command: "\"C:\\Program Files\\Microsoft VS Code\\Code.exe\" --background", location: "registryrun", scope: "user", enabled: true, editable: true },
+  { id: "run:user:Docker", name: "Docker Desktop", command: "\"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe\" --autostart", location: "registryrun", scope: "user", enabled: true, editable: true },
+  { id: "run:machine:SecurityHealth", name: "Windows 安全中心", command: "%windir%\\system32\\SecurityHealthSystray.exe", location: "registryrun", scope: "machine", enabled: true, editable: true },
+  { id: "folder:user:OneDrive", name: "OneDrive", command: "%LOCALAPPDATA%\\Microsoft\\OneDrive\\OneDrive.exe /background", location: "startupfolder", scope: "user", enabled: false, editable: true },
+];
+
+export function mockStartupItems(): StartupItem[] {
+  return startupSeed.map((item) => ({ ...item }));
+}
+
+export function mockSetStartupEnabled(id: string, enabled: boolean): StartupItem[] {
+  startupSeed = startupSeed.map((item) => (item.id === id ? { ...item, enabled } : item));
+  return mockStartupItems();
+}
+
+let taskSeed: ScheduledTask[] = [
+  { id: "\\Microsoft\\Windows\\Defrag\\ScheduledDefrag", name: "ScheduledDefrag", path: "\\Microsoft\\Windows\\Defrag", state: "就绪", description: "驱动器碎片整理与优化", author: "Microsoft", enabled: true },
+  { id: "\\Microsoft\\Windows\\UpdateOrchestrator\\Schedule Wake To Work", name: "Schedule Wake To Work", path: "\\Microsoft\\Windows\\UpdateOrchestrator", state: "就绪", description: "Windows 更新唤醒任务", author: "Microsoft", enabled: true },
+  { id: "\\Qingshan\\NightlyInventory", name: "NightlyInventory", path: "\\Qingshan", state: "就绪", description: "夜间资产盘点与日志归档", author: "IT Operations", enabled: false },
+];
+
+export function mockScheduledTasks(): ScheduledTask[] {
+  return taskSeed.map((task) => ({ ...task }));
+}
+
+export function mockSetTaskEnabled(id: string, enabled: boolean): ScheduledTask[] {
+  taskSeed = taskSeed.map((task) => (task.id === id ? { ...task, enabled } : task));
+  return mockScheduledTasks();
+}
+
+const softwareSeed: InstalledApp[] = [
+  { id: "chrome", name: "Google Chrome", version: "130.0.6723.92", publisher: "Google LLC", installDate: "2026-09-18", installLocation: "C:\\Program Files\\Google\\Chrome\\Application", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "code", name: "Microsoft Visual Studio Code", version: "1.95.2", publisher: "Microsoft Corporation", installDate: "2026-10-02", installLocation: "C:\\Program Files\\Microsoft VS Code", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "docker", name: "Docker Desktop", version: "4.35.1", publisher: "Docker Inc.", installDate: "2026-08-21", installLocation: "C:\\Program Files\\Docker\\Docker", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "git", name: "Git", version: "2.55.0", publisher: "The Git Development Community", installDate: "2026-07-11", installLocation: "C:\\Program Files\\Git", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "node", name: "Node.js", version: "22.23.1", publisher: "OpenJS Foundation", installDate: "2026-09-01", installLocation: "C:\\Program Files\\nodejs", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "postgres", name: "PostgreSQL 17", version: "17.2", publisher: "PostgreSQL Global Development Group", installDate: "2026-06-15", installLocation: "C:\\Program Files\\PostgreSQL\\17", uninstallString: "", scope: "machine", registryView: "64-bit" },
+  { id: "rust", name: "Rustup", version: "1.99.1", publisher: "The Rust Project", installDate: "2026-10-20", installLocation: "C:\\Users\\Public\\.rustup", uninstallString: "", scope: "user", registryView: "64-bit" },
+  { id: "wechat", name: "微信", version: "4.0.1", publisher: "Tencent", installDate: "2026-10-05", installLocation: "C:\\Program Files\\Tencent\\WeChat", uninstallString: "", scope: "machine", registryView: "32-bit" },
+];
+
+export function mockInstalledApps(): InstalledApp[] {
+  return softwareSeed.map((app) => ({ ...app }));
 }

@@ -210,6 +210,79 @@ export interface LogExport {
   count: number;
 }
 
+export type CleanupCategory = "temp" | "browser" | "windows" | "recycle";
+
+export interface CleanupTarget {
+  id: string;
+  name: string;
+  path: string;
+  category: CleanupCategory;
+  requiresAdmin: boolean;
+  available: boolean;
+  bytes: number;
+  files: number;
+  note: string;
+}
+
+export interface CleanupScan {
+  targets: CleanupTarget[];
+  totalBytes: number;
+  totalFiles: number;
+  scannedAt: number;
+}
+
+export interface CleanupOutcome {
+  id: string;
+  name: string;
+  freedBytes: number;
+  removedFiles: number;
+  errors: string[];
+}
+
+export interface CleanupReport {
+  outcomes: CleanupOutcome[];
+  freedBytes: number;
+  removedFiles: number;
+  errors: string[];
+}
+
+export type StartupScope = "user" | "machine";
+export type StartupLocation = "registryrun" | "startupfolder";
+
+export interface StartupItem {
+  id: string;
+  name: string;
+  command: string;
+  location: StartupLocation;
+  scope: StartupScope;
+  enabled: boolean;
+  editable: boolean;
+}
+
+export interface ScheduledTask {
+  id: string;
+  name: string;
+  path: string;
+  state: string;
+  description: string;
+  author: string;
+  enabled: boolean;
+}
+
+export type SoftwareScope = "user" | "machine";
+
+export interface InstalledApp {
+  id: string;
+  name: string;
+  version: string;
+  publisher: string;
+  installDate: string;
+  installLocation: string;
+  uninstallString: string;
+  scope: SoftwareScope;
+  registryView: string;
+}
+
 export type PageKey =
   | "plugins"
   | "overview"
@@ -217,4 +290,7 @@ export type PageKey =
   | "services"
   | "network"
   | "logs"
+  | "cleanup"
+  | "startup"
+  | "software"
   | "settings";

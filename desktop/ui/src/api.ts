@@ -1,7 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   AppInfo,
+  CleanupReport,
+  CleanupScan,
   DnsLookupResult,
+  InstalledApp,
   LogBatch,
   LogEntry,
   LogExport,
@@ -12,16 +15,20 @@ import type {
   PluginMarketEntry,
   PortCheckResult,
   ProcessInfo,
+  ScheduledTask,
   ServiceAction,
   ServiceInfo,
+  StartupItem,
   SystemSnapshot,
 } from "./types";
 import {
   mockAppInfo,
+  mockCleanupScan,
   mockExportLogs,
   mockInterfaces,
   mockInstallPlugin,
   mockInstallPluginFromPath,
+  mockInstalledApps,
   mockLogSources,
   mockOpenPluginDirectory,
   mockPluginCatalog,
@@ -30,9 +37,14 @@ import {
   mockQueryLogs,
   mockRemovePlugin,
   mockRescanPlugins,
+  mockRunCleanup,
+  mockScheduledTasks,
   mockServices,
   mockSetPluginEnabled,
+  mockSetStartupEnabled,
+  mockSetTaskEnabled,
   mockSnapshot,
+  mockStartupItems,
   mockCheckPort,
   mockResolve,
 } from "./mock";
@@ -127,6 +139,52 @@ export async function queryLogs(query: LogQuery): Promise<LogBatch> {
 export async function exportLogs(entries: LogEntry[]): Promise<LogExport> {
   if (!isDesktopRuntime) return mockExportLogs(entries);
   return call<LogExport>("logs_export", { entries });
+}
+
+export async function cleanupScan(): Promise<CleanupScan> {
+  if (!isDesktopRuntime) return mockCleanupScan();
+  return call<CleanupScan>("cleanup_scan");
+}
+
+export async function runCleanup(ids: string[]): Promise<CleanupReport> {
+  if (!isDesktopRuntime) return mockRunCleanup(ids);
+  return call<CleanupReport>("cleanup_run", { ids });
+}
+
+export async function startupItems(): Promise<StartupItem[]> {
+  if (!isDesktopRuntime) return mockStartupItems();
+  return call<StartupItem[]>("startup_items");
+}
+
+export async function setStartupEnabled(
+  id: string,
+  enabled: boolean,
+): Promise<StartupItem[]> {
+  if (!isDesktopRuntime) return mockSetStartupEnabled(id, enabled);
+  return call<StartupItem[]>("startup_set_enabled", { id, enabled });
+}
+
+export async function scheduledTasks(): Promise<ScheduledTask[]> {
+  if (!isDesktopRuntime) return mockScheduledTasks();
+  return call<ScheduledTask[]>("scheduled_tasks");
+}
+
+export async function setTaskEnabled(
+  id: string,
+  enabled: boolean,
+): Promise<ScheduledTask[]> {
+  if (!isDesktopRuntime) return mockSetTaskEnabled(id, enabled);
+  return call<ScheduledTask[]>("task_set_enabled", { id, enabled });
+}
+
+export async function softwareList(): Promise<InstalledApp[]> {
+  if (!isDesktopRuntime) return mockInstalledApps();
+  return call<InstalledApp[]>("software_list");
+}
+
+export async function openAppsFeatures(): Promise<void> {
+  if (!isDesktopRuntime) return;
+  await call<void>("open_apps_features");
 }
 
 export async function pluginCatalog(): Promise<PluginCatalog> {

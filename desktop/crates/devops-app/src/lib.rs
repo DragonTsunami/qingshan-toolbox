@@ -8,10 +8,84 @@
 use std::sync::Arc;
 
 use devops_core::{
-    DnsLookupResult, Elevation, LogBatch, LogCenter, LogEntry, LogExport, LogQuery, LogSource,
-    NetworkInterface, NetworkProbe, OpsError, OpsResult, PortCheckResult, ProcessControl,
-    ProcessInfo, ServiceAction, ServiceControl, ServiceInfo, SystemProbe, SystemSnapshot,
+    Cleanup, CleanupReport, CleanupScan, DnsLookupResult, Elevation, InstalledApp, LogBatch,
+    LogCenter, LogEntry, LogExport, LogQuery, LogSource, NetworkInterface, NetworkProbe, OpsError,
+    OpsResult, PortCheckResult, ProcessControl, ProcessInfo, ScheduledTask, ServiceAction,
+    ServiceControl, ServiceInfo, SoftwareInventory, StartupItem, StartupManager, SystemProbe,
+    SystemSnapshot,
 };
+
+/// Disk cleanup use cases; deletion is strictly id-based and never path-based.
+#[derive(Clone)]
+pub struct CleanupService {
+    cleanup: Arc<dyn Cleanup>,
+}
+
+impl CleanupService {
+    pub fn new(cleanup: Arc<dyn Cleanup>) -> Self {
+        Self { cleanup }
+    }
+
+    pub fn scan(&self) -> OpsResult<CleanupScan> {
+        self.cleanup.scan()
+    }
+
+    pub fn clean(&self, ids: Vec<String>) -> OpsResult<CleanupReport> {
+        let mut unique = Vec::new();
+        for id in ids {
+            let id = id.trim().to_string();
+            if !id.is_empty() && !unique.contains(&id) {
+                unique.push(id);
+            }
+        }
+        if unique.is_empty() {
+            return Err(OpsError::InvalidInput("请选择要清理的项目".into()));
+        }
+        if unique.len() > 16 {
+            return Err(OpsError::InvalidInput("单次最多清理 16 个项目".into()));
+        }
+        self.cleanup.clean(&unique)
+    }
+}
+
+/// Startup entries, scheduled tasks and installed software.
+#[derive(Clone)]
+pub struct MaintenanceService {
+    startup: Arc<dyn StartupManager>,
+    software: Arc<dyn SoftwareInventory>,
+}
+
+impl MaintenanceService {
+    pub fn new(startup: Arc<dyn StartupManager>, software: Arc<dyn SoftwareInventory>) -> Self {
+        Self { startup, software }
+    }
+
+    pub fn startup_items(&self) -> OpsResult<Vec<StartupItem>> {
+        self.startup.startup_items()
+    }
+
+    pub fn set_startup_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<StartupItem>> {
+        if id.trim().is_empty() {
+            return Err(OpsError::InvalidInput("启动项标识不能为空".into()));
+        }
+        self.startup.set_startup_enabled(id.trim(), enabled)
+    }
+
+    pub fn scheduled_tasks(&self) -> OpsResult<Vec<ScheduledTask>> {
+        self.startup.scheduled_tasks()
+    }
+
+    pub fn set_task_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<ScheduledTask>> {
+        if id.trim().is_empty() {
+            return Err(OpsError::InvalidInput("计划任务标识不能为空".into()));
+        }
+        self.startup.set_task_enabled(id.trim(), enabled)
+    }
+
+    pub fn software(&self) -> OpsResult<Vec<InstalledApp>> {
+        self.software.list()
+    }
+}
 
 /// Log center use cases: list channels, run a bounded query, export a snapshot.
 #[derive(Clone)]

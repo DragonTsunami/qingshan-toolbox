@@ -9,6 +9,9 @@ import ProcessesPage from "./pages/Processes";
 import ServicesPage from "./pages/Services";
 import NetworkPage from "./pages/Network";
 import LogsPage from "./pages/Logs";
+import CleanupPage from "./pages/Cleanup";
+import StartupPage from "./pages/Startup";
+import SoftwarePage from "./pages/Software";
 import SettingsPage from "./pages/Settings";
 import { appInfo, relaunchAsAdmin, setWindowTheme, systemSnapshot } from "./api";
 import {
@@ -26,6 +29,9 @@ const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
   services: { title: "服务管理", subtitle: "控制系统服务的启动、停止与重启" },
   network: { title: "网络诊断", subtitle: "接口、端口连通性与 DNS 解析" },
   logs: { title: "日志中心", subtitle: "Windows 事件日志的检索、详情与导出" },
+  cleanup: { title: "磁盘清理", subtitle: "扫描并释放可安全删除的临时文件" },
+  startup: { title: "启动项", subtitle: "管理开机启动项与计划任务" },
+  software: { title: "软件清单", subtitle: "已安装程序、版本与安装信息" },
   settings: { title: "设置", subtitle: "应用信息、权限与后续能力" },
 };
 
@@ -127,6 +133,17 @@ function App() {
             onElevate={elevate}
           />
         );
+      case "cleanup":
+        return (
+          <CleanupPage
+            elevated={snapshot?.isElevated ?? false}
+            onElevate={elevate}
+          />
+        );
+      case "startup":
+        return <StartupPage />;
+      case "software":
+        return <SoftwarePage />;
       case "settings":
         return (
           <SettingsPage

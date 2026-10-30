@@ -1,8 +1,12 @@
+pub mod cleanup;
 pub mod elevation;
 pub mod logs;
 pub mod network;
 pub mod process;
+pub mod registry;
 pub mod service;
+pub mod software;
+pub mod startup;
 pub mod system;
 
 pub struct WindowsPlatform {
@@ -12,6 +16,9 @@ pub struct WindowsPlatform {
     pub network: network::NetworkProbeImpl,
     pub elevation: elevation::ElevationImpl,
     pub logs: logs::LogCenterImpl,
+    pub cleanup: cleanup::CleanupImpl,
+    pub startup: startup::StartupManagerImpl,
+    pub software: software::SoftwareInventoryImpl,
 }
 
 impl WindowsPlatform {
@@ -23,6 +30,9 @@ impl WindowsPlatform {
             network: network::NetworkProbeImpl,
             elevation: elevation::ElevationImpl,
             logs: logs::LogCenterImpl,
+            cleanup: cleanup::CleanupImpl,
+            startup: startup::StartupManagerImpl,
+            software: software::SoftwareInventoryImpl,
         }
     }
 }

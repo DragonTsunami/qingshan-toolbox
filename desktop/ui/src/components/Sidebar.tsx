@@ -1,10 +1,13 @@
 import {
   AppstoreAddOutlined,
+  AppstoreOutlined,
   ClusterOutlined,
   DashboardOutlined,
+  DeleteOutlined,
   DeploymentUnitOutlined,
   FileTextOutlined,
   GlobalOutlined,
+  RocketOutlined,
   SafetyCertificateFilled,
   SettingOutlined,
   ThunderboltFilled,
@@ -27,6 +30,9 @@ const NAV_ITEMS: Array<{ key: PageKey; label: string; icon: React.ReactNode; hin
   { key: "services", label: "服务管理", icon: <ClusterOutlined />, hint: "启停与重启" },
   { key: "network", label: "网络诊断", icon: <GlobalOutlined />, hint: "端口与 DNS" },
   { key: "logs", label: "日志中心", icon: <FileTextOutlined />, hint: "事件检索与导出" },
+  { key: "cleanup", label: "磁盘清理", icon: <DeleteOutlined />, hint: "临时文件与缓存" },
+  { key: "startup", label: "启动项", icon: <RocketOutlined />, hint: "开机启动与计划任务" },
+  { key: "software", label: "软件清单", icon: <AppstoreOutlined />, hint: "已安装程序与版本" },
   { key: "settings", label: "设置", icon: <SettingOutlined />, hint: "权限与关于" },
 ];
 
@@ -79,7 +85,7 @@ export default function Sidebar({ page, onNavigate, snapshot, info, onElevate }:
       </div>
 
       <div className="sidebar-footer">
-        <span>v{info?.version ?? "0.4.0"}</span>
+        <span>v{info?.version ?? "0.5.0"}</span>
         <span className="footer-dot" />
         <span>Rust · Tauri</span>
       </div>
