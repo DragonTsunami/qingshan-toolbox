@@ -203,6 +203,15 @@ pub async fn software_list(state: State<'_, AppState>) -> Result<Vec<InstalledAp
 }
 
 #[tauri::command]
+pub async fn software_uninstall(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    let maintenance = state.maintenance.clone();
+    tauri::async_runtime::spawn_blocking(move || maintenance.uninstall_software(&id))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
 pub fn open_apps_features() -> Result<(), String> {
     let mut command = Command::new("control.exe");
     command.arg("appwiz.cpl");

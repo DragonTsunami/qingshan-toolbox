@@ -2,8 +2,12 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use devops_core::{InstalledApp, OpsResult, SoftwareInventory, SoftwareScope};
+use devops_core::{InstalledApp, OpsError, OpsResult, SoftwareInventory, SoftwareScope};
+use windows::core::PCWSTR;
+use windows::Win32::Foundation::GetLastError;
 use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+use windows::Win32::UI::Shell::ShellExecuteW;
+use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
 use super::registry;
 
@@ -58,6 +62,72 @@ impl SoftwareInventory for SoftwareInventoryImpl {
         apps.sort_by_key(|app| app.name.to_lowercase());
         Ok(apps)
     }
+
+    fn uninstall(&self, id: &str) -> OpsResult<()> {
+        let id = id.trim();
+        if id.is_empty() {
+            return Err(OpsError::InvalidInput("软件标识不能为空".into()));
+        }
+        if id.chars().count() > 512 {
+            return Err(OpsError::InvalidInput("软件标识过长".into()));
+        }
+
+        let apps = self.list()?;
+        let app = apps
+            .iter()
+            .find(|app| app.id == id)
+            .ok_or_else(|| OpsError::NotFound("未找到该软件，请刷新后重试".into()))?;
+        let command = app.uninstall_string.trim();
+        if command.is_empty() {
+            return Err(OpsError::InvalidInput(
+                "该系统未提供此软件的卸载命令，请使用 Windows「应用和功能」".into(),
+            ));
+        }
+        if command.chars().count() > 4096 {
+            return Err(OpsError::InvalidInput("卸载命令过长，已拒绝执行".into()));
+        }
+
+        launch_uninstaller(command, app.scope)
+    }
+}
+
+fn launch_uninstaller(command: &str, scope: SoftwareScope) -> OpsResult<()> {
+    // The command comes from the application's own Uninstall registry value.
+    // Machine-wide uninstallers normally need elevation, so let UAC prompt for
+    // them; per-user uninstallers run in the current token.
+    let verb = match scope {
+        SoftwareScope::Machine => "runas",
+        SoftwareScope::User => "open",
+    };
+    let file = wide("cmd.exe");
+    let verb = wide(verb);
+    let parameters = wide(&format!("/C {command}"));
+
+    let result = unsafe {
+        ShellExecuteW(
+            None,
+            PCWSTR(verb.as_ptr()),
+            PCWSTR(file.as_ptr()),
+            PCWSTR(parameters.as_ptr()),
+            PCWSTR::null(),
+            SW_SHOWNORMAL,
+        )
+    };
+    if result.0 as isize <= 32 {
+        let code = unsafe { GetLastError() };
+        if code.0 == 1223 {
+            return Err(OpsError::PermissionDenied);
+        }
+        return Err(OpsError::Platform(format!(
+            "无法启动卸载程序（Windows 错误 {}）",
+            code.0
+        )));
+    }
+    Ok(())
+}
+
+fn wide(value: &str) -> Vec<u16> {
+    value.encode_utf16().chain(std::iter::once(0)).collect()
 }
 
 fn read_app(

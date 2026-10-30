@@ -752,17 +752,21 @@ export function mockSetTaskEnabled(id: string, enabled: boolean): ScheduledTask[
   return mockScheduledTasks();
 }
 
-const softwareSeed: InstalledApp[] = [
-  { id: "chrome", name: "Google Chrome", version: "130.0.6723.92", publisher: "Google LLC", installDate: "2026-09-18", installLocation: "C:\\Program Files\\Google\\Chrome\\Application", uninstallString: "", scope: "machine", registryView: "64-bit" },
-  { id: "code", name: "Microsoft Visual Studio Code", version: "1.95.2", publisher: "Microsoft Corporation", installDate: "2026-10-02", installLocation: "C:\\Program Files\\Microsoft VS Code", uninstallString: "", scope: "machine", registryView: "64-bit" },
-  { id: "docker", name: "Docker Desktop", version: "4.35.1", publisher: "Docker Inc.", installDate: "2026-08-21", installLocation: "C:\\Program Files\\Docker\\Docker", uninstallString: "", scope: "machine", registryView: "64-bit" },
-  { id: "git", name: "Git", version: "2.55.0", publisher: "The Git Development Community", installDate: "2026-07-11", installLocation: "C:\\Program Files\\Git", uninstallString: "", scope: "machine", registryView: "64-bit" },
-  { id: "node", name: "Node.js", version: "22.23.1", publisher: "OpenJS Foundation", installDate: "2026-09-01", installLocation: "C:\\Program Files\\nodejs", uninstallString: "", scope: "machine", registryView: "64-bit" },
-  { id: "postgres", name: "PostgreSQL 17", version: "17.2", publisher: "PostgreSQL Global Development Group", installDate: "2026-06-15", installLocation: "C:\\Program Files\\PostgreSQL\\17", uninstallString: "", scope: "machine", registryView: "64-bit" },
-  { id: "rust", name: "Rustup", version: "1.99.1", publisher: "The Rust Project", installDate: "2026-10-20", installLocation: "C:\\Users\\Public\\.rustup", uninstallString: "", scope: "user", registryView: "64-bit" },
-  { id: "wechat", name: "微信", version: "4.0.1", publisher: "Tencent", installDate: "2026-10-05", installLocation: "C:\\Program Files\\Tencent\\WeChat", uninstallString: "", scope: "machine", registryView: "32-bit" },
+let softwareSeed: InstalledApp[] = [
+  { id: "chrome", name: "Google Chrome", version: "130.0.6723.92", publisher: "Google LLC", installDate: "2026-09-18", installLocation: "C:\\Program Files\\Google\\Chrome\\Application", uninstallString: "C:\\Program Files\\Google\\Chrome\\Application\\setup.exe --uninstall", scope: "machine", registryView: "64-bit" },
+  { id: "code", name: "Microsoft Visual Studio Code", version: "1.95.2", publisher: "Microsoft Corporation", installDate: "2026-10-02", installLocation: "C:\\Program Files\\Microsoft VS Code", uninstallString: "C:\\Program Files\\Microsoft VS Code\\unins000.exe", scope: "machine", registryView: "64-bit" },
+  { id: "docker", name: "Docker Desktop", version: "4.35.1", publisher: "Docker Inc.", installDate: "2026-08-21", installLocation: "C:\\Program Files\\Docker\\Docker", uninstallString: "C:\\Program Files\\Docker\\Docker\\Docker Desktop Installer.exe uninstall", scope: "machine", registryView: "64-bit" },
+  { id: "git", name: "Git", version: "2.55.0", publisher: "The Git Development Community", installDate: "2026-07-11", installLocation: "C:\\Program Files\\Git", uninstallString: "C:\\Program Files\\Git\\unins000.exe", scope: "machine", registryView: "64-bit" },
+  { id: "node", name: "Node.js", version: "22.23.1", publisher: "OpenJS Foundation", installDate: "2026-09-01", installLocation: "C:\\Program Files\\nodejs", uninstallString: "MsiExec.exe /X{12345678-1234-1234-1234-123456789012}", scope: "machine", registryView: "64-bit" },
+  { id: "postgres", name: "PostgreSQL 17", version: "17.2", publisher: "PostgreSQL Global Development Group", installDate: "2026-06-15", installLocation: "C:\\Program Files\\PostgreSQL\\17", uninstallString: "C:\\Program Files\\PostgreSQL\\17\\uninstall-postgresql.exe", scope: "machine", registryView: "64-bit" },
+  { id: "rust", name: "Rustup", version: "1.99.1", publisher: "The Rust Project", installDate: "2026-10-20", installLocation: "C:\\Users\\Public\\.rustup", uninstallString: "C:\\Users\\Public\\.rustup\\uninstall.exe", scope: "user", registryView: "64-bit" },
+  { id: "wechat", name: "微信", version: "4.0.1", publisher: "Tencent", installDate: "2026-10-05", installLocation: "C:\\Program Files\\Tencent\\WeChat", uninstallString: "C:\\Program Files\\Tencent\\WeChat\\Uninstall.exe", scope: "machine", registryView: "32-bit" },
 ];
 
 export function mockInstalledApps(): InstalledApp[] {
   return softwareSeed.map((app) => ({ ...app }));
+}
+
+export function mockUninstallSoftware(id: string): void {
+  softwareSeed = softwareSeed.filter((app) => app.id !== id);
 }

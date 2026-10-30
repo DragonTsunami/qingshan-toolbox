@@ -217,7 +217,7 @@
 
 .software-card {
   min-width: 0;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1 / 0.85;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -350,12 +350,19 @@
   justify-content: space-between;
   gap: 6px;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 11px;
   line-height: 1.4;
   white-space: nowrap;
+}
+
+.software-uninstall {
+  height: 22px !important;
+  padding: 0 6px !important;
+  font-size: 11px !important;
+  margin-right: -6px;
 }
 
 @media (max-width: 1180px) {

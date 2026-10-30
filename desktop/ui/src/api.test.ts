@@ -16,7 +16,9 @@ import {
   resolveHost,
   rescanPlugins,
   setPluginEnabled,
+  softwareList,
   systemSnapshot,
+  uninstallSoftware,
 } from "./api";
 
 describe("browser mock contract", () => {
@@ -57,8 +59,15 @@ describe("browser mock contract", () => {
     expect(dns.error).toBeNull();
   });
 
-  it("loads and toggles the declarative plugin catalog", async () => {
-    const catalog = await pluginCatalog();
+  it("removes an app through the mock uninstall contract", async () => {
+    const before = await softwareList();
+    expect(before.length).toBeGreaterThan(0);
+    await uninstallSoftware(before[0].id);
+    const after = await softwareList();
+    expect(after).toHaveLength(before.length - 1);
+  });
+
+  it("loads and toggles the declarative plugin catalog", async () => {    const catalog = await pluginCatalog();
     expect(catalog.plugins.some((plugin) => plugin.builtin)).toBe(true);
     expect(catalog.directory).toContain("plugins");
 

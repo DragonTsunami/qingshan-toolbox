@@ -47,6 +47,7 @@ import {
   mockStartupItems,
   mockCheckPort,
   mockResolve,
+  mockUninstallSoftware,
 } from "./mock";
 
 /** The UI also runs in a plain browser (`npm run dev`) for design work. */
@@ -180,6 +181,11 @@ export async function setTaskEnabled(
 export async function softwareList(): Promise<InstalledApp[]> {
   if (!isDesktopRuntime) return mockInstalledApps();
   return call<InstalledApp[]>("software_list");
+}
+
+export async function uninstallSoftware(id: string): Promise<void> {
+  if (!isDesktopRuntime) return mockUninstallSoftware(id);
+  await call<void>("software_uninstall", { id });
 }
 
 export async function openAppsFeatures(): Promise<void> {

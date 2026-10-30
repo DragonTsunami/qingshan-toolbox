@@ -85,6 +85,14 @@ impl MaintenanceService {
     pub fn software(&self) -> OpsResult<Vec<InstalledApp>> {
         self.software.list()
     }
+
+    pub fn uninstall_software(&self, id: &str) -> OpsResult<()> {
+        let id = id.trim();
+        if id.is_empty() {
+            return Err(OpsError::InvalidInput("软件标识不能为空".into()));
+        }
+        self.software.uninstall(id)
+    }
 }
 
 /// Log center use cases: list channels, run a bounded query, export a snapshot.

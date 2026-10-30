@@ -63,7 +63,10 @@ pub trait StartupManager: Send + Sync {
     fn set_task_enabled(&self, id: &str, enabled: bool) -> OpsResult<Vec<ScheduledTask>>;
 }
 
-/// Read-only installed software inventory (registry Uninstall keys).
+/// Installed software inventory (registry Uninstall keys).
 pub trait SoftwareInventory: Send + Sync {
     fn list(&self) -> OpsResult<Vec<InstalledApp>>;
+    /// Launch the application's own uninstaller. Implementations must resolve
+    /// `id` against the current inventory; they must not accept a raw command.
+    fn uninstall(&self, id: &str) -> OpsResult<()>;
 }

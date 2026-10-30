@@ -680,6 +680,14 @@ impl SoftwareInventory for MockSoftware {
     fn list(&self) -> OpsResult<Vec<InstalledApp>> {
         Ok(self.apps.clone())
     }
+
+    fn uninstall(&self, id: &str) -> OpsResult<()> {
+        if self.apps.iter().any(|app| app.id == id) {
+            Ok(())
+        } else {
+            Err(OpsError::NotFound(id.into()))
+        }
+    }
 }
 
 impl Default for MockSoftware {

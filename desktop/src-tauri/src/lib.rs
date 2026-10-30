@@ -76,6 +76,7 @@ pub fn run() {
             commands::scheduled_tasks,
             commands::task_set_enabled,
             commands::software_list,
+            commands::software_uninstall,
             commands::open_apps_features,
             commands::app_info,
             commands::is_elevated,

@@ -1,15 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Empty, Input, Skeleton } from "antd";
-import { AppstoreOutlined, ReloadOutlined, SearchOutlined } from "@ant-design/icons";
-import { openAppsFeatures, softwareList } from "../api";
+import { Alert, App as AntApp, Button, Empty, Input, Modal, Skeleton, Tooltip } from "antd";
+import {
+  AppstoreOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
+import { openAppsFeatures, softwareList, uninstallSoftware } from "../api";
 import type { InstalledApp } from "../types";
 import "../maintenance.css";
 
 export default function SoftwarePage() {
+  const { message } = AntApp.useApp();
   const [apps, setApps] = useState<InstalledApp[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [uninstallTarget, setUninstallTarget] = useState<InstalledApp | null>(null);
+  const [uninstalling, setUninstalling] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -26,6 +34,20 @@ export default function SoftwarePage() {
   useEffect(() => {
     void load();
   }, []);
+
+  const confirmUninstall = async () => {
+    if (!uninstallTarget) return;
+    setUninstalling(true);
+    try {
+      await uninstallSoftware(uninstallTarget.id);
+      setUninstallTarget(null);
+      message.success("已启动卸载程序，完成后请刷新列表");
+    } catch (cause) {
+      message.error(String(cause));
+    } finally {
+      setUninstalling(false);
+    }
+  };
 
   const keyword = search.trim().toLowerCase();
   const filtered = useMemo(
@@ -46,7 +68,7 @@ export default function SoftwarePage() {
         <div className="panel-head">
           <div>
             <h2>已安装程序</h2>
-            <p>汇总注册表中的已安装程序；卸载仍由 Windows「应用和功能」统一处理。</p>
+            <p>汇总注册表中的已安装程序；卸载会调用程序自带的卸载器。</p>
           </div>
           <div className="panel-actions">
             <Input
@@ -110,17 +132,27 @@ export default function SoftwarePage() {
                     <span>安装日期</span>
                     <strong>{formatDate(app.installDate)}</strong>
                   </div>
-                  <div className="software-fact">
-                    <span>环境</span>
-                    <strong>
-                      {app.registryView || "—"}-bit ·{" "}
-                      {app.scope === "user" ? "当前用户" : "所有用户"}
-                    </strong>
-                  </div>
                 </div>
                 <div className="software-foot">
-                  <span>只读注册表</span>
-                  <span>卸载请用「应用和功能」</span>
+                  <span>
+                    {app.registryView || "—"}-bit ·{" "}
+                    {app.scope === "user" ? "当前用户" : "所有用户"}
+                  </span>
+                  <Tooltip title={app.uninstallString ? "启动程序自带卸载器" : "系统未提供卸载命令"}>
+                    <span>
+                      <Button
+                        size="small"
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        disabled={!app.uninstallString}
+                        className="software-uninstall"
+                        onClick={() => setUninstallTarget(app)}
+                      >
+                        卸载
+                      </Button>
+                    </span>
+                  </Tooltip>
                 </div>
               </article>
             ))}
@@ -129,10 +161,24 @@ export default function SoftwarePage() {
 
         <div className="maint-footnote">
           共 {apps.length} 个已安装程序，当前显示 {filtered.length} 个。最近使用来自 Windows
-          UserAssist 或程序文件访问时间，系统未记录时显示「未记录」。此页面不提供卸载按钮，避免绕过
-          Windows 安装器；请使用「应用和功能」。
+          UserAssist 或程序文件访问时间，系统未记录时显示「未记录」。卸载会调用程序自带的卸载器，
+          可能需要管理员权限；完成后请刷新列表。
         </div>
       </section>
+
+      <Modal
+        open={uninstallTarget !== null}
+        title={uninstallTarget ? `卸载 ${uninstallTarget.name}` : "卸载软件"}
+        okText="启动卸载"
+        cancelText="取消"
+        okButtonProps={{ danger: true, loading: uninstalling }}
+        onOk={() => void confirmUninstall()}
+        onCancel={() => setUninstallTarget(null)}
+      >
+        <p>
+          将启动 {uninstallTarget?.name} 自带的卸载程序。卸载可能需要管理员权限，青衫工具箱不会直接删除文件。
+        </p>
+      </Modal>
     </div>
   );
 }
