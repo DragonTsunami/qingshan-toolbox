@@ -117,15 +117,28 @@ impl LogService {
         if query.source.is_empty() {
             return Err(OpsError::InvalidInput("日志来源不能为空".into()));
         }
-        if !(1..=500).contains(&query.limit) {
+        if !(1..=2000).contains(&query.limit) {
             return Err(OpsError::InvalidInput(
-                "单次查询数量需在 1 到 500 之间".into(),
+                "单次查询数量需在 1 到 2000 之间".into(),
+            ));
+        }
+        if !(1..=30).contains(&query.days) {
+            return Err(OpsError::InvalidInput(
+                "日志时间范围需在 1 到 30 天之间".into(),
             ));
         }
         if query.keyword.chars().count() > 128 {
             return Err(OpsError::InvalidInput("关键字不能超过 128 个字符".into()));
         }
         self.logs.query(&query)
+    }
+
+    pub fn clear(&self, source: &str) -> OpsResult<()> {
+        let source = source.trim();
+        if source.is_empty() {
+            return Err(OpsError::InvalidInput("日志来源不能为空".into()));
+        }
+        self.logs.clear(source)
     }
 
     pub fn export(&self, entries: &[LogEntry]) -> OpsResult<LogExport> {
@@ -303,6 +316,7 @@ mod tests {
                 level: Some(LogLevel::Error),
                 keyword: "崩溃".into(),
                 limit: 10,
+                days: 3,
             })
             .expect("query");
         assert_eq!(batch.entries.len(), 1);
@@ -319,7 +333,16 @@ mod tests {
                 ..LogQuery::default()
             })
             .unwrap_err();
-        assert!(error.to_string().contains("1 到 500"));
+        assert!(error.to_string().contains("1 到 2000"));
+    }
+
+    #[test]
+    fn log_clear_is_forwarded_and_validated() {
+        let logs = Arc::new(MockLogs::new());
+        let service = LogService::new(logs.clone());
+        service.clear(" application ").expect("clear");
+        assert_eq!(logs.clear_calls(), vec!["application".to_string()]);
+        assert!(service.clear("  ").is_err());
     }
 
     #[test]

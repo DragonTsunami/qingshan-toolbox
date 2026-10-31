@@ -28,6 +28,7 @@ import type {
 import {
   mockAppInfo,
   mockCleanupScan,
+  mockClearLogs,
   mockDiagnostics,
   mockDiagnosticActions,
   mockExportDiagnostics,
@@ -149,6 +150,11 @@ export async function queryLogs(query: LogQuery): Promise<LogBatch> {
 export async function exportLogs(entries: LogEntry[]): Promise<LogExport> {
   if (!isDesktopRuntime) return mockExportLogs(entries);
   return call<LogExport>("logs_export", { entries });
+}
+
+export async function clearLogs(source: string): Promise<void> {
+  if (!isDesktopRuntime) return mockClearLogs(source);
+  await call<void>("logs_clear", { source });
 }
 
 export async function cleanupScan(): Promise<CleanupScan> {

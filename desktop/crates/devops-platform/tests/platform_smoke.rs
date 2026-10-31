@@ -93,6 +93,7 @@ fn event_log_query_reads_application_channel() {
             level: None,
             keyword: String::new(),
             limit: 5,
+            days: 3,
         })
         .expect("application event log query");
     assert!(

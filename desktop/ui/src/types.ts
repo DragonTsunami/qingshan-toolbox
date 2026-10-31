@@ -195,6 +195,7 @@ export interface LogQuery {
   level: LogLevel | null;
   keyword: string;
   limit: number;
+  days: number;
 }
 
 export interface LogBatch {

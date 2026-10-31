@@ -763,6 +763,10 @@ export function mockExportLogs(entries: LogEntry[]): LogExport {
   };
 }
 
+export function mockClearLogs(source: string): void {
+  if (!source) throw new Error("日志来源不能为空");
+}
+
 let cleanupTargets: CleanupTarget[] = [
   { id: "user-temp", name: "用户临时文件", path: "%TEMP%", category: "temp", requiresAdmin: false, available: true, bytes: 2.4 * GB, files: 12480, note: "应用解压与安装残留，可安全删除" },
   { id: "windows-temp", name: "Windows 临时目录", path: "C:\\Windows\\Temp", category: "temp", requiresAdmin: true, available: true, bytes: 1.1 * GB, files: 4210, note: "系统级临时文件，需要管理员权限" },

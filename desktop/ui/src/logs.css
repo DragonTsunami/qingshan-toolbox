@@ -21,6 +21,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
   color: var(--muted);
   font-size: 12px;
 }
@@ -54,10 +55,6 @@
 
 .log-search {
   width: 280px;
-}
-
-.log-limit-select {
-  width: 104px;
 }
 
 .log-source-note {
@@ -147,6 +144,19 @@
 .log-channel {
   color: var(--muted);
   font-size: 11px;
+}
+
+.log-message-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.log-message-time {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
 .log-message {
@@ -286,5 +296,62 @@
 @media (max-width: 1120px) {
   .log-search {
     width: 220px;
+  }
+}
+
+@media (max-width: 900px) {
+  .log-toolbar {
+    align-items: stretch;
+  }
+
+  .log-toolbar-filters,
+  .log-toolbar-actions {
+    width: 100%;
+  }
+
+  .log-search {
+    flex: 1 1 220px;
+    width: auto;
+    min-width: 0;
+  }
+
+  .log-toolbar-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  .log-panel {
+    padding: 16px 14px 12px;
+  }
+
+  .log-toolbar-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .log-search {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .log-source-select,
+  .log-level-select {
+    width: 100%;
+  }
+
+  .log-toolbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+  }
+
+  .log-toolbar-actions .ant-btn {
+    width: 100%;
+    padding-inline: 8px;
+  }
+
+  .log-footer {
+    flex-direction: column;
+    gap: 4px;
   }
 }

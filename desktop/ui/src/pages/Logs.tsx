@@ -5,6 +5,7 @@ import {
   Button,
   Drawer,
   Empty,
+  Grid,
   Input,
   Select,
   Skeleton,
@@ -13,6 +14,7 @@ import {
   Tooltip,
 } from "antd";
 import {
+  DeleteOutlined,
   DownloadOutlined,
   FileTextOutlined,
   ReloadOutlined,
@@ -20,7 +22,7 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-import { exportLogs, logSources, queryLogs } from "../api";
+import { clearLogs, exportLogs, logSources, queryLogs } from "../api";
 import type { LogBatch, LogEntry, LogLevel, LogSource } from "../types";
 import "../logs.css";
 
@@ -43,10 +45,8 @@ const LEVEL_OPTIONS = (Object.keys(LEVEL_LABEL) as LogLevel[]).map((value) => ({
   label: LEVEL_LABEL[value],
 }));
 
-const LIMIT_OPTIONS = [100, 200, 500].map((value) => ({
-  value,
-  label: `${value} 条`,
-}));
+const LOG_WINDOW_DAYS = 3;
+const LOG_SCAN_LIMIT = 2000;
 
 function formatTime(value: string): string {
   const date = new Date(value);
@@ -83,18 +83,19 @@ function levelBadge(level: LogLevel) {
 }
 
 export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
+  const screens = Grid.useBreakpoint();
   const [sources, setSources] = useState<LogSource[]>([]);
   const [source, setSource] = useState("application");
   const [level, setLevel] = useState<LogLevel | undefined>();
   const [keyword, setKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
-  const [limit, setLimit] = useState(200);
   const [batch, setBatch] = useState<LogBatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<LogEntry | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
@@ -126,7 +127,8 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
       source,
       level: level ?? null,
       keyword: appliedKeyword,
-      limit,
+      limit: LOG_SCAN_LIMIT,
+      days: LOG_WINDOW_DAYS,
     })
       .then((next) => {
         if (cancelled) return;
@@ -143,7 +145,7 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [source, level, limit, appliedKeyword, reloadToken]);
+  }, [source, level, appliedKeyword, reloadToken]);
 
   const activeSource = useMemo(
     () => sources.find((item) => item.id === source),
@@ -158,6 +160,37 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
     setReloadToken((value) => value + 1);
   }, []);
 
+  const onClear = () => {
+    if (!elevated) {
+      message.warning("清空日志需要管理员权限，请先以管理员身份重启");
+      return;
+    }
+    const label = activeSource?.name ?? source;
+    modal.confirm({
+      title: `清空${label}日志？`,
+      content:
+        source === "security"
+          ? "将删除 Security 通道的全部事件，且 Windows 会记录本次清空审计。此操作不可恢复。"
+          : "将删除该 Windows 事件通道的全部日志，且不可恢复。请先确认已导出需要保留的记录。",
+      okText: "清空日志",
+      cancelText: "取消",
+      okButtonProps: { danger: true },
+      async onOk() {
+        setClearing(true);
+        try {
+          await clearLogs(source);
+          message.success(`${label}日志已清空`);
+          setSelected(null);
+          refresh();
+        } catch (reason) {
+          message.error(String(reason));
+        } finally {
+          setClearing(false);
+        }
+      },
+    });
+  };
+
   const onExport = async () => {
     if (!batch || batch.entries.length === 0) return;
     setExporting(true);
@@ -171,47 +204,68 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
     }
   };
 
+  const showTimeColumn = Boolean(screens.md);
+
   const columns: ColumnsType<LogEntry> = [
-    {
-      title: "时间",
-      dataIndex: "timestamp",
-      width: 138,
-      render: (value: string) => (
-        <Tooltip title={formatFullTime(value)}>
-          <span className="log-time">{formatTime(value)}</span>
-        </Tooltip>
-      ),
-    },
+    ...(showTimeColumn
+      ? [
+          {
+            title: "时间",
+            dataIndex: "timestamp",
+            width: screens.lg ? 138 : 104,
+            render: (value: string) => (
+              <Tooltip title={formatFullTime(value)}>
+                <span className="log-time">{formatTime(value)}</span>
+              </Tooltip>
+            ),
+          } as ColumnsType<LogEntry>[number],
+        ]
+      : []),
     {
       title: "级别",
       dataIndex: "level",
-      width: 88,
+      width: screens.lg ? 88 : 72,
       render: (value: LogLevel) => levelBadge(value),
     },
-    {
-      title: "事件 ID",
-      dataIndex: "eventId",
-      width: 82,
-      render: (value: number) => <span className="log-event-id">{value}</span>,
-    },
-    {
-      title: "来源",
-      dataIndex: "provider",
-      width: 218,
-      render: (value: string, entry) => (
-        <div className="log-provider">
-          <span>{value || "—"}</span>
-          <span className="log-channel">{entry.channel}</span>
-        </div>
-      ),
-    },
+    ...(screens.md
+      ? [
+          {
+            title: "事件 ID",
+            dataIndex: "eventId",
+            width: 82,
+            render: (value: number) => (
+              <span className="log-event-id">{value}</span>
+            ),
+          } as ColumnsType<LogEntry>[number],
+        ]
+      : []),
+    ...(screens.lg
+      ? [
+          {
+            title: "来源",
+            dataIndex: "provider",
+            width: 218,
+            render: (value: string, entry: LogEntry) => (
+              <div className="log-provider">
+                <span>{value || "—"}</span>
+                <span className="log-channel">{entry.channel}</span>
+              </div>
+            ),
+          } as ColumnsType<LogEntry>[number],
+        ]
+      : []),
     {
       title: "消息",
       dataIndex: "message",
-      render: (value: string) => (
-        <span className="log-message" title={value}>
-          {value}
-        </span>
+      render: (value: string, entry) => (
+        <div className="log-message-cell">
+          {!showTimeColumn && (
+            <span className="log-message-time">{formatFullTime(entry.timestamp)}</span>
+          )}
+          <span className="log-message" title={value}>
+            {value}
+          </span>
+        </div>
       ),
     },
   ];
@@ -226,10 +280,14 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
             <h2>
               <FileTextOutlined /> 事件日志
             </h2>
-            <p>读取 Windows 事件通道，按级别与关键字过滤，可导出为 CSV。</p>
+            <p>
+              读取 Windows 事件通道最近 3 天，按级别与关键字过滤，可导出 CSV
+              或清空当前通道。
+            </p>
           </div>
           <div className="log-head-meta">
             <Tag bordered={false}>{activeSource?.name ?? "事件日志"}</Tag>
+            <Tag bordered={false}>最近 3 天</Tag>
             {batch && <span>{batch.entries.length} 条</span>}
           </div>
         </div>
@@ -273,13 +331,6 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
             </Button>
           </div>
           <div className="log-toolbar-actions">
-            <Select
-              className="log-limit-select"
-              value={limit}
-              options={LIMIT_OPTIONS}
-              onChange={setLimit}
-              aria-label="读取条数"
-            />
             <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading}>
               刷新
             </Button>
@@ -291,6 +342,14 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
               disabled={!batch || batch.entries.length === 0}
             >
               导出
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={onClear}
+              loading={clearing}
+            >
+              清空日志
             </Button>
           </div>
         </div>
@@ -327,10 +386,15 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
             size="middle"
             columns={columns}
             dataSource={batch?.entries ?? []}
-            pagination={false}
+            pagination={{
+              pageSize: 50,
+              showSizeChanger: false,
+              hideOnSinglePage: true,
+              size: "small",
+            }}
             loading={loading}
             tableLayout="fixed"
-            scroll={{ x: 980 }}
+            scroll={screens.lg ? { x: 980 } : undefined}
             locale={{
               emptyText: (
                 <Empty
@@ -353,14 +417,14 @@ export default function LogsPage({ elevated, onElevate }: LogsPageProps) {
                 }`
               : "尚未读取"}
           </span>
-          <span>Security 通道需要管理员权限 · 日志只读，不会修改系统</span>
+          <span>最近 3 天 · 最多 2000 条 · 清空日志会删除当前通道记录</span>
         </div>
       </section>
 
       <Drawer
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
-        width={560}
+        width="min(560px, 92vw)"
         title="事件详情"
         className="log-drawer"
       >

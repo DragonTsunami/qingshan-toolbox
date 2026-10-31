@@ -388,6 +388,7 @@ pub struct MockLogs {
     entries: Vec<LogEntry>,
     queries: Mutex<Vec<LogQuery>>,
     exports: Mutex<Vec<usize>>,
+    clears: Mutex<Vec<String>>,
     pub fail: bool,
 }
 
@@ -397,6 +398,7 @@ impl MockLogs {
             entries: sample_logs(),
             queries: Mutex::new(Vec::new()),
             exports: Mutex::new(Vec::new()),
+            clears: Mutex::new(Vec::new()),
             fail: false,
         }
     }
@@ -407,6 +409,10 @@ impl MockLogs {
 
     pub fn export_calls(&self) -> Vec<usize> {
         self.exports.lock().expect("mock lock").clone()
+    }
+
+    pub fn clear_calls(&self) -> Vec<String> {
+        self.clears.lock().expect("mock lock").clone()
     }
 }
 
@@ -471,6 +477,14 @@ impl LogCenter for MockLogs {
             path: "C:\\Mock\\logs.csv".into(),
             count: entries.len(),
         })
+    }
+
+    fn clear(&self, source: &str) -> OpsResult<()> {
+        self.clears
+            .lock()
+            .expect("mock lock")
+            .push(source.to_string());
+        Ok(())
     }
 }
 

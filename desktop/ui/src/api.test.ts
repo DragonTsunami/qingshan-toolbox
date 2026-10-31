@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyServiceAction,
   checkPort,
+  clearLogs,
   exportLogs,
   isDesktopRuntime,
   listProcesses,
@@ -109,7 +110,8 @@ describe("browser mock contract", () => {
       source: "application",
       level: "error",
       keyword: "",
-      limit: 100,
+      limit: 2000,
+      days: 3,
     });
     expect(batch.source).toBe("application");
     expect(batch.entries.length).toBeGreaterThan(0);
@@ -119,5 +121,8 @@ describe("browser mock contract", () => {
     const exported = await exportLogs(batch.entries);
     expect(exported.count).toBe(batch.entries.length);
     expect(exported.path).toContain("qingshan-logs-");
+
+    await expect(clearLogs("application")).resolves.toBeUndefined();
+    await expect(clearLogs("")).rejects.toThrow("日志来源不能为空");
   });
 });

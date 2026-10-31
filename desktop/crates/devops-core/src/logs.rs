@@ -88,6 +88,14 @@ pub struct LogQuery {
     pub level: Option<LogLevel>,
     pub keyword: String,
     pub limit: usize,
+    /// Time window in days. The adapter applies it before parsing, so the
+    /// returned batch represents "the last N days" rather than a raw tail.
+    #[serde(default = "default_days")]
+    pub days: u32,
+}
+
+fn default_days() -> u32 {
+    3
 }
 
 impl Default for LogQuery {
@@ -96,7 +104,8 @@ impl Default for LogQuery {
             source: "application".into(),
             level: None,
             keyword: String::new(),
-            limit: 100,
+            limit: 2000,
+            days: default_days(),
         }
     }
 }

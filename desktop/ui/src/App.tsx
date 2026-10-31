@@ -30,7 +30,7 @@ const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
   processes: { title: "进程管理", subtitle: "查看资源占用并安全地结束进程" },
   services: { title: "服务管理", subtitle: "控制系统服务的启动、停止与重启" },
   network: { title: "网络诊断", subtitle: "接口、端口连通性与 DNS 解析" },
-  logs: { title: "日志中心", subtitle: "Windows 事件日志的检索、详情与导出" },
+  logs: { title: "日志中心", subtitle: "最近 3 天事件日志的检索、详情与清理" },
   cleanup: { title: "磁盘清理", subtitle: "扫描并释放可安全删除的临时文件" },
   startup: { title: "启动项", subtitle: "管理开机启动项与计划任务" },
   software: { title: "软件清单", subtitle: "已安装程序、版本与安装信息" },

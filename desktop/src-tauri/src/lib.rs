@@ -220,6 +220,7 @@ pub fn run() {
             commands::log_sources,
             commands::logs_query,
             commands::logs_export,
+            commands::logs_clear,
             commands::cleanup_scan,
             commands::cleanup_run,
             commands::startup_items,

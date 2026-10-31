@@ -39,6 +39,9 @@ pub trait LogCenter: Send + Sync {
     fn query(&self, query: &LogQuery) -> OpsResult<LogBatch>;
     /// Write the selected entries to a local file and return its path.
     fn export(&self, entries: &[LogEntry]) -> OpsResult<LogExport>;
+    /// Clear one Windows event channel. This is destructive and normally
+    /// requires elevation; the adapter must not accept arbitrary channels.
+    fn clear(&self, source: &str) -> OpsResult<()>;
 }
 
 /// Elevation state and self-relaunch. Kept separate because it is the only

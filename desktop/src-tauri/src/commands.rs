@@ -130,6 +130,15 @@ pub async fn logs_export(
 }
 
 #[tauri::command]
+pub async fn logs_clear(state: State<'_, AppState>, source: String) -> Result<(), String> {
+    let logs = state.logs.clone();
+    tauri::async_runtime::spawn_blocking(move || logs.clear(&source))
+        .await
+        .map_err(to_message)?
+        .map_err(to_message)
+}
+
+#[tauri::command]
 pub async fn cleanup_scan(state: State<'_, AppState>) -> Result<CleanupScan, String> {
     let cleanup = state.cleanup.clone();
     tauri::async_runtime::spawn_blocking(move || cleanup.scan())

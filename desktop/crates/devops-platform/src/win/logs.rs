@@ -17,8 +17,9 @@ use devops_core::{
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
-const MAX_LIMIT: usize = 500;
+const MAX_LIMIT: usize = 2000;
 const MAX_KEYWORD: usize = 128;
+const MAX_DAYS: u32 = 30;
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Default)]
@@ -54,23 +55,21 @@ impl LogCenter for LogCenterImpl {
     fn query(&self, query: &LogQuery) -> OpsResult<LogBatch> {
         let channel = channel_for(&query.source)?;
         let limit = query.limit.clamp(1, MAX_LIMIT);
+        let days = query.days.clamp(1, MAX_DAYS);
         if query.keyword.chars().count() > MAX_KEYWORD {
             return Err(OpsError::InvalidInput("关键字不能超过 128 个字符".into()));
         }
 
-        // Read extra records when filtering so the visible page can still be
-        // filled; the scan cap keeps a broad keyword from reading the whole log.
-        let requested = if query.level.is_some() || !query.keyword.trim().is_empty() {
-            (limit * 4).min(MAX_LIMIT * 2)
-        } else {
-            limit
-        };
+        // Filter by age in the event query itself. This keeps the batch a
+        // meaningful "last N days" view instead of a raw record count.
+        let age_filter = age_filter(days);
 
         let mut command = Command::new("wevtutil.exe");
         command.args([
             "qe",
             channel,
-            &format!("/c:{requested}"),
+            &format!("/q:{age_filter}"),
+            &format!("/c:{limit}"),
             "/rd:true",
             "/f:xml",
         ]);
@@ -125,6 +124,29 @@ impl LogCenter for LogCenterImpl {
         })
     }
 
+    fn clear(&self, source: &str) -> OpsResult<()> {
+        let channel = channel_for(source)?;
+        let mut command = Command::new("wevtutil.exe");
+        command.args(["cl", channel]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
+
+        let output = command
+            .output()
+            .map_err(|error| OpsError::Platform(format!("无法启动 wevtutil.exe: {error}")))?;
+        if !output.status.success() {
+            let detail = String::from_utf8_lossy(&output.stderr);
+            return Err(OpsError::Platform(format!(
+                "清空{channel}日志失败（需要管理员权限）: {}",
+                detail.trim()
+            )));
+        }
+        Ok(())
+    }
+
     fn export(&self, entries: &[LogEntry]) -> OpsResult<LogExport> {
         if entries.is_empty() {
             return Err(OpsError::InvalidInput("没有可导出的日志".into()));
@@ -152,6 +174,13 @@ impl LogCenter for LogCenterImpl {
             count: entries.len(),
         })
     }
+}
+
+fn age_filter(days: u32) -> String {
+    format!(
+        "*[System[TimeCreated[timediff(@SystemTime) <= {}]]]",
+        u64::from(days.clamp(1, MAX_DAYS)) * 86_400_000
+    )
 }
 
 fn channel_for(source: &str) -> OpsResult<&'static str> {
@@ -464,6 +493,22 @@ mod tests {
         assert_eq!(entry.computer, "OPS-TEST");
         assert_eq!(entry.fields.len(), 2);
         assert_eq!(entry.fields[1].value, "0xc0000005");
+    }
+
+    #[test]
+    fn builds_three_day_xpath() {
+        assert_eq!(
+            age_filter(3),
+            "*[System[TimeCreated[timediff(@SystemTime) <= 259200000]]]"
+        );
+        assert_eq!(
+            age_filter(0),
+            "*[System[TimeCreated[timediff(@SystemTime) <= 86400000]]]"
+        );
+        assert_eq!(
+            age_filter(99),
+            "*[System[TimeCreated[timediff(@SystemTime) <= 2592000000]]]"
+        );
     }
 
     #[test]

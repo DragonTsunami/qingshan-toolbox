@@ -26,7 +26,7 @@
 
 > 设计原则：**本地优先、只读优先、危险操作白名单化**。诊断报告不含日志正文、文件内容或凭据；插件是声明式的，不执行第三方代码；卸载只调用程序自带卸载器，不直接删文件。
 
-> **状态**：v0.6.0 开发版，安装器与代码签名仍在收尾；正式安装包会通过 GitHub Releases 发布。当前 54 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> **状态**：v0.6.0 开发版，安装器与代码签名仍在收尾；正式安装包会通过 GitHub Releases 发布。当前 56 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **如果这个项目对你有帮助，欢迎点一个 Star ⭐ 收藏。** 使用中遇到问题、想要某个能力，或者只是觉得哪里不顺手，都欢迎到 [Issues](https://github.com/DragonTsunami/qingshan-toolbox/issues) 反馈；你的反馈会直接影响下一步路线图。
 
@@ -198,7 +198,7 @@ cd ../..
 | --- | --- |
 | `cargo check`（全 workspace，含 Tauri 2.12） | 通过 |
 | `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（7.9 MB，v0.6.0） |
-| `cargo test --workspace` | 48 / 48 通过（core 5 + app 18 + platform 16 + plugins 9） |
+| `cargo test --workspace` | 56 / 56 通过（workspace 全部套件） |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 通过 |
 | `cargo fmt --all -- --check` | 通过 |
 | 前端 `tsc --noEmit && vite build` | 通过 |
@@ -209,7 +209,7 @@ cd ../..
 | 更新检查 | 已实现；真实 GitHub API 返回「当前已是最新版本」 |
 | 崩溃日志 | 已实现；panic hook 写入 `logs/panic-*.log` |
 | 刷新间隔选择（1/3/5/10/30/60 秒） | 已实现并持久化到本机 |
-| 日志中心：Application 真实事件读取、关键字/级别过滤、详情、CSV 导出 | 已实现；平台真实事件通道测试通过 |
+| 日志中心：最近 3 天 Application/System/Security、关键字/级别过滤、详情、CSV 导出、管理员清空 | 已实现；平台真实事件通道测试通过 |
 | 磁盘清理：白名单扫描、id 清理、回收站 | 已实现；真实扫描测试通过 |
 | 启动项 / 软件清单：注册表读取与启停 | 已实现；真实读取测试通过；系统项目需管理员 |
 | 计划任务：列表、状态、启停 | 已实现；受限会话可能返回权限提示，页面会显式提示 |
