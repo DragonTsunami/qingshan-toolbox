@@ -155,7 +155,7 @@ npm test               # Vitest：工具函数 + Mock API 契约
 
 cd ../src-tauri
 cargo build --release --features custom-protocol
-# 产物：desktop/target/release/opsdeck.exe（交付时重命名为 QingshanToolbox.exe）
+# 产物：QingshanToolbox/QingshanToolbox.exe + WebView2Loader.dll + zip + SHA256SUMS.txt
 ```
 
 `custom-protocol` 必须开启：否则 Tauri 会加载 `build.devUrl`（`http://localhost:1420`），窗口显示“无法访问此页面”。开发时 `cargo run` 可配合 `npm run dev` 使用 HMR；交付/分发必须用 release + `custom-protocol`。

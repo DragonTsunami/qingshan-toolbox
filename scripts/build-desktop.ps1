@@ -1,4 +1,4 @@
-# Build 青衫工具箱 with the portable toolchain stored under .toolchain/.
+﻿# Build 青衫工具箱 with the portable toolchain stored under .toolchain/.
 # This is a convenience wrapper for the current restricted machine; normal
 # development machines should just use `cargo build` (MSVC toolchain).
 #
@@ -59,11 +59,12 @@ if (!(Test-Path $distIndex)) {
 }
 
 $manifest = Join-Path $root 'desktop\src-tauri\Cargo.toml'
-$mode = if ($Release) { @('--release') } else { @() }
-# `custom-protocol` embeds ui/dist. Without it Tauri loads build.devUrl
-# (http://localhost:1420), which only exists while a Vite server is running.
-$features = if ($Release) { @('--features', 'custom-protocol') } else { @() }
-if (-not $Release) {
+$buildArgs = @('build', '--manifest-path', $manifest)
+if ($Release) {
+    # `custom-protocol` embeds ui/dist. Without it Tauri loads build.devUrl
+    # (http://localhost:1420), which only exists while a Vite server is running.
+    $buildArgs += @('--release', '--features', 'custom-protocol')
+} else {
     Write-Warning "debug 构建使用 devUrl（http://localhost:1420），需要 Vite 开发服务器。独立运行请使用 -Release。"
 }
 
@@ -74,7 +75,7 @@ try {
         exit $LASTEXITCODE
     }
 
-    cargo build --manifest-path $manifest @mode @features
+    cargo @buildArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     $targetRoot = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { Join-Path $root 'desktop\target' }
@@ -82,15 +83,30 @@ try {
     $builtExe = Join-Path $targetRoot "$profile\opsdeck.exe"
 
     if ($Release) {
-        # Stage a portable folder for distribution.
-        $dist = Join-Path $root 'desktop\dist'
+        # Stage portable artifacts in the repository-root delivery folder.
+        $dist = Join-Path $root 'QingshanToolbox'
         New-Item -ItemType Directory -Force -Path $dist | Out-Null
-        Copy-Item $builtExe (Join-Path $dist 'QingshanToolbox.exe') -Force
+        $stagedExe = Join-Path $dist 'QingshanToolbox.exe'
+        Copy-Item $builtExe $stagedExe -Force
         $loader = Join-Path $targetRoot "$profile\WebView2Loader.dll"
+        $stagedLoader = Join-Path $dist 'WebView2Loader.dll'
         if (Test-Path $loader) {
-            Copy-Item $loader (Join-Path $dist 'WebView2Loader.dll') -Force
+            Copy-Item $loader $stagedLoader -Force
         }
-        Write-Host "release staged: $dist\QingshanToolbox.exe"
+
+        $configPath = Join-Path $root 'desktop\src-tauri\tauri.conf.json'
+        $version = (Select-String -Path $configPath -Pattern '"version"\s*:\s*"([^"]+)"').Matches[0].Groups[1].Value
+        $zip = Join-Path $dist "QingshanToolbox-v$version-win-x64.zip"
+        if (Test-Path $zip) { Remove-Item $zip -Force }
+        Compress-Archive -Path $stagedExe,$stagedLoader -DestinationPath $zip -Force
+
+        $checksums = @($stagedExe, $stagedLoader, $zip) | ForEach-Object {
+            $hash = (Get-FileHash $_ -Algorithm SHA256).Hash
+            "$hash  $([System.IO.Path]::GetFileName($_))"
+        }
+        [System.IO.File]::WriteAllLines((Join-Path $dist 'SHA256SUMS.txt'), $checksums, (New-Object System.Text.UTF8Encoding($false)))
+
+        Write-Host "release staged: $dist"
     }
 
     if ($Run) {

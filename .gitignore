@@ -5,6 +5,7 @@ smoke-target/
 desktop/target/
 desktop/dist/
 desktop/src-tauri/gen/
+QingshanToolbox/
 
 # 前端
 desktop/ui/node_modules/
