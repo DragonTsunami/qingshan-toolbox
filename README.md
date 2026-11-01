@@ -6,7 +6,7 @@
 
 青衫工具箱是一个用 **Rust + Tauri 2 + React** 构建的 Windows 桌面运维工具，面向企业员工、IT 支持与运维同学。它不试图替代任务管理器，而是把日常排障最常打开的入口集中到一个界面里：看健康、查进程、管服务、翻日志、清缓存、盘软件，减少在多个系统工具之间来回切换。
 
-当前是 **v1.0.0 桌面版**，规划为桌面端 + 网页端两种形态：桌面端负责本机运维与诊断，网页端后续承载 Terraform、Ansible、GitHub Actions、Jenkins、Dockerfile、Shell 与 Git 记录。
+当前是 **v1.0.0 桌面版**。本仓库只包含桌面端「青衫工具箱」；Web DevOps 控制台名为 **青衫工作台**，是独立项目，不在此仓库，也不与青衫工具箱共用版本、Release 或安装包。
 
 ## 它适合谁
 
@@ -79,7 +79,7 @@
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
-**尚未实现（见路线图）**：远程协助、网络进阶、资产上报、网页端；自动下载/静默安装未接入，更新只做 GitHub 版本提示；安装包与代码签名在发布环境完成。
+**尚未实现（见路线图）**：远程协助、网络进阶、资产上报；自动下载/静默安装未接入，更新只做 GitHub 版本提示；安装包与代码签名在发布环境完成。网页端能力由独立的「青衫工作台」承载。
 
 
 ---
@@ -89,12 +89,12 @@
 | 层 | 技术 | 选择理由 |
 | --- | --- | --- |
 | 桌面框架 | Tauri 2 | Rust 内核、系统 WebView2、安装包体积小、权限模型清晰 |
-| 领域层 | 纯 Rust（`devops-core`） | 不依赖 UI 与平台 API，可被桌面端、未来网页后端复用 |
+| 领域层 | 纯 Rust（`devops-core`） | 不依赖 UI 与平台 API，可被桌面端与独立的青衫工作台复用 |
 | 平台层 | `sysinfo` + `windows` crate | 系统指标跨平台；服务/提权使用原生 Win32 API |
-| 前端 | React 18 + TypeScript + Ant Design 5 + Vite | 企业级表格/表单组件成熟，后续网页端可复用设计语言与部分组件 |
+| 前端 | React 18 + TypeScript + Ant Design 5 + Vite | 企业级表格/表单组件成熟，独立青衫工作台可复用设计语言与部分组件 |
 | 构建 | Cargo workspace + npm | Rust 与前端独立构建，Tauri 负责嵌入产物 |
 
-为什么不是纯 Rust GUI（egui/iced）？桌面端后续要与网页端共享领域模型、命令契约与设计系统，Tauri 的 Web 前端复用价值更高，同时保留 Rust 的系统能力与安全性。
+为什么不是纯 Rust GUI（egui/iced）？桌面端后续要与独立的青衫工作台共享领域模型、命令契约与设计系统，Tauri 的 Web 前端复用价值更高，同时保留 Rust 的系统能力与安全性。
 
 ### 视觉语言
 
@@ -130,7 +130,7 @@ DeepSeek-Devops/
 │  ├─ design-system.md           # DSH 同源视觉 token 与组件规则
 │  ├─ logs.md                    # 日志中心：通道、过滤、导出与安全边界
 │  ├─ plugins.md                 # 声明式插件：目录、manifest、卡片与安全边界
-│  └─ roadmap.md                 # 桌面端 + 网页端演进路线
+│  └─ roadmap.md                 # 桌面端演进路线；青衫工作台独立维护
 ├─ .github/workflows/ci.yml      # Linux core / Windows workspace / UI
 ├─ scripts/
 │  ├─ build-desktop.ps1          # 本机便携工具链构建脚本
@@ -291,7 +291,7 @@ cd ../..
 3. 资产上报与合规基线
 4. 远程协助入口与工单系统对接
 
-网页端：
+青衫工作台（独立仓库，不在本仓库）：
 
 1. Git 仓库与提交记录目录
 2. Terraform / Ansible 执行与审批流
