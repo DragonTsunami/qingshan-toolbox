@@ -240,8 +240,8 @@ export async function mockResolve(host: string): Promise<DnsLookupResult> {
 export function mockAppInfo(): AppInfo {
   return {
     name: "青衫工具箱",
-    version: "0.6.0",
-    coreVersion: "0.6.0",
+    version: "1.0.0",
+    coreVersion: "1.0.0",
     buildProfile: "debug",
     platform: "windows-gnu",
     isElevated: true,
@@ -318,8 +318,8 @@ export function mockExportDiagnostics(markdown: string): string {
 
 export function mockUpdateCheck(): UpdateCheck {
   return {
-    currentVersion: "0.6.0",
-    latestVersion: "0.6.0",
+    currentVersion: "1.0.0",
+    latestVersion: "1.0.0",
     available: false,
     releaseUrl: "https://github.com/DragonTsunami/qingshan-toolbox/releases/latest",
     publishedAt: null,

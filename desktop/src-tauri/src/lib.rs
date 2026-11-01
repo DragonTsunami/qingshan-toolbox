@@ -105,7 +105,7 @@ fn setup_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 }
 
 /// Persist a local crash record before the default panic output. No network or
-/// credential data is included; this is the user-facing feedback path for v0.6.
+/// credential data is included; this is the user-facing feedback path for v1.0.
 fn install_panic_hook() {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {

@@ -6,7 +6,7 @@
 
 青衫工具箱是一个用 **Rust + Tauri 2 + React** 构建的 Windows 桌面运维工具，面向企业员工、IT 支持与运维同学。它不试图替代任务管理器，而是把日常排障最常打开的入口集中到一个界面里：看健康、查进程、管服务、翻日志、清缓存、盘软件，减少在多个系统工具之间来回切换。
 
-当前是 **v0.6.0 桌面版**，规划为桌面端 + 网页端两种形态：桌面端负责本机运维与诊断，网页端后续承载 Terraform、Ansible、GitHub Actions、Jenkins、Dockerfile、Shell 与 Git 记录。
+当前是 **v1.0.0 桌面版**，规划为桌面端 + 网页端两种形态：桌面端负责本机运维与诊断，网页端后续承载 Terraform、Ansible、GitHub Actions、Jenkins、Dockerfile、Shell 与 Git 记录。
 
 ## 它适合谁
 
@@ -26,7 +26,7 @@
 
 > 设计原则：**本地优先、只读优先、危险操作白名单化**。诊断报告不含日志正文、文件内容或凭据；插件是声明式的，不执行第三方代码；卸载只调用程序自带卸载器，不直接删文件。
 
-> **状态**：v0.6.0 首个正式版发布准备中；安装包与代码签名由发布流程完成。当前 56 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> **状态**：v1.0.0 首个正式版基线；后续进入打磨与迭代。安装包与代码签名由发布流程完成。当前 56 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **如果这个项目对你有帮助，欢迎点一个 Star ⭐ 收藏。** 使用中遇到问题、想要某个能力，或者只是觉得哪里不顺手，都欢迎到 [Issues](https://github.com/DragonTsunami/qingshan-toolbox/issues) 反馈；你的反馈会直接影响下一步路线图。
 
@@ -197,7 +197,7 @@ cd ../..
 | 验证项 | 结果 |
 | --- | --- |
 | `cargo check`（全 workspace，含 Tauri 2.12） | 通过 |
-| `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（7.9 MB，v0.6.0） |
+| `cargo build --release --features custom-protocol` → `desktop/target/release/opsdeck.exe` | 通过（8.1 MB，v1.0.0） |
 | `cargo test --workspace` | 56 / 56 通过（workspace 全部套件） |
 | `cargo clippy --workspace --all-targets -- -D warnings` | 通过 |
 | `cargo fmt --all -- --check` | 通过 |

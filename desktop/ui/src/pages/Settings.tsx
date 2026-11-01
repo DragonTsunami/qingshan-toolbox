@@ -55,8 +55,8 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
           </div>
           <Descriptions column={1} size="small" className="settings-descriptions" colon={false}>
             <Descriptions.Item label="产品名称">{info?.name ?? "青衫工具箱"}</Descriptions.Item>
-            <Descriptions.Item label="应用版本">{info?.version ?? "0.6.0"}</Descriptions.Item>
-            <Descriptions.Item label="领域层版本">{info?.coreVersion ?? "0.6.0"}</Descriptions.Item>
+            <Descriptions.Item label="应用版本">{info?.version ?? "1.0.0"}</Descriptions.Item>
+            <Descriptions.Item label="领域层版本">{info?.coreVersion ?? "1.0.0"}</Descriptions.Item>
             <Descriptions.Item label="构建类型">
               <Tag bordered={false}>{info?.buildProfile ?? "debug"}</Tag>
             </Descriptions.Item>
@@ -164,7 +164,7 @@ export default function SettingsPage({ info, snapshot, dark, onToggleTheme, onEl
             <h3>版本更新</h3>
             <p>检查 GitHub 最新 Release，不会自动下载或执行安装</p>
           </div>
-          <Tag bordered={false}>{info?.version ?? "0.6.0"}</Tag>
+          <Tag bordered={false}>{info?.version ?? "1.0.0"}</Tag>
         </div>
         <div className="update-row">
           <div>

@@ -102,10 +102,10 @@ mod tests {
 
     #[test]
     fn compares_semantic_versions() {
-        assert!(is_newer("0.6.0", "0.6.1"));
-        assert!(is_newer("0.6.0", "v0.7.0"));
-        assert!(!is_newer("0.6.0", "0.6.0"));
-        assert!(!is_newer("0.7.0", "0.6.9"));
-        assert!(!is_newer("dev", "0.6.1"));
+        assert!(is_newer("1.0.0", "1.0.1"));
+        assert!(is_newer("1.0.0", "v1.1.0"));
+        assert!(!is_newer("1.0.0", "1.0.0"));
+        assert!(!is_newer("1.1.0", "1.0.9"));
+        assert!(!is_newer("dev", "1.0.1"));
     }
 }
