@@ -139,12 +139,15 @@ body {
   border-radius: 9px;
   display: grid;
   place-items: center;
-  font-family: var(--font-code);
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--on-ink);
-  background: var(--ink);
-  letter-spacing: -1px;
+  overflow: hidden;
+  flex: none;
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .brand-text {

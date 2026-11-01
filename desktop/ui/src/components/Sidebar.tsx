@@ -14,6 +14,7 @@ import {
   ThunderboltFilled,
 } from "@ant-design/icons";
 import { Button, Tooltip } from "antd";
+import appIcon from "../assets/app-icon.png";
 import type { AppInfo, PageKey, SystemSnapshot } from "../types";
 
 interface SidebarProps {
@@ -44,7 +45,9 @@ export default function Sidebar({ page, onNavigate, snapshot, info, onElevate }:
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark">&gt;_</div>
+        <div className="brand-mark">
+          <img src={appIcon} alt="青衫工具箱图标" />
+        </div>
         <div className="brand-text">
           <span className="brand-name">青衫工具箱</span>
           <span className="brand-caption">QINGSHAN TOOLBOX</span>
