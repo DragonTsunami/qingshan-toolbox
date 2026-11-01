@@ -45,11 +45,11 @@ devops-testkit (mocks)        // 仅测试/开发依赖
 | 层级 | 位置 | 内容 | 当前结果 |
 | --- | --- | --- | --- |
 | 契约测试 | `devops-core/tests/contract.rs` | camelCase 字段、枚举字符串、错误码、AppInfo | 5 / 5 |
-| 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 8 / 8 |
+| 应用层测试 | `devops-app/tests/service_layer.rs` | 参数转发、自进程保护、校验、错误传播、提权 | 11 / 11 |
 | 运维用例测试 | `devops-app/tests/maintenance.rs` | 清理扫描/执行转发、启动项/计划任务启停、软件清单 | 3 / 3 |
-| 组件/更新单测 | `devops-app` 内部 | `OpsService: Send + Sync`、日志查询校验/转发、诊断导出、更新版本比较 | 7 / 7 |
+| 组件/更新单测 | `devops-app` 内部 | `OpsService: Send + Sync`、日志查询校验/转发、诊断导出、更新版本比较 | 8 / 8 |
 | 插件清单测试 | `devops-plugins/tests/store.rs` | 内置种子、外部 manifest、BOM、启停持久化、市场、安装/移除、路径安装、非法 id/URL | 9 / 9 |
-| 平台单元测试 | `devops-platform` 内部 | 事件 XML 解析、关键字过滤、未知来源、诊断 CIM 形状 | 11 / 11 |
+| 平台单元测试 | `devops-platform` 内部 | 事件 XML 解析、关键字过滤、未知来源、诊断 CIM 形状 | 9 / 9 |
 | 平台集成测试 | `devops-platform/tests/platform_smoke.rs` | 真实 Windows 快照/进程/服务/网络/DNS、Application 事件日志查询 | 8 / 8 |
 | 运维集成测试 | `devops-platform/tests/maintenance.rs` | 磁盘清理扫描、启动项/软件读取、计划任务受限提示 | 3 / 3 |
 | 前端类型与构建 | `desktop/ui` | `tsc --noEmit && vite build` | 通过 |

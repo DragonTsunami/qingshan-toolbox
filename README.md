@@ -18,7 +18,7 @@
 
 - **一眼看健康**：主机、CPU、内存、磁盘、运行时间；健康诊断页汇总电池、磁盘 SMART、显卡与采样时间。
 - **排障三件套**：进程结束、Windows 服务启停/重启、TCP 端口与 DNS 诊断。
-- **日志与清理**：事件日志检索/详情/CSV 导出；临时文件、浏览器缓存、崩溃转储、更新缓存、回收站白名单清理。
+- **日志与清理**：最近 3 天事件日志检索/详情/CSV 导出，管理员可清空当前通道；临时文件、浏览器缓存、崩溃转储、更新缓存、回收站白名单清理。
 - **启动项与计划任务**：查看、启停，系统级操作按 UAC 权限收敛。
 - **软件清单**：软件 / 驱动 / 运行库 / 其他四类，真实图标、版本、最近使用、安装位置；有卸载命令的调用程序自带卸载器。
 - **诊断报告**：把硬件与系统摘要导出为 Markdown，方便贴到工单或发给同事；只在本机生成，不上传。
@@ -26,11 +26,11 @@
 
 > 设计原则：**本地优先、只读优先、危险操作白名单化**。诊断报告不含日志正文、文件内容或凭据；插件是声明式的，不执行第三方代码；卸载只调用程序自带卸载器，不直接删文件。
 
-> **状态**：v0.6.0 开发版，安装器与代码签名仍在收尾；正式安装包会通过 GitHub Releases 发布。当前 56 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
+> **状态**：v0.6.0 首个正式版发布准备中；安装包与代码签名由发布流程完成。当前 56 项 Rust 测试、16 项前端测试通过。界面采用与 **DeepSeek Harness** 同源的中性色 token、黑色主按钮与品牌蓝强调。
 
 > **如果这个项目对你有帮助，欢迎点一个 Star ⭐ 收藏。** 使用中遇到问题、想要某个能力，或者只是觉得哪里不顺手，都欢迎到 [Issues](https://github.com/DragonTsunami/qingshan-toolbox/issues) 反馈；你的反馈会直接影响下一步路线图。
 
-> **获取桌面端**：正式安装包发布后从 [Releases](https://github.com/DragonTsunami/qingshan-toolbox/releases) 下载；发布前可按下方「构建」章节从源码运行。`http://127.0.0.1:1421` 只是前端预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
+> **获取桌面端**：正式安装包发布后从 [Releases](https://github.com/DragonTsunami/qingshan-toolbox/releases) 下载；发布前可按下方「构建」章节从源码运行。`npm run dev` 的 `http://127.0.0.1:1420` 只是浏览器预览，不是交付形态；桌面端是独立的 Windows exe，不需要 Node/Vite。
 
 ![青衫工具箱 概览](docs/images/overview.png)
 
@@ -38,7 +38,7 @@
 
 ![插件发现：官方可选插件与安装入口](docs/images/plugins-discover.png)
 
-![日志中心：事件通道检索与导出](docs/images/logs-page.png)
+![日志中心：最近 3 天事件检索、导出与管理员清空](docs/images/logs-page.png)
 
 ![健康诊断：电池、磁盘 SMART、显卡与快速修复](docs/images/diagnostics.png)
 
@@ -66,7 +66,7 @@
 | 进程 | 列表、搜索、按 CPU/内存/名称排序、结束进程 | 自动刷新跟随全局间隔；支持强制终止；拦截对 青衫工具箱 自身的操作 |
 | 服务 | 枚举 Windows 服务、启停、重启、启动类型 | 操作后等待状态收敛（最长 20 秒）；需要管理员权限 |
 | 网络 | 接口、IP/MAC、流量、TCP 端口检测、DNS 解析 | 仅使用系统解析器与 TCP 握手，不执行任意命令 |
-| 日志 | Windows 事件日志 Application / System / Security 检索、级别与关键字过滤、事件详情、CSV 导出 | 通过 `wevtutil` 只读读取；Security 通道需要管理员权限；导出到 Downloads |
+| 日志 | 最近 3 天 Windows 事件日志 Application / System / Security 检索、级别与关键字过滤、事件详情、CSV 导出、管理员清空 | 默认只读；清空需管理员二次确认，Security 通道会留 Windows 审计记录；导出到 Downloads |
 | 磁盘清理 | 临时文件、浏览器缓存、崩溃转储、Windows Update 缓存、回收站扫描与清理 | 固定白名单，按 id 清理；不触碰个人文档；系统目录需要管理员权限 |
 | 启动项 | Run 注册表与启动文件夹、启用状态、启停 | 通过 StartupApproved 写回；系统级项目需要管理员权限 |
 | 计划任务 | 任务列表、状态、启停 | 优先读取任务计划服务，受限环境回退任务文件；系统任务需管理员权限 |
@@ -79,7 +79,7 @@
 | 权限 | 检测 UAC 提权状态、以管理员身份重启 | 通过 `ShellExecuteW(runas)` 触发 |
 | 体验 | 深色/浅色主题、跟随系统、DSH 同源视觉、WebView2 | 主题记忆在本机，支持 `?theme=dark` 预览 |
 
-**尚未实现（见路线图）**：远程协助、网络进阶、资产上报、网页端；v0.6 的 NSIS 安装包、代码签名、自动下载更新仍受本机工具/证书限制。
+**尚未实现（见路线图）**：远程协助、网络进阶、资产上报、网页端；自动下载/静默安装未接入，更新只做 GitHub 版本提示；安装包与代码签名在发布环境完成。
 
 
 ---
@@ -172,8 +172,8 @@ cargo build --release --features custom-protocol
 构建命令：
 
 ```powershell
-# 0. 仅本机需要：建立 ASCII 盘符（GNU dlltool 不支持中文路径）
-subst R: "C:\Users\青衫\Documents\DeepSeek-Devops"
+# 0. 仓库路径含中文时，建立 ASCII 盘符（GNU dlltool 不支持中文路径）
+subst R: "C:\path\to\qingshan-toolbox"
 
 # 1. 启动本地 Cargo 索引代理（首次或依赖变更时）
 node scripts/registry-proxy.mjs

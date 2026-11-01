@@ -22,6 +22,9 @@ web/.next/
 .DS_Store
 Thumbs.db
 
+# 本地 NSIS 打包实验/产物（不入库）
+installer/
+
 # 日志与本地环境
 *.log
 .env
