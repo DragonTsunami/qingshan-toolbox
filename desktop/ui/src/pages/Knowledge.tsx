@@ -473,15 +473,12 @@ export default function KnowledgePage() {
   const filteredItems = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     return KNOWLEDGE_BASE.filter((item) => {
-      // 级别筛选 (危险、紧急、重点、常见)
       if (selectedSeverity !== "all" && item.severity !== selectedSeverity) {
         return false;
       }
-      // 领域筛选
       if (selectedCategory !== "all" && item.category !== selectedCategory) {
         return false;
       }
-      // 关键字搜索
       if (!q) return true;
       return (
         item.title.toLowerCase().includes(q) ||
@@ -494,9 +491,29 @@ export default function KnowledgePage() {
     });
   }, [keyword, selectedSeverity, selectedCategory]);
 
-  // 一键尝试修复核心方法（替代用户手工复制命令）
+  // 打开独立“寻求企业 IT 帮助”弹窗（严格互斥关闭详情菜单，防止两个弹窗重叠遮挡）
+  const openSupportModal = () => {
+    setDetailItem(null);
+    setFixResult(null);
+    setShowSupportModal(true);
+  };
+
+  // 打开某个故障的排查详情（互斥关闭求助弹窗）
+  const openDetailModal = (item: TroubleshootingItem, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setShowSupportModal(false);
+    setDetailItem(item);
+  };
+
+  // 一键尝试修复核心方法
   const handleTryFix = async (item: TroubleshootingItem, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
     try {
       setFixingId(item.id);
       const res = await tryKnowledgeFix(item.id);
@@ -522,13 +539,13 @@ export default function KnowledgePage() {
       `故障现象: ${item.symptom}`,
       `排查根因: ${item.rootCause}`,
       `尝试动作: ${item.fixActionName}`,
-      `状态反馈: 已执行一键尝试修复，仍存在异常，特申请 IT 运维协助。`,
+      `状态反馈: 已经过工具箱一键自动化尝试，仍存在异常，申请企业运维老师协助处理。`,
     ]
       .filter(Boolean)
       .join("\n");
 
     void navigator.clipboard.writeText(text);
-    message.success("已复制故障报修摘要，可直接发送给企业 IT 运维人员");
+    message.success("已复制故障报修单，可直接通过企业微信/钉钉/飞书发给 IT 运维");
   };
 
   return (
@@ -546,17 +563,17 @@ export default function KnowledgePage() {
             size="large"
           />
           <Button
-            type="default"
+            type="primary"
             icon={<CustomerServiceOutlined />}
-            onClick={() => setShowSupportModal(true)}
-            style={{ borderRadius: 8, height: 40 }}
+            onClick={openSupportModal}
+            style={{ borderRadius: 8, height: 40, fontWeight: 500 }}
           >
             寻求企业 IT 帮助
           </Button>
         </div>
 
         <div className="kb-filters-container">
-          {/* 第一组：级别过滤 (危险、紧急、重点、常见) */}
+          {/* 第一组：级别过滤 */}
           <div className="kb-filter-row">
             <div className="kb-filter-group">
               <span className="kb-filter-label">故障等级:</span>
@@ -621,7 +638,11 @@ export default function KnowledgePage() {
             const conf = SEVERITY_CONFIG[item.severity];
             const isFixing = fixingId === item.id;
             return (
-              <article key={item.id} className="kb-card" onClick={() => setDetailItem(item)}>
+              <article
+                key={item.id}
+                className="kb-card"
+                onClick={(e) => openDetailModal(item, e)}
+              >
                 <div className="kb-card-top">
                   {/* 头部：级别 Badge + 错误代码 Tag */}
                   <div className="kb-card-head">
@@ -653,7 +674,7 @@ export default function KnowledgePage() {
                   <div className="kb-reason-box">{item.rootCause}</div>
                 </div>
 
-                {/* 卡片底部：直接一键修复尝试操作栏（无须用户手动复制黑命令） */}
+                {/* 卡片底部操作栏 */}
                 <div className="kb-card-bottom">
                   <div className="kb-action-row">
                     <Button
@@ -665,22 +686,19 @@ export default function KnowledgePage() {
                     >
                       {isFixing ? "正在尝试修复..." : "一键修复尝试"}
                     </Button>
-                    <Tooltip title="寻求企业 IT 运维帮助">
-                      <Button
-                        type="default"
-                        className="kb-help-btn"
-                        icon={<QuestionCircleOutlined />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowSupportModal(true);
-                        }}
-                      />
-                    </Tooltip>
+                    <Button
+                      type="default"
+                      className="kb-detail-btn"
+                      icon={<ToolOutlined />}
+                      onClick={(e) => openDetailModal(item, e)}
+                    >
+                      详细排障
+                    </Button>
                   </div>
 
-                  <div className="kb-footer-tips">
+                  <div className="kb-footer-tips" onClick={(e) => openDetailModal(item, e)}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      <ToolOutlined /> 点击卡片查看完整排查链
+                      <ToolOutlined /> 点击查看完整分析与企业运维指引
                     </span>
                     <ExpandAltOutlined style={{ color: "var(--muted)" }} />
                   </div>
@@ -691,7 +709,7 @@ export default function KnowledgePage() {
         </div>
       )}
 
-      {/* 完整排查链详情弹窗 */}
+      {/* 完整排查链详情弹窗（已完整内嵌运维求助指引，绝不与其他弹窗重叠打架） */}
       <Modal
         title={
           detailItem ? (
@@ -722,14 +740,13 @@ export default function KnowledgePage() {
           >
             复制报修信息
           </Button>,
-          <Button key="support" onClick={() => setShowSupportModal(true)}>
-            寻求运维支持
-          </Button>,
           <Button key="close" onClick={() => setDetailItem(null)}>
             关闭
           </Button>,
         ]}
         width={720}
+        zIndex={1050}
+        destroyOnClose
       >
         {detailItem && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
@@ -768,7 +785,7 @@ export default function KnowledgePage() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                排查细节与生产建议
+                排查细节与规程说明
               </div>
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text)", whiteSpace: "pre-line" }}>
                 {detailItem.solution}
@@ -788,19 +805,33 @@ export default function KnowledgePage() {
               </div>
             </div>
 
-            {/* 自动化修复提示 */}
-            <div className="kb-support-banner">
-              <InfoCircleOutlined style={{ color: "#faad14", fontSize: 16, marginTop: 2 }} />
-              <div>
-                <strong>免手动配置说明：</strong>
-                无需复制和手动运行复杂代码，点击下方【一键修复尝试】即可由工具箱执行自动化诊断或恢复。若问题依旧存在，请直接联系企业运维协助。
+            {/* 内嵌式企业运维支持与报修指引卡片（原地展示，杜绝二级弹窗重叠遮挡） */}
+            <div className="kb-embedded-support-card">
+              <div className="kb-support-head">
+                <CustomerServiceOutlined style={{ color: "var(--accent)", fontSize: 16 }} />
+                <span>企业 IT 桌面运维支持与快速报障指引</span>
+              </div>
+              <div className="kb-support-body">
+                <div>
+                  <strong>免手动操作原则：</strong>
+                  您无需手动复制或在终端中敲命令。点击下方【一键修复尝试】将由工具箱全自动执行系统轻量排障。
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <strong>遇到棘手故障？</strong>
+                  如果一键修复后仍未解决，或属于硬件物理故障/域控权限拦截：
+                </div>
+                <ol style={{ paddingLeft: 18, margin: "4px 0 0 0", color: "var(--text)" }}>
+                  <li>切勿擅自修改底层 BIOS/分区表或格式化磁盘；</li>
+                  <li>点击弹窗底部【复制报修信息】自动复制完整错误代码与机器诊断摘要；</li>
+                  <li>将内容直接粘贴发送给企业 IT 运维老师或录入服务台工单系统。</li>
+                </ol>
               </div>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* 修复尝试执行结果反馈弹窗 */}
+      {/* 修复尝试执行结果反馈弹窗 (独立高层级，绝不与详情菜单重叠) */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -819,10 +850,7 @@ export default function KnowledgePage() {
             key="help"
             type="primary"
             icon={<PhoneOutlined />}
-            onClick={() => {
-              setFixResult(null);
-              setShowSupportModal(true);
-            }}
+            onClick={openSupportModal}
           >
             联系企业运维 / 寻求帮助
           </Button>,
@@ -831,6 +859,8 @@ export default function KnowledgePage() {
           </Button>,
         ]}
         width={560}
+        zIndex={1150}
+        destroyOnClose
       >
         {fixResult && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, margin: "16px 0" }}>
@@ -863,37 +893,47 @@ export default function KnowledgePage() {
         )}
       </Modal>
 
-      {/* 企业 IT 桌面运维支持求助弹窗 */}
+      {/* 企业 IT 桌面运维支持求助独立弹窗 (最高层级 zIndex=2000，绝对置顶且互斥) */}
       <Modal
         title={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <CustomerServiceOutlined style={{ color: "var(--accent)" }} />
-            <span>企业 IT 桌面运维支持与求助指引</span>
+            <CustomerServiceOutlined style={{ color: "var(--accent)", fontSize: 18 }} />
+            <span>企业 IT 桌面运维支持与服务台求助指引</span>
           </div>
         }
         open={showSupportModal}
         onCancel={() => setShowSupportModal(false)}
         footer={[
           <Button key="close" type="primary" onClick={() => setShowSupportModal(false)}>
-            确认
+            我知道了
           </Button>,
         ]}
-        width={540}
+        width={560}
+        zIndex={2000}
+        destroyOnClose
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "12px 0", fontSize: 13, lineHeight: 1.6 }}>
-          <div style={{ padding: "12px", background: "var(--bg-soft)", borderRadius: 8, border: "1px solid var(--border)" }}>
-            <div style={{ fontWeight: 600, marginBottom: 6, color: "var(--text)" }}>📞 企业 IT 服务台标准报障流程：</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, margin: "14px 0", fontSize: 13, lineHeight: 1.6 }}>
+          <div style={{ padding: "14px", background: "var(--bg-soft)", borderRadius: 8, border: "1px solid var(--border)" }}>
+            <div style={{ fontWeight: 600, marginBottom: 8, color: "var(--text)", fontSize: 14 }}>
+              📞 企业 IT 服务台标准报障受理流程：
+            </div>
             <ol style={{ paddingLeft: 18, margin: 0, color: "var(--text-2)" }}>
-              <li><strong>记录现象：</strong>保存当前的报错弹窗截图或错误代码（如 0x11b, 0x50 等）。</li>
-              <li><strong>避免误操作：</strong>切勿自行格式化磁盘、修改 BIOS/UEFI 引导项或退域加域。</li>
-              <li><strong>上报支持：</strong>通过企业企业微信/钉钉/飞书提交 IT 工单，或拨打内网 IT 热线。</li>
+              <li style={{ marginBottom: 6 }}>
+                <strong>记录现象与代码：</strong>遇到蓝屏（如 0x50, 0x7B）或打印机故障（0x11b），在详情页点击【复制报修信息】一键提取完整报错日志。
+              </li>
+              <li style={{ marginBottom: 6 }}>
+                <strong>避免破坏性操作：</strong>切勿自行格式化磁盘、修改 BIOS/UEFI 启动模式、或擅自退域加域，防止丢失企业域配置文件。
+              </li>
+              <li>
+                <strong>提交支持渠道：</strong>通过企业企业微信、钉钉、飞书服务台工单，或拨打内网 IT 运维热线派单，等待桌面工程师远程或到场处置。
+              </li>
             </ol>
           </div>
 
-          <div style={{ padding: "12px", background: "var(--accent-soft)", borderRadius: 8, color: "var(--accent)" }}>
+          <div style={{ padding: "12px 14px", background: "var(--accent-soft)", borderRadius: 8, color: "var(--accent)" }}>
             <SafetyCertificateOutlined style={{ marginRight: 6 }} />
-            <strong>青衫工具箱承诺：</strong>
-            工具箱所有一键修复尝试均遵循企业级无损安全规程，不私自修改任何非必要系统核心分区。若环境存在域策略限制，运维团队可使用管理员权限协助您完成终极处置。
+            <strong>安全保障承诺：</strong>
+            青衫工具箱所有一键排查尝试均遵循企业桌面安全规范，绝不执行不可逆破坏性操作。如遇到域控策略限制，请由授权 IT 工程师协助处理。
           </div>
         </div>
       </Modal>

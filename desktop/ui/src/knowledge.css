@@ -263,13 +263,44 @@
   gap: 6px;
 }
 
-.kb-help-btn {
+.kb-detail-btn {
   border-radius: 6px;
+  font-size: 12px;
   color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.kb-help-btn:hover {
+.kb-detail-btn:hover {
   color: var(--accent);
+  border-color: var(--accent);
+}
+
+.kb-embedded-support-card {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kb-embedded-support-card .kb-support-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.kb-embedded-support-card .kb-support-body {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.6;
 }
 
 .kb-support-banner {
