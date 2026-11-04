@@ -24,6 +24,7 @@ import type {
   SystemDiagnostics,
   SystemSnapshot,
   UpdateCheck,
+  KnowledgeFixResult,
 } from "./types";
 import {
   mockAppInfo,
@@ -282,4 +283,16 @@ export async function exportDiagnostics(markdown: string): Promise<string> {
 export async function updateCheck(): Promise<UpdateCheck> {
   if (!isDesktopRuntime) return mockUpdateCheck();
   return call<UpdateCheck>("update_check");
+}
+
+export async function tryKnowledgeFix(id: string): Promise<KnowledgeFixResult> {
+  if (!isDesktopRuntime) {
+    return {
+      success: true,
+      title: "模拟环境一键修复尝试",
+      detail: "浏览器模拟运行：修复脚本已下发执行尝试。",
+      contactSupportTip: "若仍有问题，请联系企业 IT 桌面运维支持人员寻求帮助。",
+    };
+  }
+  return call<KnowledgeFixResult>("knowledge_try_fix", { id });
 }

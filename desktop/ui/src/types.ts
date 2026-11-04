@@ -349,3 +349,10 @@ export type PageKey =
   | "startup"
   | "software"
   | "settings";
+
+export interface KnowledgeFixResult {
+  success: boolean;
+  title: string;
+  detail: string;
+  contactSupportTip: string;
+}

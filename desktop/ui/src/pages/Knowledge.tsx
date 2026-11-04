@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from "react";
 import {
   AlertOutlined,
-  CheckOutlined,
+  CheckCircleOutlined,
   CloseCircleOutlined,
-  CopyOutlined,
-  DesktopOutlined,
+  CustomerServiceOutlined,
+  ExclamationCircleOutlined,
   ExpandAltOutlined,
   FireOutlined,
   GlobalOutlined,
   HddOutlined,
   InfoCircleOutlined,
   MailOutlined,
+  PhoneOutlined,
   PrinterOutlined,
   QuestionCircleOutlined,
   SafetyCertificateOutlined,
@@ -19,8 +20,11 @@ import {
   ToolOutlined,
   WarningOutlined,
   WindowsOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import { Button, Empty, Input, Modal, Tag, Tooltip, message } from "antd";
+import { tryKnowledgeFix } from "../api";
+import type { KnowledgeFixResult } from "../types";
 import "../knowledge.css";
 
 export type SeverityLevel = "danger" | "urgent" | "warning" | "common";
@@ -37,6 +41,7 @@ interface TroubleshootingItem {
   command: string;
   solution: string;
   bestPractice: string;
+  fixActionName: string;
 }
 
 const KNOWLEDGE_BASE: TroubleshootingItem[] = [
@@ -62,6 +67,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 进入安全模式，卸载近期更新的显卡/网卡驱动或涉事驱动；\n2. 若 !analyze -v 定位为硬件原因，断电重新插拔内存并使用橡皮擦清理金手指，更换插槽测试。",
     bestPractice:
       "企业环境应禁用非必要驱动强制静默更新，对高发蓝屏设备优先保留 Minidump 日志留痕，不盲目直接重装系统。",
+    fixActionName: "检查系统版本与启动状态",
   },
   {
     id: "dt-boot-bcd",
@@ -83,6 +89,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "进入 WinPE 终端，确认系统盘符为 C:，挂载 ESP 引导分区为 S:，执行：bcdboot C:\\Windows /s S: /f UEFI 瞬间重构原生 UEFI 引导文件并激活。",
     bestPractice:
       "现代办公电脑一律规范采用 UEFI + GPT 引导规范，彻底淘汰 Legacy MBR 模式，防止引导扇区易碎损坏。",
+    fixActionName: "读取当前 UEFI 引导参数",
   },
   {
     id: "dt-malware-miner",
@@ -105,6 +112,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 物理断网隔离；2. 使用 Process Explorer 挂起目标进程树并根据真实路径粉碎恶意文件；3. 清理任务计划程序与服务管理器中的常驻启动项；4. 强制更改所有域密码与本地管理员口令。",
     bestPractice:
       "全司严格推行强密码策略，禁止将办公机 RDP 端口直通公网；关键文档必须定期做 NAS 异地冷备份以防勒索。",
+    fixActionName: "应急排查高危外联连接",
   },
   {
     id: "dt-disk-smart-io",
@@ -126,6 +134,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 【黄金原则】若有关键资料，严禁反复跑写盘测试，第一时间将重要文件冷拷贝导出到外置移动硬盘；2. 更换损坏硬盘并使用工具对关键分区做镜像克隆。",
     bestPractice:
       "IT 资产台账应建立硬盘通电时间与 SMART 健康度年检机制，对预警硬盘提前做预防性更换。",
+    fixActionName: "检测磁盘介质 SMART 健康状态",
   },
 
   // ================= 🟠 紧急级 (Urgent) =================
@@ -149,6 +158,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 终端执行 ipconfig /release && ipconfig /renew 重新获取合法网关；\n2. 网管在核心交换机开启 DHCP Snooping 阻断非法 DHCP Offer，拔除私接路由器的 LAN 口连线。",
     bestPractice:
       "全网开启交换机 DHCP Snooping 与端口安全绑定，从根源绝杀内网私接路由器引发的大面积瘫痪。",
+    fixActionName: "释放并重新获取合法 DHCP 租约",
   },
   {
     id: "dt-ad-trust-failed",
@@ -170,6 +180,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "以本地管理员登录后，打开 PowerShell 运行修复命令：Test-ComputerSecureChannel -Repair -Credential (Get-Credential)，输入域管账号密码即可秒级重塑安全通道，无需退域加域！",
     bestPractice:
       "切忌动不动退域再加域（会导致员工本地 AppData 与桌面 Profile 迁移混乱），优先使用单条 PowerShell 修复指令。",
+    fixActionName: "安全信任通道健康探活",
   },
   {
     id: "dt-office-outlook-pst",
@@ -191,6 +202,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 先以 safe 模式启动，禁用可疑 COM 加载项；\n2. 若文件损坏，彻底关闭 Outlook 后，运行 C:\\Program Files\\Microsoft Office\\root\\Office16\\SCANPST.EXE 修复数据文件；\n3. 或直接将 .ost 更名为 .old，重新启动让 Outlook 自动从 Exchange 云端全量同步。",
     bestPractice:
       "指导经常超大容量收发邮件的员工配置邮件自动存档（AutoArchive），将旧邮件归档，保持主 OST 处于 20G 黄金健康线。",
+    fixActionName: "终止僵死进程并尝试以安全模式唤起",
   },
   {
     id: "dt-rdp-credssp",
@@ -211,6 +223,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "在客户端运行管理员命令添加注册表项，将 AllowEncryptionOracle 设为 2（易受攻击/宽松模式），即可立即成功建立远程桌面连接。",
     bestPractice:
       "临时连接处理完紧急故障后，必须推动被连接的服务端打满安全补丁，并将客户端策略恢复为受保护状态。",
+    fixActionName: "配置宽松 CredSSP 兼容策略",
   },
 
   // ================= 🟡 重点级 (Warning) =================
@@ -233,6 +246,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "在连接打印机的**主机端（服务端）**执行上述命令，将 RpcAuthnLevelPrivacyEnabled 设为 0 并重启打印后台服务，客户端即可一键正常连接。",
     bestPractice:
       "公司办公网优先采购网络直连打印机（自带 RJ45 网线接口或 Wi-Fi），采用 TCP/IP 端口直连，彻底规避 USB 电脑共享的权限兼容坑。",
+    fixActionName: "放行 RPC 打印共享并重启服务",
   },
   {
     id: "dt-printer-spooler-crash",
@@ -253,6 +267,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "运行管理员命令行：先停止 spooler 服务，清空 PRINTERS 目录下所有废弃缓存文件，再次启动服务即可彻底恢复稳定。",
     bestPractice:
       "若清空后依旧崩溃，多为某个残破第三方驱动导致，使用 printui.exe /s 删除有问题的旧版打印机驱动程序程序包。",
+    fixActionName: "清空损坏假脱机队列并重启 Spooler",
   },
   {
     id: "dt-sys-update-loop",
@@ -273,6 +288,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "以安全模式进入系统，停止 Windows Update 服务，将 SoftwareDistribution 重命名重置，再执行 dism /online /cleanup-image /restorehealth 清理修复组件仓库。",
     bestPractice:
       "企业电脑可通过组策略设置延迟功能更新，仅推送经过兼容性测试的累积质量补丁，防止批量员工电脑因更新翻车。",
+    fixActionName: "重置 Windows Update 缓存服务",
   },
   {
     id: "dt-office-kms-activate",
@@ -293,6 +309,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 先同步时钟：w32tm /resync；\n2. 重新绑定企业内网 KMS 服务器并强制激活：slmgr.vbs /skms <KMS地址> 随后 slmgr.vbs /ato。",
     bestPractice:
       "对于外发长期出差员工，建议分配 Office 365 E3/E5 商业云端授权或预先签发批量 MAK 激活密钥，避免脱离内网断活。",
+    fixActionName: "校准网络时钟并触发批量激活验证",
   },
 
   // ================= 🟢 常见级 (Common) =================
@@ -316,6 +333,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "以管理员身份运行一键重置三部曲：netsh winsock reset 重置目录、netsh int ip reset 重置 TCP/IP 协议栈，最后 ipconfig /flushdns 刷新缓存，重启计算机即可秒级复原。",
     bestPractice:
       "指导员工排查关闭浏览器中残留的无效系统代理设置（设置 ➔ 网络和 Internet ➔ 代理 ➔ 关闭手动代理）。",
+    fixActionName: "重置 Winsock / TCP-IP 并刷新 DNS",
   },
   {
     id: "dt-sys-explorer-hang",
@@ -336,6 +354,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "通过命令行快速强制结束假死的 Explorer 并立即重新拉起干净实例：taskkill /f /im explorer.exe && start explorer.exe 瞬间复活桌面与任务栏。",
     bestPractice:
       "使用 ShellExView 工具禁用非微软原生的第三方右键菜单扩展，从根源绝杀右键转圈假死。",
+    fixActionName: "强制重启假死的资源管理器进程",
   },
   {
     id: "dt-usb-gpo-block",
@@ -356,6 +375,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "若已获合规授权，执行管理员命令将注册表 WriteProtect 属性修改为 0 解除只读保护；若为域策略锁定，联系安全管理员在域控对应 OU 赋予临时放行策略。",
     bestPractice:
       "企业数据安全红线严禁私自违规绕过防泄密策略，外发文件应统一走审批加密外发通道。",
+    fixActionName: "重置本地注册表写保护标志",
   },
   {
     id: "dt-user-temp-profile",
@@ -376,6 +396,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "1. 以本地 Administrator 登入；\n2. 打开注册表定位至 ProfileList，找到带有 .bak 后缀的该用户 SID 项；\n3. 删除没有 .bak 的错误空项，将带 .bak 的项重命名去掉 .bak，并将 State 键值重置为 0，重启即可完美找回原桌面！",
     bestPractice:
       "嘱咐员工切勿在临时桌面中保存新工作文件（注销后会被临时目录抹掉），且平时重要文档应养成保存在 D 盘非系统盘的习惯。",
+    fixActionName: "扫描 ProfileList 账户配置文件状态",
   },
   {
     id: "dt-printer-offline",
@@ -396,6 +417,7 @@ const KNOWLEDGE_BASE: TroubleshootingItem[] = [
       "打开控制面板 ➔ 打印机属性 ➔ 切换到【端口】选项卡 ➔ 选中当前 IP 端口点击【配置端口】➔ **取消勾选【启用 SNMP 状态】**，点击确定后打印机状态瞬间恢复联机！",
     bestPractice:
       "安装网络打印机标准驱动时，统一去掉 SNMP 状态检测，彻底避免跨网段跨 VLAN 时误报脱机。",
+    fixActionName: "清空 ARP 地址表并重启打印服务",
   },
 ];
 
@@ -443,8 +465,10 @@ export default function KnowledgePage() {
   const [keyword, setKeyword] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [fixingId, setFixingId] = useState<string | null>(null);
   const [detailItem, setDetailItem] = useState<TroubleshootingItem | null>(null);
+  const [fixResult, setFixResult] = useState<KnowledgeFixResult | null>(null);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   const filteredItems = useMemo(() => {
     const q = keyword.trim().toLowerCase();
@@ -464,20 +488,47 @@ export default function KnowledgePage() {
         (item.errorCode && item.errorCode.toLowerCase().includes(q)) ||
         item.symptom.toLowerCase().includes(q) ||
         item.rootCause.toLowerCase().includes(q) ||
-        item.command.toLowerCase().includes(q) ||
+        item.fixActionName.toLowerCase().includes(q) ||
         item.solution.toLowerCase().includes(q)
       );
     });
   }, [keyword, selectedSeverity, selectedCategory]);
 
-  const handleCopy = (id: string, text: string, e?: React.MouseEvent) => {
+  // 一键尝试修复核心方法（替代用户手工复制命令）
+  const handleTryFix = async (item: TroubleshootingItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    try {
+      setFixingId(item.id);
+      const res = await tryKnowledgeFix(item.id);
+      setFixResult(res);
+    } catch (err) {
+      setFixResult({
+        success: false,
+        title: item.title + " - 修复尝试异常",
+        detail: `系统调用返回: ${String(err)}。可能是权限受限或当前策略拦截。`,
+        contactSupportTip: "自动化修复尝试遇阻，请直接联系企业 IT 桌面运维支持人员排查。",
+      });
+    } finally {
+      setFixingId(null);
+    }
+  };
+
+  // 一键复制故障信息供运维老师排障
+  const handleCopyFaultReport = (item: TroubleshootingItem) => {
+    const text = [
+      `【企业 IT 桌面运维报修单】`,
+      `故障项目: ${item.title}`,
+      item.errorCode ? `错误代码: ${item.errorCode}` : "",
+      `故障现象: ${item.symptom}`,
+      `排查根因: ${item.rootCause}`,
+      `尝试动作: ${item.fixActionName}`,
+      `状态反馈: 已执行一键尝试修复，仍存在异常，特申请 IT 运维协助。`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     void navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    message.success("诊断/排障命令已复制到剪贴板");
-    setTimeout(() => {
-      setCopiedId(null);
-    }, 2000);
+    message.success("已复制故障报修摘要，可直接发送给企业 IT 运维人员");
   };
 
   return (
@@ -494,6 +545,14 @@ export default function KnowledgePage() {
             allowClear
             size="large"
           />
+          <Button
+            type="default"
+            icon={<CustomerServiceOutlined />}
+            onClick={() => setShowSupportModal(true)}
+            style={{ borderRadius: 8, height: 40 }}
+          >
+            寻求企业 IT 帮助
+          </Button>
         </div>
 
         <div className="kb-filters-container">
@@ -560,6 +619,7 @@ export default function KnowledgePage() {
         <div className="kb-grid">
           {filteredItems.map((item) => {
             const conf = SEVERITY_CONFIG[item.severity];
+            const isFixing = fixingId === item.id;
             return (
               <article key={item.id} className="kb-card" onClick={() => setDetailItem(item)}>
                 <div className="kb-card-top">
@@ -593,19 +653,27 @@ export default function KnowledgePage() {
                   <div className="kb-reason-box">{item.rootCause}</div>
                 </div>
 
-                {/* 卡片底部：核心诊断命令与一键复制 */}
+                {/* 卡片底部：直接一键修复尝试操作栏（无须用户手动复制黑命令） */}
                 <div className="kb-card-bottom">
-                  <div className="kb-cmd-wrapper">
-                    <code className="kb-cmd-code" title={item.command}>
-                      {item.command}
-                    </code>
-                    <Tooltip title={copiedId === item.id ? "已复制" : "复制命令"}>
+                  <div className="kb-action-row">
+                    <Button
+                      type="primary"
+                      className="kb-fix-btn"
+                      icon={<ThunderboltOutlined />}
+                      loading={isFixing}
+                      onClick={(e) => handleTryFix(item, e)}
+                    >
+                      {isFixing ? "正在尝试修复..." : "一键修复尝试"}
+                    </Button>
+                    <Tooltip title="寻求企业 IT 运维帮助">
                       <Button
-                        type="text"
-                        size="small"
-                        className="kb-copy-btn"
-                        icon={copiedId === item.id ? <CheckOutlined style={{ color: "#52c41a" }} /> : <CopyOutlined />}
-                        onClick={(e) => handleCopy(item.id, item.command, e)}
+                        type="default"
+                        className="kb-help-btn"
+                        icon={<QuestionCircleOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSupportModal(true);
+                        }}
                       />
                     </Tooltip>
                   </div>
@@ -639,12 +707,23 @@ export default function KnowledgePage() {
         onCancel={() => setDetailItem(null)}
         footer={[
           <Button
-            key="copy"
+            key="fix"
             type="primary"
-            icon={<CopyOutlined />}
-            onClick={() => detailItem && handleCopy(detailItem.id, detailItem.command)}
+            icon={<ThunderboltOutlined />}
+            loading={detailItem ? fixingId === detailItem.id : false}
+            onClick={() => detailItem && handleTryFix(detailItem)}
           >
-            复制诊断与修复命令
+            一键修复尝试
+          </Button>,
+          <Button
+            key="copyFault"
+            icon={<CopyOutlined />}
+            onClick={() => detailItem && handleCopyFaultReport(detailItem)}
+          >
+            复制报修信息
+          </Button>,
+          <Button key="support" onClick={() => setShowSupportModal(true)}>
+            寻求运维支持
           </Button>,
           <Button key="close" onClick={() => setDetailItem(null)}>
             关闭
@@ -689,26 +768,6 @@ export default function KnowledgePage() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                一键诊断与修复指令
-              </div>
-              <div className="kb-cmd-wrapper">
-                <code className="kb-cmd-code" style={{ whiteSpace: "pre-wrap" }}>
-                  {detailItem.command}
-                </code>
-                <Tooltip title={copiedId === detailItem.id ? "已复制" : "复制命令"}>
-                  <Button
-                    type="text"
-                    size="small"
-                    className="kb-copy-btn"
-                    icon={copiedId === detailItem.id ? <CheckOutlined style={{ color: "#52c41a" }} /> : <CopyOutlined />}
-                    onClick={(e) => handleCopy(detailItem.id, detailItem.command)}
-                  />
-                </Tooltip>
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
                 排查细节与生产建议
               </div>
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text)", whiteSpace: "pre-line" }}>
@@ -728,8 +787,115 @@ export default function KnowledgePage() {
                 <strong>企业 IT 运维规程：</strong>{detailItem.bestPractice}
               </div>
             </div>
+
+            {/* 自动化修复提示 */}
+            <div className="kb-support-banner">
+              <InfoCircleOutlined style={{ color: "#faad14", fontSize: 16, marginTop: 2 }} />
+              <div>
+                <strong>免手动配置说明：</strong>
+                无需复制和手动运行复杂代码，点击下方【一键修复尝试】即可由工具箱执行自动化诊断或恢复。若问题依旧存在，请直接联系企业运维协助。
+              </div>
+            </div>
           </div>
         )}
+      </Modal>
+
+      {/* 修复尝试执行结果反馈弹窗 */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {fixResult?.success ? (
+              <CheckCircleOutlined style={{ color: "#52c41a", fontSize: 18 }} />
+            ) : (
+              <ExclamationCircleOutlined style={{ color: "#faad14", fontSize: 18 }} />
+            )}
+            <span>{fixResult?.title || "修复尝试反馈"}</span>
+          </div>
+        }
+        open={!!fixResult}
+        onCancel={() => setFixResult(null)}
+        footer={[
+          <Button
+            key="help"
+            type="primary"
+            icon={<PhoneOutlined />}
+            onClick={() => {
+              setFixResult(null);
+              setShowSupportModal(true);
+            }}
+          >
+            联系企业运维 / 寻求帮助
+          </Button>,
+          <Button key="ok" onClick={() => setFixResult(null)}>
+            我知道了
+          </Button>,
+        ]}
+        width={560}
+      >
+        {fixResult && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, margin: "16px 0" }}>
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 8,
+                background: "var(--bg-soft)",
+                border: "1px solid var(--border)",
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: "var(--text)",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {fixResult.detail}
+            </div>
+
+            <div className="kb-support-banner" style={{ marginTop: 0 }}>
+              <WarningOutlined style={{ color: "#faad14", fontSize: 18, marginTop: 2 }} />
+              <div>
+                <strong style={{ display: "block", marginBottom: 2 }}>后续处理与求助指引：</strong>
+                {fixResult.contactSupportTip}
+                <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>
+                  提示：如果上述尝试完成后故障现象仍未消失，请勿反复修改高级底层配置，请直接联系企业 IT 桌面运维团队。
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 企业 IT 桌面运维支持求助弹窗 */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <CustomerServiceOutlined style={{ color: "var(--accent)" }} />
+            <span>企业 IT 桌面运维支持与求助指引</span>
+          </div>
+        }
+        open={showSupportModal}
+        onCancel={() => setShowSupportModal(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setShowSupportModal(false)}>
+            确认
+          </Button>,
+        ]}
+        width={540}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "12px 0", fontSize: 13, lineHeight: 1.6 }}>
+          <div style={{ padding: "12px", background: "var(--bg-soft)", borderRadius: 8, border: "1px solid var(--border)" }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, color: "var(--text)" }}>📞 企业 IT 服务台标准报障流程：</div>
+            <ol style={{ paddingLeft: 18, margin: 0, color: "var(--text-2)" }}>
+              <li><strong>记录现象：</strong>保存当前的报错弹窗截图或错误代码（如 0x11b, 0x50 等）。</li>
+              <li><strong>避免误操作：</strong>切勿自行格式化磁盘、修改 BIOS/UEFI 引导项或退域加域。</li>
+              <li><strong>上报支持：</strong>通过企业企业微信/钉钉/飞书提交 IT 工单，或拨打内网 IT 热线。</li>
+            </ol>
+          </div>
+
+          <div style={{ padding: "12px", background: "var(--accent-soft)", borderRadius: 8, color: "var(--accent)" }}>
+            <SafetyCertificateOutlined style={{ marginRight: 6 }} />
+            <strong>青衫工具箱承诺：</strong>
+            工具箱所有一键修复尝试均遵循企业级无损安全规程，不私自修改任何非必要系统核心分区。若环境存在域策略限制，运维团队可使用管理员权限协助您完成终极处置。
+          </div>
+        </div>
       </Modal>
     </div>
   );
