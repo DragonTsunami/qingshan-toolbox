@@ -296,3 +296,12 @@ export async function tryKnowledgeFix(id: string): Promise<KnowledgeFixResult> {
   }
   return call<KnowledgeFixResult>("knowledge_try_fix", { id });
 }
+
+export async function fetchRemoteKnowledge(url: string): Promise<string> {
+  if (!isDesktopRuntime) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  }
+  return call<string>("fetch_remote_knowledge", { url });
+}

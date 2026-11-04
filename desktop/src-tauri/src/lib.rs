@@ -256,6 +256,7 @@ pub fn run() {
             commands::set_window_theme,
             commands::relaunch_as_admin,
             commands::knowledge_try_fix,
+            commands::fetch_remote_knowledge,
         ])
         .run(tauri::generate_context!())
         .expect("启动青衫工具箱失败");

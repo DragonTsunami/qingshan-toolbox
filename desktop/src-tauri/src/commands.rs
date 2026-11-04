@@ -549,6 +549,54 @@ pub async fn knowledge_try_fix(id: String) -> Result<KnowledgeFixResult, String>
                 "已清空局域网 ARP 硬件地址缓存，并重启了本地打印假脱机服务。",
                 "若网络打印机仍旧显示脱机，请在控制面板打印机属性的端口设置中取消勾选【启用 SNMP 状态】，或联系企业 IT 桌面运维人员检查打印机 IP 联通状态。"
             ),
+            "dt-audio-realtek" => (
+                "Windows 音频核心与端点服务重启",
+                "Restart-Service Audiosrv -Force -ErrorAction SilentlyContinue; Restart-Service AudioEndpointBuilder -Force -ErrorAction SilentlyContinue",
+                "已重新启动 Windows Audio 音频核心及端点构建服务，已触发音频设备重新探针。",
+                "若耳机依然无声音，多为音频插孔接触氧化松动或需要声卡硬件驱动修复，请联系企业 IT 运维人员协助。"
+            ),
+            "dt-screen-projection" => (
+                "多屏显示模式与投屏信号重置",
+                "DisplaySwitch.exe /extend",
+                "已向系统图形渲染层发送多显示器扩展投屏重置指令。",
+                "若外接显示器或会议室投影仪依然无画面，请检查 HDMI/Type-C 转接线是否松动，或联系会议室管理员检查信号输入通道。"
+            ),
+            "dt-ime-ctfmon" => (
+                "Windows 语言栏与输入法核心重启",
+                "Stop-Process -Name ctfmon -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; Start-Process \"ctfmon.exe\" -ErrorAction SilentlyContinue",
+                "已强制重新拉起 Windows 语言栏与文本输入控制进程 (ctfmon.exe)。",
+                "若键盘依然切不出中文输入法，说明可能存在输入法语言包配置冲突，请联系企业 IT 运维人员修复输入法设置。"
+            ),
+            "dt-clipboard-hang" => (
+                "系统剪贴板句柄清空与释放",
+                "cmd.exe /c \"echo off | clip\"",
+                "已清空并释放系统全局剪贴板通道，解除了被异常程序锁死的剪贴板句柄。",
+                "若仍旧无法复制粘贴，说明后台有流氓软件霸占了键盘快捷键钩子，请联系企业 IT 运维人员排查。"
+            ),
+            "dt-bt-peripheral" => (
+                "蓝牙设备支持服务与通信重置",
+                "Restart-Service bthserv -Force -ErrorAction SilentlyContinue",
+                "已重新启动 Windows 蓝牙底层支持服务并重置了无线外设配对会话。",
+                "若蓝牙键鼠依然卡顿或无法连接，通常由于外设电池电量耗尽或受工位 2.4G 严重干扰，请更换电池或联系运维。"
+            ),
+            "dt-camera-privacy" => (
+                "全局摄像头系统隐私开关修复",
+                "if (!(Test-Path \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\webcam\")) { New-Item -Path \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\webcam\" -Force | Out-Null }; Set-ItemProperty -Path \"HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\webcam\" -Name \"Value\" -Value \"Allow\" -Force -ErrorAction SilentlyContinue",
+                "已重置系统全局摄像头应用程序权限为允许，恢复会议软件画面采集通道。",
+                "若腾讯会议/Teams 画面依然黑屏，请检查笔记本电脑镜头上方的物理防窥遮挡拨片是否已推开，或联系运维人员。"
+            ),
+            "dt-disk-cleanup-c" => (
+                "系统 C 盘应急缓存与临时垃圾清理",
+                "Remove-Item -Path \"$env:TEMP\\*\" -Recurse -Force -ErrorAction SilentlyContinue; Clear-RecycleBin -Force -ErrorAction SilentlyContinue",
+                "已清空当前用户的临时垃圾缓存文件与回收站，为 C 盘腾出关键运行空间。",
+                "若 C 盘依然爆红剩余空间不足，多由微信个人文档缓存或大软件占用，请联系企业 IT 运维协助清理或迁移至 D 盘。"
+            ),
+            "dt-wifi-power-sleep" => (
+                "无线网卡节能休眠保护关闭",
+                "Get-NetAdapter -Name *Wi-Fi* -ErrorAction SilentlyContinue | Set-NetAdapterPowerManagement -WakeOnMagicPacket Disabled -ErrorAction SilentlyContinue",
+                "已调整无线网卡电源管理配置，防止系统待机时误将 Wi-Fi 芯片断电休眠导致掉线。",
+                "若无线网络依然每隔几分钟频繁掉线，说明工位所在 AP 信号覆盖不足或信道拥挤，请联系企业网络管理员排查。"
+            ),
             _ => (
                 "常规系统排查",
                 "ipconfig /flushdns",
@@ -592,6 +640,41 @@ pub async fn knowledge_try_fix(id: String) -> Result<KnowledgeFixResult, String>
             detail: format!("{}{}", detail, extra),
             contact_support_tip: fallback_contact.to_string(),
         })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn fetch_remote_knowledge(url: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut command = std::process::Command::new("powershell.exe");
+        command.args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            &format!(
+                "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (Invoke-WebRequest -Uri '{}' -UseBasicParsing -TimeoutSec 10).Content",
+                url.replace('\'', "''")
+            ),
+        ]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x0800_0000);
+        }
+        let output = command.output().map_err(|e| e.to_string())?;
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("网络请求失败: {}", err.trim()));
+        }
+        let content = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if content.is_empty() {
+            return Err("远程数据为空".to_string());
+        }
+        Ok(content)
     })
     .await
     .map_err(|e| e.to_string())?
