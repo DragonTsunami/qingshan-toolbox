@@ -32,6 +32,9 @@ fn wide(value: &str) -> Vec<u16> {
 /// window instead of creating another WebView2 profile and duplicate tray icon.
 #[cfg(windows)]
 fn claim_single_instance() -> bool {
+    if std::env::args().any(|arg| arg == "--multi" || arg == "--force") {
+        return true;
+    }
     let name = wide("Local\\QingshanToolbox.SingleInstance");
     let handle = unsafe { CreateMutexW(std::ptr::null(), 0, name.as_ptr()) };
     if handle.is_null() {
@@ -40,23 +43,28 @@ fn claim_single_instance() -> bool {
     let already_running = unsafe { GetLastError() } == ERROR_ALREADY_EXISTS;
     if already_running {
         unsafe { CloseHandle(handle) };
-        focus_existing_window();
-        return false;
+        if focus_existing_window() {
+            return false;
+        }
+        return true;
     }
     let _ = INSTANCE_MUTEX.set(handle as isize);
     true
 }
 
 #[cfg(windows)]
-fn focus_existing_window() {
+fn focus_existing_window() -> bool {
     let title = wide("青衫工具箱");
     let window = unsafe { FindWindowW(std::ptr::null(), title.as_ptr()) };
     if !window.is_null() {
         unsafe {
-            ShowWindow(window, SW_RESTORE);
+            ShowWindow(window, 5); // SW_SHOW
+            ShowWindow(window, 9); // SW_RESTORE
             SetForegroundWindow(window);
         }
+        return true;
     }
+    false
 }
 
 #[cfg(not(windows))]
@@ -196,11 +204,10 @@ pub fn run() {
             }
 
             if let Some(window) = app.get_webview_window("main") {
-                let hide_window = window.clone();
+                let app_handle = app.handle().clone();
                 window.on_window_event(move |event| {
-                    if let WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = hide_window.hide();
+                    if let WindowEvent::CloseRequested { .. } = event {
+                        app_handle.exit(0);
                     }
                 });
             }

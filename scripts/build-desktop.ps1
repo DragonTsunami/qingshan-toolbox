@@ -1,13 +1,4 @@
-﻿# Build 青衫工具箱 with the portable toolchain stored under .toolchain/.
-# This is a convenience wrapper for the current restricted machine; normal
-# development machines should just use `cargo build` (MSVC toolchain).
-#
-# Usage:
-#   .\scripts\build-desktop.ps1            # debug build
-#   .\scripts\build-desktop.ps1 -Release   # release build
-#   .\scripts\build-desktop.ps1 -Run       # build then launch
-#   .\scripts\build-desktop.ps1 -Check     # cargo check only
-param(
+﻿param(
     [switch]$Release,
     [switch]$Run,
     [switch]$Check
@@ -15,40 +6,48 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$toolchain = Join-Path $root '.toolchain\rustup\toolchains\stable-x86_64-pc-windows-gnu'
 
-if (!(Test-Path $toolchain)) {
-    throw "未找到便携 Rust 工具链：$toolchain。请先按 README 4.2 节准备，或直接使用系统 cargo。"
+function Resolve-ToolchainRoot {
+    if ($env:QINGSHAN_TOOLCHAIN_ROOT) { return (Resolve-Path $env:QINGSHAN_TOOLCHAIN_ROOT).Path }
+    if (Test-Path 'C:\Toolchain\cargo\bin\cargo.exe') { return 'C:\Toolchain' }
+    $local = Join-Path $root '.toolchain'
+    if (Test-Path (Join-Path $local 'cargo\bin\cargo.exe')) { return $local }
+    throw "未找到便携 Rust 工具链。请设置 QINGSHAN_TOOLCHAIN_ROOT。"
 }
 
-$cargoHome = Join-Path $root '.toolchain\cargo'
+$toolchainRoot = Resolve-ToolchainRoot
+$toolchain = Join-Path $toolchainRoot 'rustup\toolchains\stable-x86_64-pc-windows-gnu'
+
+if (!(Test-Path $toolchain)) {
+    throw "未找到 Rust 工具链目录：$toolchain"
+}
+
+$cargoHome = Join-Path $toolchainRoot 'cargo'
 $lld = Join-Path $toolchain 'lib\rustlib\x86_64-pc-windows-gnu\bin\gcc-ld\ld.lld.exe'
 if (!(Test-Path $lld)) {
     throw "未找到 ld.lld：$lld"
 }
 
 $env:CARGO_HOME = $cargoHome
-$env:RUSTUP_HOME = Join-Path $root '.toolchain\rustup'
-$env:PATH = "$cargoHome\bin;$(Join-Path $root '.toolchain\mingw-bin');$env:PATH"
+$env:RUSTUP_HOME = Join-Path $toolchainRoot 'rustup'
+$env:PATH = "$cargoHome\bin;$(Join-Path $toolchainRoot 'mingw-bin');$env:PATH"
 $env:CARGO_HTTP_PROXY = ''
 $env:NO_PROXY = '127.0.0.1,localhost'
 
-# GNU dlltool cannot handle non-ASCII paths. When an ASCII subst drive (R:) is
-# available, keep all build artifacts and temp files on it.
-if (Test-Path 'R:\') {
-    $env:CARGO_TARGET_DIR = 'R:\target'
-    $env:TEMP = 'R:\.toolchain\tmp'
+$asciiDrive = $null
+foreach ($letter in @('R', 'S')) {
+    if (Test-Path "${letter}:\") { $asciiDrive = "${letter}:"; break }
+}
+if ($asciiDrive) {
+    $env:CARGO_TARGET_DIR = "$asciiDrive\target"
+    $env:TEMP = "$asciiDrive\.toolchain\tmp"
 } else {
     $env:CARGO_TARGET_DIR = Join-Path $root 'desktop\target'
     $env:TEMP = Join-Path $root '.toolchain\tmp'
-    Write-Warning "构建路径包含中文时，dlltool 可能失败。建议先执行：subst R: `"$root`""
 }
 $env:TMP = $env:TEMP
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 
-# The bundled GNU gcc driver is unusable in this sandbox; link with lld directly.
-# The explicit -L entries are required because a custom linker gets no default
-# sysroot search paths from rustc.
 $rustLib = Join-Path $toolchain 'lib\rustlib\x86_64-pc-windows-gnu\lib'
 $env:RUSTFLAGS = "-C linker=$lld -C linker-flavor=ld -C link-self-contained=yes -L native=$rustLib -L native=$rustLib\self-contained"
 $env:CARGO_TERM_PROGRESS_WHEN = 'never'
@@ -61,11 +60,7 @@ if (!(Test-Path $distIndex)) {
 $manifest = Join-Path $root 'desktop\src-tauri\Cargo.toml'
 $buildArgs = @('build', '--manifest-path', $manifest)
 if ($Release) {
-    # `custom-protocol` embeds ui/dist. Without it Tauri loads build.devUrl
-    # (http://localhost:1420), which only exists while a Vite server is running.
     $buildArgs += @('--release', '--features', 'custom-protocol')
-} else {
-    Write-Warning "debug 构建使用 devUrl（http://localhost:1420），需要 Vite 开发服务器。独立运行请使用 -Release。"
 }
 
 Push-Location (Join-Path $root 'desktop')
@@ -83,7 +78,6 @@ try {
     $builtExe = Join-Path $targetRoot "$profile\opsdeck.exe"
 
     if ($Release) {
-        # Stage portable artifacts in the repository-root delivery folder.
         $dist = Join-Path $root 'QingshanToolbox'
         New-Item -ItemType Directory -Force -Path $dist | Out-Null
         $stagedExe = Join-Path $dist 'QingshanToolbox.exe'

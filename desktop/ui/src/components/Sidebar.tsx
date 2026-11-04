@@ -8,6 +8,7 @@ import {
   FileTextOutlined,
   GlobalOutlined,
   HeartOutlined,
+  ReadOutlined,
   RocketOutlined,
   SafetyCertificateFilled,
   SettingOutlined,
@@ -27,6 +28,7 @@ interface SidebarProps {
 
 const NAV_ITEMS: Array<{ key: PageKey; label: string; icon: React.ReactNode; hint: string }> = [
   { key: "plugins", label: "插件", icon: <AppstoreAddOutlined />, hint: "扩展工作台" },
+  { key: "knowledge", label: "资料库", icon: <ReadOutlined />, hint: "运维日常排障手册与解决方案" },
   { key: "overview", label: "概览", icon: <DashboardOutlined />, hint: "健康状态" },
   { key: "diagnostics", label: "健康诊断", icon: <HeartOutlined />, hint: "硬件与快速修复" },
   { key: "processes", label: "进程管理", icon: <DeploymentUnitOutlined />, hint: "资源与终止" },

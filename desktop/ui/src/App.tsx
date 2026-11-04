@@ -4,6 +4,7 @@ import zhCN from "antd/locale/zh_CN";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import PluginsPage from "./pages/Plugins";
+import KnowledgePage from "./pages/Knowledge";
 import OverviewPage from "./pages/Overview";
 import DiagnosticsPage from "./pages/Diagnostics";
 import ProcessesPage from "./pages/Processes";
@@ -25,6 +26,7 @@ import type { AppInfo, PageKey, SystemSnapshot } from "./types";
 
 const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
   plugins: { title: "插件", subtitle: "声明式扩展工作台能力" },
+  knowledge: { title: "资料库", subtitle: "运维日常高频故障排查链与权威解决方案" },
   overview: { title: "概览", subtitle: "本机健康状态与关键指标" },
   diagnostics: { title: "健康诊断", subtitle: "电池、磁盘、显卡与快速修复" },
   processes: { title: "进程管理", subtitle: "查看资源占用并安全地结束进程" },
@@ -122,6 +124,8 @@ function App() {
     switch (page) {
       case "plugins":
         return <PluginsPage />;
+      case "knowledge":
+        return <KnowledgePage />;
       case "diagnostics":
         return <DiagnosticsPage snapshot={snapshot} />;
       case "processes":

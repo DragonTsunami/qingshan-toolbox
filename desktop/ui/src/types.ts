@@ -338,6 +338,7 @@ export interface UpdateCheck {
 
 export type PageKey =
   | "plugins"
+  | "knowledge"
   | "overview"
   | "diagnostics"
   | "processes"
