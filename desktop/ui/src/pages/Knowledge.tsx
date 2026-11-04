@@ -4,12 +4,14 @@ import {
   CheckOutlined,
   CloseCircleOutlined,
   CopyOutlined,
-  DatabaseOutlined,
+  DesktopOutlined,
   ExpandAltOutlined,
   FireOutlined,
   GlobalOutlined,
   HddOutlined,
   InfoCircleOutlined,
+  MailOutlined,
+  PrinterOutlined,
   QuestionCircleOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
@@ -25,7 +27,7 @@ export type SeverityLevel = "danger" | "urgent" | "warning" | "common";
 
 interface TroubleshootingItem {
   id: string;
-  category: "docker" | "linux" | "network" | "database" | "windows";
+  category: "system" | "network" | "hardware" | "printer" | "office";
   severity: SeverityLevel;
   title: string;
   errorCode?: string;
@@ -38,362 +40,366 @@ interface TroubleshootingItem {
 }
 
 const KNOWLEDGE_BASE: TroubleshootingItem[] = [
-  // --- 危险级 (Danger) ---
+  // ================= 🔴 危险级 (Danger) =================
   {
-    id: "docker-oom",
-    category: "docker",
+    id: "dt-bsod-dump",
+    category: "system",
     severity: "danger",
-    title: "容器突发 Exit 137 (OOMKilled 强杀)",
-    errorCode: "OOMKilled: true (Exit Code 137)",
+    title: "Windows 蓝屏崩溃 (BSOD) 转储排查",
+    errorCode: "CRITICAL_PROCESS_DIED / PAGE_FAULT (0x50)",
     symptom:
-      "容器无预警 Crash 停止，docker inspect 返回 \"OOMKilled\": true, \"ExitCode\": 137，服务彻底中断。",
+      "员工办公电脑突发蓝屏重启，蓝屏代码多为 CRITICAL_PROCESS_DIED、PAGE_FAULT_IN_NONPAGED_AREA (0x50) 或 KERNEL_SECURITY_CHECK_FAILURE，开机后不久重复死机。",
     rootCause:
-      "容器内应用内存占用击穿了 Docker Cgroups 内存配额，被 Linux 内核 OOM Killer 强行发送 SIGKILL (9) 处决（128 + 9 = 137）。",
+      "通常由近期 Windows 质量补丁与驱动冲突、第三方杀毒/加解密驱动（.sys）损坏、或物理内存条金手指氧化松动引发内存寻址异常。",
     diagnosticSteps: [
-      "查验宿主机内核 OOM 拦截记录：dmesg -T | grep -E -i 'killed process|oom-killer'",
-      "核对容器内存限制阈值：docker inspect <容器名> | grep -i memory",
-      "实时监控容器内存消耗：docker stats --no-stream",
+      "提取系统崩溃转储日志：C:\\Windows\\Minidump\\*.dmp",
+      "使用 WinDbg 运行自动分析命令：!analyze -v 锁定引发崩溃的具体驱动名",
+      "执行系统组件完整性扫描：sfc /scannow 与 DISM 修复",
+      "执行内存硬件诊断：Windows 内存诊断工具 (mdsched.exe)",
     ],
-    command: "dmesg -T | grep -E -i 'killed process|oom-killer' | tail -n 15",
+    command: "sfc /scannow && dism /online /cleanup-image /restorehealth",
     solution:
-      "1. 临时调大 compose 或 run 中的 memory limit；\n2. 若为 Java 容器，配置 -XX:+UseContainerSupport 并预留 25% 堆外与元空间冗余；\n3. 定位是否存在堆内对象泄漏或未关闭资源。",
+      "1. 进入安全模式，卸载近期更新的显卡/网卡驱动或涉事驱动；\n2. 若 !analyze -v 定位为硬件原因，断电重新插拔内存并使用橡皮擦清理金手指，更换插槽测试。",
     bestPractice:
-      "生产容器禁止裸跑无 limit，同时内存上限应设置在应用峰值的 1.3 倍以上，严禁紧贴临界值。",
+      "企业环境应禁用非必要驱动强制静默更新，对高发蓝屏设备优先保留 Minidump 日志留痕，不盲目直接重装系统。",
   },
   {
-    id: "docker-iptables",
-    category: "docker",
+    id: "dt-boot-bcd",
+    category: "system",
     severity: "danger",
-    title: "Docker 端口映射报错 iptables failed 容器全阻断",
-    errorCode: "driver failed programming external connectivity",
+    title: "开机引导丢失 (An OS wasn't found / BCD 损坏)",
+    errorCode: "INACCESSIBLE_BOOT_DEVICE (0x7B) / 0xc000000f",
     symptom:
-      "启动容器映射端口时抛错：\nError response from daemon: driver failed programming external connectivity ... (iptables failed: No chain/target/match by that name)",
+      "电脑开机黑屏提示：An operating system wasn't found 或 Recovery 0xc000000f，无法进入 Windows 桌面。",
     rootCause:
-      "宿主机重启了 firewalld 或 iptables，导致 Docker 注入在内核 nat/filter 表的自定义 DOCKER 链被全量刷掉丢失。",
+      "磁盘分区表 MBR/GPT 异常、BIOS/UEFI 引导模式与分区格式不匹配、或更新后 Windows BCD 引导扇区数据被破坏。",
     diagnosticSteps: [
-      "检查 iptables 中的 DOCKER 链：iptables -L -n -v | grep DOCKER",
-      "检查 firewalld 服务状态：systemctl status firewalld",
-      "检查 Docker 服务健康度：systemctl status docker",
+      "检查 BIOS 设置中 Boot Mode 是否被误切为 Legacy/UEFI",
+      "检查 SATA Mode 是否由 AHCI 变更为 RAID/IDE",
+      "通过 WinPE 启动盘使用 Diskpart 检查系统分区卷标与活动分区 (Active)",
     ],
-    command: "systemctl restart docker",
+    command: "bcdboot C:\\Windows /s S: /f UEFI",
     solution:
-      "直接重启 Docker 服务即可自动重建所需的 iptables/nat 自定义链。若使用 firewalld，务必先启动 firewalld 再启动 docker。",
+      "进入 WinPE 终端，确认系统盘符为 C:，挂载 ESP 引导分区为 S:，执行：bcdboot C:\\Windows /s S: /f UEFI 瞬间重构原生 UEFI 引导文件并激活。",
     bestPractice:
-      "在 /etc/docker/daemon.json 中配置 \"iptables\": true，或配置 systemd 依赖关系使得 docker 在防火墙就绪后再启动。",
+      "现代办公电脑一律规范采用 UEFI + GPT 引导规范，彻底淘汰 Legacy MBR 模式，防止引导扇区易碎损坏。",
   },
   {
-    id: "db-redis-misconf",
-    category: "database",
+    id: "dt-malware-miner",
+    category: "system",
     severity: "danger",
-    title: "Redis 拒绝所有写入: MISCONF RDB 持久化阻断",
-    errorCode: "MISCONF Errors writing to the AOF/RDB",
+    title: "办公机被植入挖矿木马 / 勒索病毒应急隔离",
+    errorCode: "High CPU/GPU 100% & Suspicious RDP Outbound",
     symptom:
-      "Redis 拒绝所有 set/hset 等写操作，返回：MISCONF Redis is configured to save RDB snapshots, but is currently not able to persist on disk.",
+      "电脑风扇狂转咆哮，CPU/显卡占用常年 100%，打开任务管理器时占用瞬间骤降，局域网内异常向未知公网 IP 大量发送流量。",
     rootCause:
-      "Redis 执行 BGSAVE 生成快照需要 fork() 子进程。Linux 内核内存过量分配策略（vm.overcommit_memory=0）判定内存不足拒绝 fork。",
+      "员工私自下载运行了带毒激活工具/破解软件，或办公机启用了弱口令 RDP (3389) 暴露外网，被黑客扫描暴力破解植入挖矿后门或勒索病毒。",
     diagnosticSteps: [
-      "检查内核内存预留分配策略：sysctl vm.overcommit_memory",
-      "检查 Redis 持久化状态：redis-cli info persistence",
+      "【第一步】立即拔掉网线或断开 Wi-Fi 物理隔离，防止横向扩散！",
+      "查验隐藏进程真实路径：wmic process get caption,commandline,processid",
+      "排查所有可疑网络外联端口：netstat -ano | findstr ESTABLISHED",
+      "排查任务计划程序与启动项：tasklib、注册表 Run 键值",
     ],
-    command: "sudo sysctl vm.overcommit_memory=1 && redis-cli config set stop-writes-on-bgsave-error no",
+    command: "wmic process where \"ProcessId > 100\" get Caption,ExecutablePath,ProcessId",
     solution:
-      "1. 紧急恢复写入：redis-cli config set stop-writes-on-bgsave-error no；\n2. 永久根治：执行 sudo sysctl vm.overcommit_memory=1 并写入 /etc/sysctl.conf 重载。",
+      "1. 物理断网隔离；2. 使用 Process Explorer 挂起目标进程树并根据真实路径粉碎恶意文件；3. 清理任务计划程序与服务管理器中的常驻启动项；4. 强制更改所有域密码与本地管理员口令。",
     bestPractice:
-      "Redis 初始化基线参数：vm.overcommit_memory=1、禁用 Transparent Huge Pages (THP)、调大 somaxconn 至 2048。",
+      "全司严格推行强密码策略，禁止将办公机 RDP 端口直通公网；关键文档必须定期做 NAS 异地冷备份以防勒索。",
+  },
+  {
+    id: "dt-disk-smart-io",
+    category: "hardware",
+    severity: "danger",
+    title: "磁盘掉盘/只读保护与坏道急救 (I/O Device Error)",
+    errorCode: "0x8007045D (I/O Device Error) / SMART 05 Alert",
+    symptom:
+      "复制大文件报错 0x8007045D（由于 I/O 设备错误，无法运行此项请求），或固态硬盘掉盘变为只读模式，无法新建或保存任何文件。",
+    rootCause:
+      "机械硬盘出现物理坏道，磁头读取遇阻；或 SSD 主控触发保护机制锁定为 Read-Only 模式。",
+    diagnosticSteps: [
+      "检查 CrystalDiskInfo / SMART 参数：查看 05 重分配扇区数与 0BB 无法校正错误",
+      "运行磁盘文件系统修复：chkdsk C: /f /r",
+      "检查事件查看器系统日志中的 Disk / Ntfs 报错事件",
+    ],
+    command: "chkdsk C: /f /r",
+    solution:
+      "1. 【黄金原则】若有关键资料，严禁反复跑写盘测试，第一时间将重要文件冷拷贝导出到外置移动硬盘；2. 更换损坏硬盘并使用工具对关键分区做镜像克隆。",
+    bestPractice:
+      "IT 资产台账应建立硬盘通电时间与 SMART 健康度年检机制，对预警硬盘提前做预防性更换。",
   },
 
-  // --- 紧急级 (Urgent) ---
+  // ================= 🟠 紧急级 (Urgent) =================
   {
-    id: "db-mysql-connections",
-    category: "database",
-    severity: "urgent",
-    title: "MySQL 报 Too many connections 拒绝新连接",
-    errorCode: "Error 1040 (HY000): Too many connections",
-    symptom:
-      "所有业务服务与前端报错：Communications link failure: Error 1040: Too many connections，运维连控制台都无法登录。",
-    rootCause:
-      "活动连接数达到了 MySQL 的 max_connections 上限。通常由后端应用突发流量并发冲顶、连接池泄漏、或慢 SQL 引起连接堆积。",
-    diagnosticSteps: [
-      "利用预留的 1 个专属连接登录：mysql -u root -p -h 127.0.0.1",
-      "查看当前最大连接配置：SHOW VARIABLES LIKE 'max_connections';",
-      "查看当前各线程活动状态：SHOW FULL PROCESSLIST;",
-    ],
-    command: "mysql -u root -p -e \"SET GLOBAL max_connections = 2000; SHOW FULL PROCESSLIST;\"",
-    solution:
-      "1. 紧急动态调大连接数：SET GLOBAL max_connections = 2000;（无需重启）；\n2. 执行 SHOW PROCESSLIST 查找处于 Locked 的慢查询，KILL <ID> 斩断。",
-    bestPractice:
-      "在 my.cnf 中持久化 max_connections，并合理调小 wait_timeout（如从 28800 缩短为 600）及时回收死连接。",
-  },
-  {
-    id: "db-mysql-lock-timeout",
-    category: "database",
-    severity: "urgent",
-    title: "MySQL 行锁事务超时: Lock wait timeout",
-    errorCode: "Error 1205: Lock wait timeout exceeded",
-    symptom:
-      "业务写入 SQL 偶发超时失败：ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction。",
-    rootCause:
-      "前序未提交的长事务锁定了目标行锁或间隙锁，后续事务等待超过了 innodb_lock_wait_timeout（默认 50 秒）限制。",
-    diagnosticSteps: [
-      "查询正在阻塞运行的长事务：SELECT * FROM information_schema.innodb_trx\\G",
-      "查询锁等待关联：SELECT * FROM performance_schema.data_lock_waits\\G",
-    ],
-    command: "mysql -u root -p -e \"SELECT trx_id, trx_state, trx_started, trx_query, trx_mysql_thread_id FROM information_schema.innodb_trx ORDER BY trx_started ASC;\"",
-    solution:
-      "根据查询结果中的 trx_mysql_thread_id，执行 KILL <thread_id> 强行斩断占锁的长事务释放行锁。",
-    bestPractice:
-      "严格要求研发事务切小切短，禁止在事务内混杂 RPC 远程调用或大批次耗时循环更新。",
-  },
-  {
-    id: "net-time-wait",
+    id: "dt-net-ip-conflict",
     category: "network",
     severity: "urgent",
-    title: "TIME_WAIT 连接过多导致端口耗尽",
-    errorCode: "EADDRNOTAVAIL (TIME_WAIT Exhaustion)",
+    title: "企业内网 IP 冲突 / DHCP 租约泛洪断网",
+    errorCode: "Windows detected an IP address conflict",
     symptom:
-      "高并发反向代理或网关抛出报错：connect() failed (99: Cannot assign requested address)，无法发起对外新连接。",
+      "多台电脑右下角网络图标弹出黄色感叹号，提示“Windows 检测到 IP 地址冲突”，或整排工位同时断网无法获取内网 IP。",
     rootCause:
-      "主动关闭 TCP 连接方需停留 2MSL 时间的 TIME_WAIT 状态。极端高频短连接场景下，本地临时端口范围（通常 28232 个）被耗尽未释放。",
+      "某部门私自接入未经授权的小无线路由器，网线误插在 LAN 口而非 WAN 口，导致私接路由器向内网泛洪下发假 DHCP 地址池（DHCP 污染）。",
     diagnosticSteps: [
-      "统计各状态 TCP 连接数量：ss -ant | awk '{print $1}' | sort | uniq -c",
-      "查看本地端口分配范围：cat /proc/sys/net/ipv4/ip_local_port_range",
+      "查看当前获取到的网关是否为公司真实网关：ipconfig /all",
+      "查看冲突 IP 对应的设备物理 MAC：arp -a | findstr <冲突IP>",
+      "在三层核心交换机查验该 MAC 挂载的具体物理端口",
     ],
-    command: "sudo sysctl -w net.ipv4.tcp_tw_reuse=1",
+    command: "ipconfig /release && ipconfig /renew",
     solution:
-      "1. 开启安全端口复用：在 /etc/sysctl.conf 中配置 net.ipv4.tcp_tw_reuse = 1 并执行 sysctl -p；\n2. 扩大本地端口范围：net.ipv4.ip_local_port_range = 10240 65535；\n3. 在 Nginx 等反向代理开启 upstream keepalive 连接池长连接复用。",
+      "1. 终端执行 ipconfig /release && ipconfig /renew 重新获取合法网关；\n2. 网管在核心交换机开启 DHCP Snooping 阻断非法 DHCP Offer，拔除私接路由器的 LAN 口连线。",
     bestPractice:
-      "绝对不要开启过时的 net.ipv4.tcp_tw_recycle（Linux 4.12 已被移除，公网 NAT 环境会导致合法连接被丢弃）。",
+      "全网开启交换机 DHCP Snooping 与端口安全绑定，从根源绝杀内网私接路由器引发的大面积瘫痪。",
   },
   {
-    id: "win-service-stopping",
-    category: "windows",
+    id: "dt-ad-trust-failed",
+    category: "system",
     severity: "urgent",
-    title: "Windows 服务卡在 Stopping 状态且按钮置灰",
-    errorCode: "Service Stuck in 'Stopping' State",
+    title: "Active Directory 域信任关系丢失导致无法登录",
+    errorCode: "The trust relationship between workstation and domain failed",
     symptom:
-      "在 services.msc 控制台中停止某个服务，状态一直显示为“正在停止”，启动/停止按钮不可点击，无法重新拉起。",
+      "员工输入域账号密码时提示：“此工作站与主域之间的信任关系失败”，域账户无法登入桌面。",
     rootCause:
-      "服务主进程在执行关闭钩子或释放句柄时死锁或异常挂死，没有及时向 Windows SCM (服务控制管理器) 汇报 STOPPED 状态更新。",
+      "电脑长期关机离线（超过 30 天密码轮转周期）、或者在虚拟机克隆后 SID 冲突，导致域控上该计算机对象的加密通道密码（Machine Account Password）脱节。",
     diagnosticSteps: [
-      "通过 sc 查询该服务的底层专属 PID：sc queryex <服务名>",
+      "断开网线可临时使用缓存凭据登入（如果曾开启过缓存登录）",
+      "使用本地管理员账号登入计算机：.\\administrator",
+      "测试安全信任通道状态：Test-ComputerSecureChannel",
     ],
-    command: "sc queryex <服务名> && taskkill /f /pid <查询出的PID>",
+    command: "Test-ComputerSecureChannel -Repair -Credential (Get-Credential)",
     solution:
-      "运行 sc queryex 查出 PID_STATE 中的 PID 号，随后使用 taskkill /f /pid <PID> 强行终结对应挂死进程，SCM 即可恢复正常初始态。",
+      "以本地管理员登录后，打开 PowerShell 运行修复命令：Test-ComputerSecureChannel -Repair -Credential (Get-Credential)，输入域管账号密码即可秒级重塑安全通道，无需退域加域！",
     bestPractice:
-      "对于自研的 Windows Service，务必在 OnStop 生命周期内加入超时退出防护，防止单线程阻塞整个服务宿主。",
+      "切忌动不动退域再加域（会导致员工本地 AppData 与桌面 Profile 迁移混乱），优先使用单条 PowerShell 修复指令。",
+  },
+  {
+    id: "dt-office-outlook-pst",
+    category: "office",
+    severity: "urgent",
+    title: "Outlook / 邮箱客户端启动卡死 / 数据文件损坏",
+    errorCode: "Cannot start Microsoft Outlook / OST Corrupted",
+    symptom:
+      "启动 Outlook 提示“无法打开 Outlook 窗口。无法打开这套文件夹”，或一直卡在“正在加载配置文件”，严重影响高管收发邮件。",
+    rootCause:
+      "Outlook 数据文件（.ost / .pst）体积逼近或超过 50GB 上限导致索引崩溃；或第三方防病毒邮件扫描加载项引起主线程死锁。",
+    diagnosticSteps: [
+      "测试安全模式排查加载项：outlook.exe /safe",
+      "检查数据文件体积：进入 %LOCALAPPDATA%\\Microsoft\\Outlook 确认 OST 文件大小",
+      "排查后台死锁进程：tasklist | findstr /i outlook",
+    ],
+    command: "outlook.exe /safe",
+    solution:
+      "1. 先以 safe 模式启动，禁用可疑 COM 加载项；\n2. 若文件损坏，彻底关闭 Outlook 后，运行 C:\\Program Files\\Microsoft Office\\root\\Office16\\SCANPST.EXE 修复数据文件；\n3. 或直接将 .ost 更名为 .old，重新启动让 Outlook 自动从 Exchange 云端全量同步。",
+    bestPractice:
+      "指导经常超大容量收发邮件的员工配置邮件自动存档（AutoArchive），将旧邮件归档，保持主 OST 处于 20G 黄金健康线。",
+  },
+  {
+    id: "dt-rdp-credssp",
+    category: "network",
+    severity: "urgent",
+    title: "远程桌面 (RDP) 报 CredSSP 凭据加密 Oracle 修正",
+    errorCode: "CredSSP Encryption Oracle Remediation",
+    symptom:
+      "远程连接服务器或同事电脑时弹窗拦截：出现身份验证错误。要求的函数不受支持。这可能是由于 CredSSP 凭据加密 Oracle 修正。",
+    rootCause:
+      "客户端 Windows 安装了 CVE-2018-0886 安全补丁，而目标远程机为老旧 Windows Server 未打相应补丁，高安全级别策略主动拒绝建立 RDP 连接。",
+    diagnosticSteps: [
+      "验证是否为客户端组策略拦截阻断",
+      "核对被连接目标机 Windows Update 更新状态",
+    ],
+    command: "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\CredSSP\\Parameters\" /v AllowEncryptionOracle /t REG_DWORD /d 2 /f",
+    solution:
+      "在客户端运行管理员命令添加注册表项，将 AllowEncryptionOracle 设为 2（易受攻击/宽松模式），即可立即成功建立远程桌面连接。",
+    bestPractice:
+      "临时连接处理完紧急故障后，必须推动被连接的服务端打满安全补丁，并将客户端策略恢复为受保护状态。",
   },
 
-  // --- 重点级 (Warning) ---
+  // ================= 🟡 重点级 (Warning) =================
   {
-    id: "linux-nofile",
-    category: "linux",
+    id: "dt-printer-11b-709",
+    category: "printer",
     severity: "warning",
-    title: "系统句柄超限: Too many open files",
-    errorCode: "EMFILE / ENFILE (File Descriptors)",
+    title: "网络共享打印机报错 0x0000011b / 0x00000709",
+    errorCode: "0x0000011b / 0x00000709 Connect Error",
     symptom:
-      "高并发 Web 服务（Nginx/Redis/Java）突然拒绝新连接，系统日志持续输出：socket() failed (24: Too many open files)。",
+      "添加办公室内共享打印机时，弹出错误代码 0x0000011b 或 0x00000709，无法安装驱动并连接打印。",
     rootCause:
-      "Linux 系统默认进程级文件描述符配额（nofile）通常仅为 1024。高并发场景下 Socket 连接与文件读取瞬间击穿该上限。",
+      "微软针对 PrintNightmare 打印漏洞强制启用 RPC 身份验证级别，未加入域控制器的局域网匿名共享通道被 Windows 防火墙与内核阻断。",
     diagnosticSteps: [
-      "查看当前会话限制：ulimit -n",
-      "查看具体故障进程当前持有的文件句柄数：lsof -p <PID> | wc -l 或 ls /proc/<PID>/fd | wc -l",
-      "查验整机内核分配情况：cat /proc/sys/fs/file-nr",
+      "确认打印机所连接的宿主 PC 共享权限设置正常",
+      "检查宿主 PC 与客户端是否都能互相 ping 通 IP",
     ],
-    command: "echo '* soft nofile 65535\n* hard nofile 65535' | sudo tee -a /etc/security/limits.conf",
+    command: "reg add \"HKLM\\System\\CurrentControlSet\\Control\\Print\" /v RpcAuthnLevelPrivacyEnabled /t REG_DWORD /d 0 /f && net stop spooler && net start spooler",
     solution:
-      "1. 修改 /etc/security/limits.conf 提高 soft/hard nofile 到 65535 或更高；\n2. 若服务由 Systemd 托管，必须在 service 单元中明确配置：LimitNOFILE=65535。",
+      "在连接打印机的**主机端（服务端）**执行上述命令，将 RpcAuthnLevelPrivacyEnabled 设为 0 并重启打印后台服务，客户端即可一键正常连接。",
     bestPractice:
-      "排查应用是否存在流未关闭（如 InputStream、Socket 未 close）引发的句柄泄漏。",
+      "公司办公网优先采购网络直连打印机（自带 RJ45 网线接口或 Wi-Fi），采用 TCP/IP 端口直连，彻底规避 USB 电脑共享的权限兼容坑。",
   },
   {
-    id: "linux-inode-full",
-    category: "linux",
+    id: "dt-printer-spooler-crash",
+    category: "printer",
     severity: "warning",
-    title: "磁盘剩余数十G却报 No space left on device",
-    errorCode: "No space left on device (Inode 100%)",
+    title: "打印后台处理程序 (Print Spooler) 频繁自动崩溃",
+    errorCode: "Print Spooler Service Terminated Unexpectedly",
     symptom:
-      "写入文件或创建新目录时报 No space left on device，但运行 df -h 显示磁盘使用率仅 50% 甚至剩余数十 GB。",
+      "“设备和打印机”页面空白，所有打印机消失，提示“打印后台处理程序未运行”。在服务管理器中手动启动，一打印文档服务又闪退。",
     rootCause:
-      "文件系统的 Inode 索引节点数量在格式化时固定，当存在海量极微小文件（如旧邮件队列、大量 session 碎片）时，Inode 先于磁盘空间被耗尽。",
+      "打印假脱机缓存目录（PRINTERS）中存在格式破损或超大异常的旧任务碎片（.SPL / .SHD 文件），Spooler 进程每次加载解析即崩溃。",
     diagnosticSteps: [
-      "查看 Inode 使用率：df -i",
-      "快速找出含有极多小文件的目录：for i in /*; do echo $i; find $i | wc -l; done",
-      "精确定位前 10 大文件密集群：find / -xdev -printf '%h\n' | sort | uniq -c | sort -k 1 -nr | head -10",
+      "查看系统服务管理器中 Print Spooler 服务运行状态",
+      "检查 C:\\Windows\\System32\\spool\\PRINTERS 目录下是否有残留文件堆积",
     ],
-    command: "df -i && find /var/spool/postfix/maildrop -type f -delete 2>/dev/null",
+    command: "net stop spooler && del /q /f %SystemRoot%\\System32\\spool\\PRINTERS\\*.* && net start spooler",
     solution:
-      "使用 find 定位并批量删除产生海量碎片的无用目录文件（如未配置定时轮转的邮件缓存或 PHP session 文件）。",
+      "运行管理员命令行：先停止 spooler 服务，清空 PRINTERS 目录下所有废弃缓存文件，再次启动服务即可彻底恢复稳定。",
     bestPractice:
-      "切忌用 rm -rf * 一次性删除几十万文件导致 Argument list too long，应使用 find ... -delete 或 xargs 批处理。",
+      "若清空后依旧崩溃，多为某个残破第三方驱动导致，使用 printui.exe /s 删除有问题的旧版打印机驱动程序程序包。",
   },
   {
-    id: "linux-high-load",
-    category: "linux",
+    id: "dt-sys-update-loop",
+    category: "system",
     severity: "warning",
-    title: "CPU 空闲 80%+ 但 Load Average 飙升数百 (D状态阻塞)",
-    errorCode: "High Load with Low CPU (D-State Block)",
+    title: "Windows Update 卡死 / 正在撤销更改死循环",
+    errorCode: "We couldn't complete the updates. Undoing changes.",
     symptom:
-      "服务器响应迟钝，top 显示 load average 达到 50+甚至更高，但 %Cpu(s) 用户/系统态极低，空闲 id 高达 80%~90%。",
+      "电脑开机卡在“正在配置更新 100% 完成，我们无法完成更新，正在撤消更改，请勿关闭计算机”，反复重启循环耗费几小时。",
     rootCause:
-      "Load Average 统计不仅包括 CPU 运行队列，还包含处于 D 状态（Uninterruptible sleep，不可中断休眠）的任务。通常是慢速磁盘 I/O 阻塞、网络 NFS 挂载断联或设备锁竞争导致。",
+      "Windows 补丁下载缓存目录（SoftwareDistribution）元数据损坏，或 WinSXS 组件存储中存在哈希不一致的破损文件。",
     diagnosticSteps: [
-      "检索处于 D 状态的进程清单：ps -eo stat,pid,user,comm | grep -E '^D'",
-      "检查磁盘 I/O 读写压力与等待率：iostat -xz 1 5",
-      "实时查看具体哪个进程在疯狂读写 I/O：iotop -oP",
+      "长按电源键强制重启进入 WinRE 疑难解答或安全模式",
+      "检查 SoftwareDistribution 目录体积与最近修改时间",
     ],
-    command: "ps -eo state,pid,user,cmd | grep -E '^D'",
+    command: "net stop wuauserv && ren C:\\Windows\\SoftwareDistribution SoftwareDistribution.old && net start wuauserv",
     solution:
-      "根据排查出的 D 状态进程定位故障存储；若为网络挂载（如 NFS/CIFS）失联，使用 umount -l 强行延迟卸载挂死节点。",
+      "以安全模式进入系统，停止 Windows Update 服务，将 SoftwareDistribution 重命名重置，再执行 dism /online /cleanup-image /restorehealth 清理修复组件仓库。",
     bestPractice:
-      "监控系统应同时采集 wa (I/O wait) 指标与 D 状态进程计数，不能仅凭 CPU 利用率评判系统健康。",
+      "企业电脑可通过组策略设置延迟功能更新，仅推送经过兼容性测试的累积质量补丁，防止批量员工电脑因更新翻车。",
   },
   {
-    id: "docker-disk-overlay2",
-    category: "docker",
+    id: "dt-office-kms-activate",
+    category: "office",
     severity: "warning",
-    title: "Docker overlay2 目录暴涨占满系统根分区",
-    errorCode: "no space left on device in /var/lib/docker",
+    title: "Office / Windows 激活失效 (0xC004F074 / 0xC004C008)",
+    errorCode: "0xC004F074 (KMS Server Unavailable)",
     symptom:
-      "无法拉取镜像或创建新容器，报错：no space left on device，df -h 发现 /var/lib/docker/overlay2 占用了 90%+ 空间。",
+      "屏幕右下角突然出现“激活 Windows”水印，Word 标题栏显示“产品未经授权”，错误代码通常为 0xC004F074。",
     rootCause:
-      "未被引用的废弃镜像、已停止容器的可写层数据、未具名的卷（anonymous volumes）以及无轮转策略的容器 json-file 日志长期累积。",
+      "电脑系统时间与公司 KMS 域时间服务器偏差超过 4 小时；或本地 DNS 未能正确解析内部 KMS 激活服务器的主机名与 1688 端口。",
     diagnosticSteps: [
-      "查验 Docker 资源空间分布：docker system df",
-      "排查最大的日志文件：find /var/lib/docker/containers/ -name \"*-json.log\" -size +500M",
+      "校对当前系统时间是否与北京时间准确一致",
+      "探测 KMS 端口连通性：Test-NetConnection -Port 1688 -ComputerName <KMS_IP>",
     ],
-    command: "docker system prune -a --volumes -f",
+    command: "slmgr.vbs /skms kms.domain.local:1688 && slmgr.vbs /ato",
     solution:
-      "运行安全清理命令释放无主容器、网络、构建缓存与未使用的孤儿卷。对失控的日志文件执行：cat /dev/null > <日志路径> 清空。",
+      "1. 先同步时钟：w32tm /resync；\n2. 重新绑定企业内网 KMS 服务器并强制激活：slmgr.vbs /skms <KMS地址> 随后 slmgr.vbs /ato。",
     bestPractice:
-      "在 /etc/docker/daemon.json 中配置全局日志轮转限制：\"log-opts\": {\"max-size\": \"100m\", \"max-file\": \"3\"}。",
-  },
-  {
-    id: "linux-zombie",
-    category: "linux",
-    severity: "warning",
-    title: "僵尸进程堆积且 kill -9 无法杀死",
-    errorCode: "Defunct Process Accumulation",
-    symptom:
-      "ps -ef | grep defunct 显示存在大量僵尸进程，对这些进程执行 kill -9 <PID> 毫无反应，PID 无法释放。",
-    rootCause:
-      "僵尸进程本身已经终止退出了，其代码和内存已被回收，仅残留内核任务结构体（PCB）等待父进程调用 wait()/waitpid() 获取退出码。它已不再接收任何信号，因此 kill -9 无效。",
-    diagnosticSteps: [
-      "查找僵尸进程及其父进程 PID (PPID)：ps -ef | grep defunct",
-      "查看父进程详细信息：ps -o pid,ppid,stat,cmd -p <PPID>",
-    ],
-    command: "ps -A -ostat,ppid,pid,cmd | grep -e '^[Zz]'",
-    solution:
-      "1. 向其父进程发送通知信号触发回收：kill -s SIGCHLD <PPID>；\n2. 若父进程已死锁，直接终止或重启该父进程，僵尸进程会自动过继给 PID 1 (systemd) 并被自动清理回收。",
-    bestPractice:
-      "开发自定义常驻进程或编写 Shell 守护脚本时，必须规范处理子进程退出信号（SIGCHLD）以防产生僵尸。",
+      "对于外发长期出差员工，建议分配 Office 365 E3/E5 商业云端授权或预先签发批量 MAK 激活密钥，避免脱离内网断活。",
   },
 
-  // --- 常见级 (Common) ---
+  // ================= 🟢 常见级 (Common) =================
   {
-    id: "docker-sock-perm",
-    category: "docker",
-    severity: "common",
-    title: "普通用户运行 Docker 报 permission denied",
-    errorCode: "dial unix /var/run/docker.sock: permission denied",
-    symptom:
-      "非 root 用户执行 docker ps 时出现：permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock。",
-    rootCause:
-      "/var/run/docker.sock 套接字默认文件属主为 root:docker，当前登录普通用户未被加入系统的 docker 用户组。",
-    diagnosticSteps: [
-      "检查当前用户所属组：groups $USER",
-      "检查 socket 权限：ls -l /var/run/docker.sock",
-    ],
-    command: "sudo usermod -aG docker $USER && newgrp docker",
-    solution:
-      "执行 sudo usermod -aG docker $USER 将当前用户加入 docker 组，随后执行 newgrp docker 即时生效（或重新登录终端）。",
-    bestPractice:
-      "切忌对 /var/run/docker.sock 赋予 chmod 777 危险权限，加入受信任用户组是标准运维合规操作。",
-  },
-  {
-    id: "net-refused-timeout",
+    id: "dt-net-winsock-reset",
     category: "network",
     severity: "common",
-    title: "Connection Refused 与 Timed Out 快速诊断",
-    errorCode: "Connection Refused vs Timed Out",
+    title: "网络受限 / 微信能登但浏览器打不开网页 (Winsock 重置)",
+    errorCode: "DNS Probe Finished No Internet / LSP Broken",
     symptom:
-      "客户端调用服务失败，提示 Connection refused（被目标快速重置拒绝）或 Connection timed out（握手超时无响应）。",
+      "微信、QQ 等基于 IP 直连的应用通信正常，但 Edge/Chrome 任何网页均打不开，提示 DNS_PROBE_FINISHED_NO_INTERNET。",
     rootCause:
-      "Refused 表示目标主机已收到握手，但对应端口没有进程监听；Timed Out 表示报文在传输路径中被安全组或防火墙 DROP 丢弃未回包。",
+      "Windows Winsock 分层服务提供者 (LSP) 被某些流氓加速器/代理软件异常拦截篡改，或系统 DNS 缓存污染导致域名解析瘫痪。",
     diagnosticSteps: [
-      "服务端验证是否在对应端口监听：ss -tulpn | grep :<端口>",
-      "核验监听地址是否仅为 127.0.0.1：netstat -tnlp",
-      "客户端端口探测：nc -zv -w 3 <目标IP> <端口>",
+      "测试内网网关 ping 是否连通",
+      "测试公网纯 IP（如 223.5.5.5）是否连通",
+      "测试是否仅域名无法解析",
     ],
-    command: "ss -tulpn | grep -E ':(80|443|3306|6379|8080)'",
+    command: "netsh winsock reset && netsh int ip reset && ipconfig /flushdns",
     solution:
-      "Refused：检查服务端程序是否启动，监听 IP 是否配置为 0.0.0.0；Timed Out：检查云安全组及系统防火墙放行规则。",
+      "以管理员身份运行一键重置三部曲：netsh winsock reset 重置目录、netsh int ip reset 重置 TCP/IP 协议栈，最后 ipconfig /flushdns 刷新缓存，重启计算机即可秒级复原。",
     bestPractice:
-      "排查闭环：服务端看监听(ss) ➔ 本地看防火墙(iptables) ➔ 链路看路由(traceroute) ➔ 抓包定真相(tcpdump)。",
+      "指导员工排查关闭浏览器中残留的无效系统代理设置（设置 ➔ 网络和 Internet ➔ 代理 ➔ 关闭手动代理）。",
   },
   {
-    id: "net-dns-fail",
-    category: "network",
+    id: "dt-sys-explorer-hang",
+    category: "system",
     severity: "common",
-    title: "Linux DNS 解析缓慢或 Temporary failure in name resolution",
-    errorCode: "Temporary failure in name resolution",
+    title: "桌面图标消失 / 任务栏转圈假死 (资源管理器重启)",
+    errorCode: "Explorer.exe Hang / Taskbar Freeze",
     symptom:
-      "ping 外部域名或 curl 网址极慢，卡顿数秒后报错：Could not resolve host 或 Temporary failure in name resolution，但直接 ping IP 正常。",
+      "桌面所有图标变白或消失、点击开始菜单与任务栏毫无反应一直在转圈，右键文件卡顿几十秒。",
     rootCause:
-      "/etc/resolv.conf 中的首选 nameserver 失效超时；或配置了未响应的内网 DNS 服务器；或 systemd-resolved 服务解析缓存异常。",
+      "某个第三方流氓软件注入的右键上下文菜单 Shell 扩展 DLL 死锁，或大量多媒体文件在生成缩略图索引时耗尽了 Explorer 句柄。",
     diagnosticSteps: [
-      "直接测试 DNS 响应耗时：dig @223.5.5.5 baidu.com +time=2",
-      "核对系统当前 DNS 解析配置：cat /etc/resolv.conf",
+      "按下 Ctrl + Shift + Esc 尝试调出任务管理器",
+      "查验资源管理器 CPU 与句柄占用",
     ],
-    command: "echo 'nameserver 223.5.5.5\nnameserver 119.29.29.29' | sudo tee /etc/resolv.conf",
+    command: "taskkill /f /im explorer.exe && start explorer.exe",
     solution:
-      "配置高可用公共 DNS（如阿里 223.5.5.5、腾讯 119.29.29.29、Google 8.8.8.8）。在 resolv.conf 中加入 options timeout:1 attempts:2 降低超时等待。",
+      "通过命令行快速强制结束假死的 Explorer 并立即重新拉起干净实例：taskkill /f /im explorer.exe && start explorer.exe 瞬间复活桌面与任务栏。",
     bestPractice:
-      "注意 Ubuntu 等系统中 /etc/resolv.conf 常被 systemd-resolved 软链接劫持，需通过 resolvectl 或 netplan 进行永久持久化。",
+      "使用 ShellExView 工具禁用非微软原生的第三方右键菜单扩展，从根源绝杀右键转圈假死。",
   },
   {
-    id: "win-pid4-port",
-    category: "windows",
+    id: "dt-usb-gpo-block",
+    category: "hardware",
     severity: "common",
-    title: "Windows 80/443 端口被 System (PID 4) 占用冲突",
-    errorCode: "Port 80/443 Occupied by System (PID 4)",
+    title: "U 盘插入提示“访问被拒绝”或写保护排查",
+    errorCode: "Access Denied / Disk is Write Protected",
     symptom:
-      "在 Windows 上部署 Nginx、Apache 或本地 Web 服务时提示 80/443 端口绑定失败。运行 netstat -ano 发现 PID 4 (System) 牢牢占死端口。",
+      "插入外接移动硬盘或 U 盘，能在磁盘管理看到设备，但双击盘符提示“访问被拒绝”或“介质受写入保护无法拷贝”。",
     rootCause:
-      "Windows 内核驱动组件 HTTP.sys 正在运行，绑定了该端口。通常是后台的 IIS、Web 部署服务 (MsDepSvc)、BranchCache 或万维网发布服务 (W3SVC) 自动接管了端口监听。",
+      "公司域控策略下发了可移动存储阻止规则，或注册表中开启了 StorageDevicePolicies 写入保护强制策略。",
     diagnosticSteps: [
-      "查看哪个服务注册了 HTTP.sys 路由：netsh http show servicestate",
-      "检查万维网发布服务状态：Get-Service -Name W3SVC",
+      "测试其它无策略管控电脑该 U 盘是否正常读取",
+      "检查注册表 StorageDevicePolicies 键值配置",
     ],
-    command: "net stop http /y && sc config http start= disabled",
+    command: "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Control\\StorageDevicePolicies\" /v WriteProtect /t REG_DWORD /d 0 /f",
     solution:
-      "1. 执行 net stop http /y 停止内核 HTTP 驱动及其附随服务；\n2. 在服务管理器（services.msc）中将“World Wide Web Publishing Service”设为禁用。",
+      "若已获合规授权，执行管理员命令将注册表 WriteProtect 属性修改为 0 解除只读保护；若为域策略锁定，联系安全管理员在域控对应 OU 赋予临时放行策略。",
     bestPractice:
-      "若需与 Windows 服务共存，可通过 netsh http add iplisten ipaddress=127.0.0.1 限制其仅监听特定 IP，释放其他 IP 地址段。",
+      "企业数据安全红线严禁私自违规绕过防泄密策略，外发文件应统一走审批加密外发通道。",
   },
   {
-    id: "win-substream-align",
-    category: "windows",
+    id: "dt-user-temp-profile",
+    category: "system",
     severity: "common",
-    title: "SubStream 字节流切片与免 UAC 交付原理",
-    errorCode: "Qingshan SubStream & UAC-Free Protocol",
+    title: "登录后提示“您已使用临时配置文件登录”",
+    errorCode: "You've been signed in with a temporary profile",
     symptom:
-      "普通自解压工具在解包时易被 360/火绒拦截，或因 Windows 管理员 UAC 弹窗导致静默部署失败。",
+      "开机登录后右下角弹窗提示临时配置文件，原本保存在桌面上的文档和个性化壁纸全部消失，变成初始空桌面。",
     rootCause:
-      "传统安装包写注册表 HKLM 与 Program Files 需要 Administrator 令牌；自解压 ZIP 拼接在 EXE 末尾若字节偏移不对齐，容易触发 CRC 校验失效。",
+      "前一次非正常关机或蓝屏导致用户目录下的核心注册表文件（NTUSER.DAT）被锁定或轻微损坏，Windows 无法加载原始配置，降级进入 Temp 临时模式。",
     diagnosticSteps: [
-      "核查安装目标路径：必须限制在 %LOCALAPPDATA%\\Programs\\ 范围，免除写保护提权",
-      "校验末尾 8 字节 offset 标记，确认 SubStream 指针精准跳过 Stub 执行体",
+      "打开 C:\\Users 查看原用户专属目录（如 C:\\Users\\zhangsan）文件是否仍完整存在",
+      "打开注册表检查 ProfileList 路径：HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList",
     ],
-    command: "explorer.exe %LOCALAPPDATA%\\Programs\\QingShanToolBox",
+    command: "reg query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\" /s | findstr /i \".bak\"",
     solution:
-      "青衫工具箱采用自研 SubStream 字节流切片机制，读取 EXE 末尾 8 字节精确寻址 Payload ZIP，同时锁定当前用户专属 AppData 目录，做到零弹窗、零残留交付。",
+      "1. 以本地 Administrator 登入；\n2. 打开注册表定位至 ProfileList，找到带有 .bak 后缀的该用户 SID 项；\n3. 删除没有 .bak 的错误空项，将带 .bak 的项重命名去掉 .bak，并将 State 键值重置为 0，重启即可完美找回原桌面！",
     bestPractice:
-      "开发桌面运维类辅助工具时，优先遵循免提权用户目录规范，既保障安全性又杜绝企业域控 UAC 阻断。",
+      "嘱咐员工切勿在临时桌面中保存新工作文件（注销后会被临时目录抹掉），且平时重要文档应养成保存在 D 盘非系统盘的习惯。",
+  },
+  {
+    id: "dt-printer-offline",
+    category: "printer",
+    severity: "common",
+    title: "打印机状态频繁显示“脱机”无法打印",
+    errorCode: "Printer Status Offline (SNMP MIB Failure)",
+    symptom:
+      "网络打印机电源开启、网线插好、IP 能 ping 通，但在 Windows 中打印机状态始终显示为灰色的“脱机”。",
+    rootCause:
+      "Windows 打印端口驱动默认开启了“SNMP 状态已启用”检查，如果内网防火墙过滤了 SNMP 161 端口，Windows 探活失败即误判打印机已脱机。",
+    diagnosticSteps: [
+      "直接在浏览器输入打印机 IP 地址，查看 Web 管理后台是否正常可达",
+      "进入打印机属性 ➔ 端口 ➔ 配置端口 检查 SNMP 状态",
+    ],
+    command: "ping -n 4 <打印机IP地址>",
+    solution:
+      "打开控制面板 ➔ 打印机属性 ➔ 切换到【端口】选项卡 ➔ 选中当前 IP 端口点击【配置端口】➔ **取消勾选【启用 SNMP 状态】**，点击确定后打印机状态瞬间恢复联机！",
+    bestPractice:
+      "安装网络打印机标准驱动时，统一去掉 SNMP 状态检测，彻底避免跨网段跨 VLAN 时误报脱机。",
   },
 ];
 
-// 级别映射定义：危险、紧急、重点、常见
+// 级别定义：危险级、紧急级、重点级、常见级
 const SEVERITY_CONFIG: Record<
   SeverityLevel,
   { label: string; tagColor: string; pillClass: string; icon: React.ReactNode }
@@ -426,11 +432,11 @@ const SEVERITY_CONFIG: Record<
 
 const CATEGORIES = [
   { key: "all", label: "全部领域", icon: <ToolOutlined /> },
-  { key: "docker", label: "容器与 Docker", icon: <HddOutlined /> },
-  { key: "linux", label: "Linux 底层与资源", icon: <AlertOutlined /> },
-  { key: "network", label: "网络与端口连通", icon: <GlobalOutlined /> },
-  { key: "database", label: "数据库与缓存", icon: <DatabaseOutlined /> },
-  { key: "windows", label: "Windows 运维", icon: <WindowsOutlined /> },
+  { key: "system", label: "系统与引导", icon: <WindowsOutlined /> },
+  { key: "network", label: "网络与域控", icon: <GlobalOutlined /> },
+  { key: "hardware", label: "硬件与外设", icon: <HddOutlined /> },
+  { key: "printer", label: "打印机专项", icon: <PrinterOutlined /> },
+  { key: "office", label: "Office与办公软件", icon: <MailOutlined /> },
 ] as const;
 
 export default function KnowledgePage() {
@@ -443,7 +449,7 @@ export default function KnowledgePage() {
   const filteredItems = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     return KNOWLEDGE_BASE.filter((item) => {
-      // 级别筛选 (常见、紧急、重点、危险)
+      // 级别筛选 (危险、紧急、重点、常见)
       if (selectedSeverity !== "all" && item.severity !== selectedSeverity) {
         return false;
       }
@@ -468,7 +474,7 @@ export default function KnowledgePage() {
     if (e) e.stopPropagation();
     void navigator.clipboard.writeText(text);
     setCopiedId(id);
-    message.success("诊断/排查命令已复制到剪贴板");
+    message.success("诊断/排障命令已复制到剪贴板");
     setTimeout(() => {
       setCopiedId(null);
     }, 2000);
@@ -482,7 +488,7 @@ export default function KnowledgePage() {
           <Input
             className="kb-search-input"
             prefix={<SearchOutlined style={{ color: "var(--muted)", marginRight: 6 }} />}
-            placeholder="搜索日常运维错误、错误代码 (如 137, 1040, 1205)、关键词 (如 iptables, ulimit, Inode, TIME_WAIT)..."
+            placeholder="搜索桌面运维与IT支持故障、错误代码 (如 0x0000011b, 0x50, 0x7B, 0xC004F074)、关键词 (如 蓝屏, 域信任, 共享打印, Outlook, 临时配置)..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             allowClear
@@ -491,7 +497,7 @@ export default function KnowledgePage() {
         </div>
 
         <div className="kb-filters-container">
-          {/* 第一组：级别过滤 (常见、紧急、重点、危险) */}
+          {/* 第一组：级别过滤 (危险、紧急、重点、常见) */}
           <div className="kb-filter-row">
             <div className="kb-filter-group">
               <span className="kb-filter-label">故障等级:</span>
@@ -517,14 +523,14 @@ export default function KnowledgePage() {
             </div>
 
             <div className="kb-stat-text">
-              匹配到 <strong>{filteredItems.length}</strong> / {KNOWLEDGE_BASE.length} 条运维故障对策
+              匹配到 <strong>{filteredItems.length}</strong> / {KNOWLEDGE_BASE.length} 项桌面运维排障指南
             </div>
           </div>
 
           {/* 第二组：领域分类过滤 */}
           <div className="kb-filter-row">
             <div className="kb-filter-group">
-              <span className="kb-filter-label">技术领域:</span>
+              <span className="kb-filter-label">IT分类:</span>
               {CATEGORIES.map((cat) => (
                 <span
                   key={cat.key}
@@ -545,7 +551,7 @@ export default function KnowledgePage() {
           <Empty
             description={
               <span>
-                未找到包含 "<strong>{keyword}</strong>" 的排障资料，您可以尝试精简搜索词
+                未找到包含 "<strong>{keyword}</strong>" 的桌面运维资料，您可以尝试输入 蓝屏、打印机、或错误代码
               </span>
             }
           />
@@ -650,7 +656,7 @@ export default function KnowledgePage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                报错特征 / 典型现象
+                故障特征 / 典型表现
               </div>
               <div className="kb-error-box" style={{ maxHeight: "none", WebkitLineClamp: "unset" }}>
                 {detailItem.symptom}
@@ -659,7 +665,7 @@ export default function KnowledgePage() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                底层根因机制分析
+                根因机制与系统分析
               </div>
               <div className="kb-reason-box" style={{ maxHeight: "none", WebkitLineClamp: "unset" }}>
                 {detailItem.rootCause}
@@ -668,7 +674,7 @@ export default function KnowledgePage() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                闭环排查步骤
+                IT 支持闭环排查步骤
               </div>
               <ol style={{ paddingLeft: 20, margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--text)" }}>
                 {detailItem.diagnosticSteps.map((step, idx) => (
@@ -683,7 +689,7 @@ export default function KnowledgePage() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                权威修复命令
+                一键诊断与修复指令
               </div>
               <div className="kb-cmd-wrapper">
                 <code className="kb-cmd-code" style={{ whiteSpace: "pre-wrap" }}>
@@ -695,7 +701,7 @@ export default function KnowledgePage() {
                     size="small"
                     className="kb-copy-btn"
                     icon={copiedId === detailItem.id ? <CheckOutlined style={{ color: "#52c41a" }} /> : <CopyOutlined />}
-                    onClick={(e) => handleCopy(detailItem.id, detailItem.command, e)}
+                    onClick={(e) => handleCopy(detailItem.id, detailItem.command)}
                   />
                 </Tooltip>
               </div>
@@ -703,7 +709,7 @@ export default function KnowledgePage() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>
-                处置细节与避坑指南
+                排查细节与生产建议
               </div>
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text)", whiteSpace: "pre-line" }}>
                 {detailItem.solution}
@@ -719,7 +725,7 @@ export default function KnowledgePage() {
                 }}
               >
                 <SafetyCertificateOutlined style={{ marginRight: 6 }} />
-                <strong>生产避坑指南：</strong>{detailItem.bestPractice}
+                <strong>企业 IT 运维规程：</strong>{detailItem.bestPractice}
               </div>
             </div>
           </div>
