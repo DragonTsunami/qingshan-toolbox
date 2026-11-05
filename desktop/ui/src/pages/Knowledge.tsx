@@ -129,13 +129,22 @@ export default function KnowledgePage() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          setCustomItems(parsed);
+          // 只保留用户真正自建或手动导入的，不污染初始 30 条
+          setCustomItems(parsed.filter((i) => i && i.isCustom && (i.id.startsWith("custom_") || i.id.startsWith("import_"))));
         }
       }
     } catch {
       // 容错读取
     }
   }, []);
+
+  // 重置回纯净的初始 30 条（便于用户反复测试云端拉取）
+  const handleResetToBuiltin30 = () => {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    setCustomItems([]);
+    setRemoteData(null);
+    message.success("已重置为初始 30 条基础故障库！现在可以测试从云端拉取 60 条。");
+  };
 
   // 保存本地持久化
   const saveCustomItems = (items: TroubleshootingItem[]) => {
@@ -355,10 +364,11 @@ export default function KnowledgePage() {
     setRemoteCheckLoading(true);
     setRemoteData(null);
     try {
-      // 双源自动回退：优先高速镜像，兜底官方 Raw
+      const ts = Date.now();
+      // 双源自动回退并携带时间戳防 CDN 缓存
       const sources = [
-        "https://fastly.jsdelivr.net/gh/DragonTsunami/qingshan-toolbox@main/data/knowledge-community.json",
-        "https://raw.githubusercontent.com/DragonTsunami/qingshan-toolbox/main/data/knowledge-community.json",
+        `https://fastly.jsdelivr.net/gh/DragonTsunami/qingshan-toolbox@main/data/knowledge-community.json?t=${ts}`,
+        `https://raw.githubusercontent.com/DragonTsunami/qingshan-toolbox/main/data/knowledge-community.json?t=${ts}`,
       ];
 
       let rawContent = "";
@@ -380,11 +390,11 @@ export default function KnowledgePage() {
       const json = JSON.parse(rawContent);
       if (json && Array.isArray(json.items)) {
         setRemoteData({
-          version: json.version || "1.0.6",
+          version: json.version || "1.0.7",
           updatedAt: json.updatedAt || "近期",
           items: json.items,
         });
-        message.success(`成功检测到 GitHub 云端资料库 (共 ${json.items.length} 条)！`);
+        message.success(`成功检测到 GitHub 云端资料库 (共 ${json.items.length} 条案例)！`);
       } else {
         throw new Error("云端数据结构不符合规范");
       }
@@ -416,9 +426,9 @@ export default function KnowledgePage() {
     if (newCount > 0) {
       const updated = [...mergedList, ...customItems];
       saveCustomItems(updated);
-      message.success(`已拉取并成功合并 ${newCount} 条云端最新故障指南！`);
+      message.success(`已拉取并成功合并 ${newCount} 条云端最新故障指南，本地现有 ${allItems.length + newCount} 条！`);
     } else {
-      message.info("您的本地资料库已是最新版本，无需额外合并。");
+      message.info("您的本地资料库已拥有云端的全部条目，无需额外拉取。");
     }
     setShowSyncModal(false);
     setRemoteData(null);
@@ -825,24 +835,29 @@ export default function KnowledgePage() {
               <div
                 style={{
                   marginTop: 10,
-                  padding: "10px 14px",
+                  padding: "12px 14px",
                   background: "var(--panel)",
                   borderRadius: 8,
                   border: "1px dashed var(--accent)",
                 }}
               >
-                <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
-                  ☁️ 检测到云端资料库版本: {remoteData.version} (更新于 {remoteData.updatedAt})
+                <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>
+                  ☁️ 检测到 GitHub 云端资料库: v{remoteData.version} (发布于 {remoteData.updatedAt})
                 </div>
-                <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 10 }}>
-                  云端共包含 {remoteData.items.length} 条精选运维故障案例。您是否选择拉取并合并至您本地的工具箱中？
+                <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 6 }}>
+                  • 本地现有条目: <strong>{allItems.length}</strong> 条<br />
+                  • 云端共有条目: <strong>{remoteData.items.length}</strong> 条<br />
+                  • 可拉取新增条目: <strong style={{ color: "#52c41a" }}>{Math.max(0, remoteData.items.length - allItems.length)}</strong> 条
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 12 }}>
+                  您是否选择拉取并合并这批最新故障库至您本地的工具箱中？
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <Button type="primary" onClick={handleConfirmPullRemote}>
-                    确认拉取并合并到本地
+                    确认拉取并合并到本地 ({remoteData.items.length} 条)
                   </Button>
                   <Button onClick={() => setRemoteData(null)}>
-                    暂不拉取 (保留现状)
+                    暂不拉取 (保留本地 {allItems.length} 条)
                   </Button>
                 </div>
               </div>
@@ -866,6 +881,23 @@ export default function KnowledgePage() {
                 一键向 GitHub 仓库贡献本地新记录
               </Button>
             </div>
+          </div>
+
+          {/* 测试辅助：一键重置回 30 条测试基线 */}
+          <div style={{ padding: "10px 14px", background: "var(--bg-soft)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>
+              🧪 测试专用：若需要重新测试拉取效果，可一键重置本地为初始 30 条基线
+            </span>
+            <Popconfirm
+              title="确定清空本地已合并的条目，重置为初始 30 条吗？"
+              onConfirm={handleResetToBuiltin30}
+              okText="重置"
+              cancelText="取消"
+            >
+              <Button size="small" danger>
+                重置回初始 30 条
+              </Button>
+            </Popconfirm>
           </div>
         </div>
       </Modal>
