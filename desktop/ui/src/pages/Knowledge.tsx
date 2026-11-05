@@ -129,8 +129,9 @@ export default function KnowledgePage() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          // 只保留用户真正自建或手动导入的，不污染初始 30 条
-          setCustomItems(parsed.filter((i) => i && i.isCustom && (i.id.startsWith("custom_") || i.id.startsWith("import_"))));
+          // 保留所有非内置 30 条的条目（用户自建、手动导入、或从云端拉取合并的额外项）
+          const builtinIds = new Set(BUILTIN_KNOWLEDGE_BASE.map((b) => b.id));
+          setCustomItems(parsed.filter((i) => i && i.id && !builtinIds.has(i.id)));
         }
       }
     } catch {
@@ -365,39 +366,66 @@ export default function KnowledgePage() {
     setRemoteData(null);
     try {
       const ts = Date.now();
-      // 双源自动回退并携带时间戳防 CDN 缓存
+      // 多通道智能检测：官方 Raw 无缓存直连 -> 国内镜像代理加速 -> CDN 边缘分发 -> GitHub Contents API
       const sources = [
-        `https://fastly.jsdelivr.net/gh/DragonTsunami/qingshan-toolbox@main/data/knowledge-community.json?t=${ts}`,
         `https://raw.githubusercontent.com/DragonTsunami/qingshan-toolbox/main/data/knowledge-community.json?t=${ts}`,
+        `https://ghproxy.net/https://raw.githubusercontent.com/DragonTsunami/qingshan-toolbox/main/data/knowledge-community.json?t=${ts}`,
+        `https://cdn.jsdelivr.net/gh/DragonTsunami/qingshan-toolbox@main/data/knowledge-community.json?t=${ts}`,
+        `https://api.github.com/repos/DragonTsunami/qingshan-toolbox/contents/data/knowledge-community.json`,
       ];
 
-      let rawContent = "";
-      let errorMsg = "";
+      let bestPayload: { version: string; updatedAt: string; items: TroubleshootingItem[] } | null = null;
+      let lastError = "";
 
       for (const url of sources) {
         try {
-          rawContent = await fetchRemoteKnowledge(url);
-          if (rawContent && rawContent.startsWith("{")) break;
+          const raw = await fetchRemoteKnowledge(url);
+          if (!raw) continue;
+          let parsed: any = null;
+          try {
+            parsed = JSON.parse(raw);
+          } catch {
+            continue;
+          }
+
+          // 兼容 GitHub REST API Base64 编码格式
+          if (parsed && parsed.content && typeof parsed.content === "string") {
+            try {
+              const decodedStr = decodeURIComponent(
+                escape(atob(parsed.content.replace(/\s/g, "")))
+              );
+              parsed = JSON.parse(decodedStr);
+            } catch {
+              // 忽略 base64 解码异常
+            }
+          }
+
+          if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+            const candidate = {
+              version: parsed.version || "1.0.9",
+              updatedAt: parsed.updatedAt || "近期",
+              items: parsed.items as TroubleshootingItem[],
+            };
+            // 择优策略：优先选取条目数量最全的有效数据（防止个别 CDN 缓存旧版本截断）
+            if (!bestPayload || candidate.items.length > bestPayload.items.length) {
+              bestPayload = candidate;
+            }
+            // 若条目数已达到 60 条全量以上，立即确认采用，避免不必要的网络轮询等待
+            if (candidate.items.length >= 60) {
+              break;
+            }
+          }
         } catch (e) {
-          errorMsg = String(e);
+          lastError = String(e);
         }
       }
 
-      if (!rawContent) {
-        throw new Error(errorMsg || "无法连通 GitHub 远程知识库，请检查网络");
+      if (!bestPayload) {
+        throw new Error(lastError || "无法连通 GitHub 远程知识库，请检查网络设置");
       }
 
-      const json = JSON.parse(rawContent);
-      if (json && Array.isArray(json.items)) {
-        setRemoteData({
-          version: json.version || "1.0.7",
-          updatedAt: json.updatedAt || "近期",
-          items: json.items,
-        });
-        message.success(`成功检测到 GitHub 云端资料库 (共 ${json.items.length} 条案例)！`);
-      } else {
-        throw new Error("云端数据结构不符合规范");
-      }
+      setRemoteData(bestPayload);
+      message.success(`成功检测到 GitHub 云端资料库 (共 ${bestPayload.items.length} 条案例)！`);
     } catch (err) {
       message.error(`检查云端更新失败: ${String(err)}`);
     } finally {

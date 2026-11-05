@@ -656,7 +656,7 @@ pub async fn fetch_remote_knowledge(url: String) -> Result<String, String> {
             "Bypass",
             "-Command",
             &format!(
-                "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (Invoke-WebRequest -Uri '{}' -UseBasicParsing -TimeoutSec 10).Content",
+                "$ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; (Invoke-WebRequest -Uri '{}' -UseBasicParsing -UserAgent 'QingshanToolbox/1.0' -TimeoutSec 10).Content",
                 url.replace('\'', "''")
             ),
         ]);
