@@ -17,15 +17,9 @@ import {
 } from "@ant-design/icons";
 import { cleanupScan, runCleanup } from "../api";
 import { formatBytes } from "../format";
+import { useI18n } from "../i18n";
 import type { CleanupCategory, CleanupReport, CleanupScan, CleanupTarget } from "../types";
 import "../maintenance.css";
-
-const CATEGORY_LABELS: Record<CleanupCategory, string> = {
-  temp: "临时文件",
-  browser: "浏览器缓存",
-  windows: "系统缓存",
-  recycle: "回收站",
-};
 
 const CATEGORY_ORDER: CleanupCategory[] = ["temp", "browser", "windows", "recycle"];
 
@@ -36,12 +30,20 @@ interface CleanupPageProps {
 
 export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
   const { modal, message } = App.useApp();
+  const { t, language } = useI18n();
   const [scan, setScan] = useState<CleanupScan | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [cleaning, setCleaning] = useState(false);
   const [error, setError] = useState("");
   const [report, setReport] = useState<CleanupReport | null>(null);
+
+  const categoryLabels: Record<CleanupCategory, string> = useMemo(() => ({
+    temp: t("临时文件"),
+    browser: t("浏览器缓存"),
+    windows: t("系统缓存"),
+    recycle: t("回收站"),
+  }), [t]);
 
   const load = async () => {
     setLoading(true);
@@ -99,10 +101,13 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
     if (selected.size === 0) return;
     const ids = [...selected];
     modal.confirm({
-      title: `清理 ${ids.length} 个项目？`,
-      content: `预计释放 ${formatBytes(selectedBytes)}，涉及 ${selectedFiles.toLocaleString()} 个文件。回收站与系统缓存清理后无法撤销。`,
-      okText: "开始清理",
-      cancelText: "取消",
+      title: language === "en-US" ? `Clean ${ids.length} items?` : `清理 ${ids.length} 个项目？`,
+      content:
+        language === "en-US"
+          ? `Will free approx. ${formatBytes(selectedBytes)} across ${selectedFiles.toLocaleString()} files. Recycle bin & system caches cannot be undone.`
+          : `预计释放 ${formatBytes(selectedBytes)}，涉及 ${selectedFiles.toLocaleString()} 个文件。回收站与系统缓存清理后无法撤销。`,
+      okText: language === "en-US" ? "Start Cleaning" : "开始清理",
+      cancelText: t("取消"),
       okButtonProps: { danger: true },
       onOk: async () => {
         setCleaning(true);
@@ -110,7 +115,11 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
           const result = await runCleanup(ids);
           setReport(result);
           setSelected(new Set());
-          message.success(`已释放 ${formatBytes(result.freedBytes)}`);
+          message.success(
+            language === "en-US"
+              ? `Freed ${formatBytes(result.freedBytes)}`
+              : `已释放 ${formatBytes(result.freedBytes)}`
+          );
           await load();
         } catch (cause) {
           message.error(String(cause));
@@ -126,12 +135,16 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
       <section className="panel cleanup-panel">
         <div className="panel-head">
           <div>
-            <h2>清理项目</h2>
-            <p>扫描已知缓存与临时文件位置，按白名单删除；不会触碰个人文档。</p>
+            <h2>{t("清理项目")}</h2>
+            <p>
+              {language === "en-US"
+                ? "Scan known cache and temporary file locations, removing items according to safe whitelist; personal documents are untouched."
+                : "扫描已知缓存与临时文件位置，按白名单删除；不会触碰个人文档。"}
+            </p>
           </div>
           <div className="panel-actions">
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-              重新扫描
+              {t("重新扫描")}
             </Button>
             <Button
               type="primary"
@@ -141,12 +154,14 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
               loading={cleaning}
               onClick={clean}
             >
-              清理所选{selected.size > 0 ? `（${formatBytes(selectedBytes)}）` : ""}
+              {language === "en-US"
+                ? `Clean Selected${selected.size > 0 ? ` (${formatBytes(selectedBytes)})` : ""}`
+                : `清理所选${selected.size > 0 ? `（${formatBytes(selectedBytes)}）` : ""}`}
             </Button>
           </div>
         </div>
 
-        {error && <Alert type="error" showIcon message="扫描失败" description={error} />}
+        {error && <Alert type="error" showIcon message={language === "en-US" ? "Scan Failed" : "扫描失败"} description={error} />}
 
         {report && (
           <Alert
@@ -154,11 +169,15 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
             showIcon
             closable
             onClose={() => setReport(null)}
-            message={`已释放 ${formatBytes(report.freedBytes)}`}
+            message={language === "en-US" ? `Freed ${formatBytes(report.freedBytes)}` : `已释放 ${formatBytes(report.freedBytes)}`}
             description={
               report.errors.length > 0
-                ? `清理 ${report.outcomes.length} 项，${report.errors.length} 个问题：${report.errors.join("；")}`
-                : `清理 ${report.outcomes.length} 项，删除 ${report.removedFiles.toLocaleString()} 个文件。`
+                ? (language === "en-US"
+                  ? `Cleaned ${report.outcomes.length} items, ${report.errors.length} issues: ${report.errors.join("; ")}`
+                  : `清理 ${report.outcomes.length} 项，${report.errors.length} 个问题：${report.errors.join("；")}`)
+                : (language === "en-US"
+                  ? `Cleaned ${report.outcomes.length} items, removed ${report.removedFiles.toLocaleString()} files.`
+                  : `清理 ${report.outcomes.length} 项，删除 ${report.removedFiles.toLocaleString()} 个文件。`)
             }
           />
         )}
@@ -168,11 +187,15 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
             type="info"
             showIcon
             icon={<SafetyCertificateOutlined />}
-            message="部分系统缓存需要管理员权限"
-            description="以标准用户运行时可清理个人临时文件与浏览器缓存；Windows Update 缓存等项目会保持锁定。"
+            message={language === "en-US" ? "Some system caches require administrator privileges" : "部分系统缓存需要管理员权限"}
+            description={
+              language === "en-US"
+                ? "Standard users can clean user temp files and browser cache; Windows Update caches will remain locked."
+                : "以标准用户运行时可清理个人临时文件与浏览器缓存；Windows Update 缓存等项目会保持锁定。"
+            }
             action={
               <Button size="small" icon={<LockOutlined />} onClick={onElevate}>
-                以管理员重启
+                {t("以管理员身份重启")}
               </Button>
             }
           />
@@ -181,21 +204,23 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
         {loading && !scan ? (
           <Skeleton active paragraph={{ rows: 6 }} />
         ) : !scan || scan.targets.length === 0 ? (
-          <Empty description="没有可扫描的清理位置" />
+          <Empty description={language === "en-US" ? "No cleanable locations found" : "没有可扫描的清理位置"} />
         ) : (
           <>
             <div className="cleanup-summary">
               <div>
-                <span>可释放空间</span>
+                <span>{language === "en-US" ? "Reclaimable Space" : "可释放空间"}</span>
                 <strong>{formatBytes(scan.totalBytes)}</strong>
               </div>
               <div>
-                <span>可清理文件</span>
+                <span>{language === "en-US" ? "Cleanable Files" : "可清理文件"}</span>
                 <strong>{scan.totalFiles.toLocaleString()}</strong>
               </div>
               <div>
-                <span>已选择</span>
-                <strong>{selected.size} 项</strong>
+                <span>{language === "en-US" ? "Selected" : "已选择"}</span>
+                <strong>
+                  {selected.size} {language === "en-US" ? "items" : "项"}
+                </strong>
               </div>
               <div className="cleanup-summary-select">
                 <Button
@@ -209,7 +234,9 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
                     )
                   }
                 >
-                  {selected.size === selectable.length ? "取消全选" : "全选可清理项"}
+                  {selected.size === selectable.length
+                    ? (language === "en-US" ? "Deselect All" : "取消全选")
+                    : (language === "en-US" ? "Select All Cleanable" : "全选可清理项")}
                 </Button>
               </div>
             </div>
@@ -221,7 +248,7 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
                 return (
                   <div className="cleanup-group" key={category}>
                     <div className="cleanup-group-title">
-                      <span>{CATEGORY_LABELS[category]}</span>
+                      <span>{categoryLabels[category]}</span>
                       <span>{formatBytes(targets.reduce((sum, target) => sum + target.bytes, 0))}</span>
                     </div>
                     <div className="cleanup-list">
@@ -232,6 +259,8 @@ export default function CleanupPage({ elevated, onElevate }: CleanupPageProps) {
                           checked={selected.has(target.id)}
                           locked={target.requiresAdmin && !elevated}
                           onChange={(checked) => toggle(target.id, checked)}
+                          language={language}
+                          t={t}
                         />
                       ))}
                     </div>
@@ -251,11 +280,15 @@ function CleanupRow({
   checked,
   locked,
   onChange,
+  language,
+  t,
 }: {
   target: CleanupTarget;
   checked: boolean;
   locked: boolean;
   onChange: (checked: boolean) => void;
+  language: string;
+  t: (k: string, fb?: string) => string;
 }) {
   const disabled = !target.available || target.bytes === 0 || locked;
   const row = (
@@ -270,7 +303,7 @@ function CleanupRow({
           {target.name}
           {target.requiresAdmin && (
             <Tag bordered={false} icon={<LockOutlined />}>
-              管理员
+              {t("管理员")}
             </Tag>
           )}
         </div>
@@ -279,10 +312,18 @@ function CleanupRow({
       </div>
       <div className="cleanup-size">
         <strong>{formatBytes(target.bytes)}</strong>
-        <span>{target.files.toLocaleString()} 个文件</span>
+        <span>
+          {target.files.toLocaleString()} {language === "en-US" ? "files" : "个文件"}
+        </span>
       </div>
     </div>
   );
 
-  return locked ? <Tooltip title="需要以管理员身份重启后清理">{row}</Tooltip> : row;
+  return locked ? (
+    <Tooltip title={language === "en-US" ? "Requires relaunch as admin to clean" : "需要以管理员身份重启后清理"}>
+      {row}
+    </Tooltip>
+  ) : (
+    row
+  );
 }

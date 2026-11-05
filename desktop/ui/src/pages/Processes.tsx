@@ -9,6 +9,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { killProcess, listProcesses } from "../api";
 import { formatBytes } from "../format";
+import { useI18n } from "../i18n";
 import type { ProcessInfo } from "../types";
 
 type SortKey = "memory" | "cpu" | "name";
@@ -19,6 +20,7 @@ interface ProcessesProps {
 
 export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
   const { message } = App.useApp();
+  const { t, language } = useI18n();
   const [rows, setRows] = useState<ProcessInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,11 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
     setKilling(process.pid);
     try {
       await killProcess(process.pid, forceKill);
-      message.success(`已结束 ${process.name} (PID ${process.pid})`);
+      message.success(
+        language === "en-US"
+          ? `Ended ${process.name} (PID ${process.pid})`
+          : `已结束 ${process.name} (PID ${process.pid})`
+      );
       await load();
     } catch (killError) {
       message.error(String(killError));
@@ -76,14 +82,14 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
     });
     return filtered.sort((a, b) => {
       if (sortKey === "cpu") return b.cpuUsage - a.cpuUsage;
-      if (sortKey === "name") return a.name.localeCompare(b.name, "zh-CN");
+      if (sortKey === "name") return a.name.localeCompare(b.name, language === "en-US" ? "en" : "zh-CN");
       return b.memory - a.memory;
     });
-  }, [rows, query, sortKey]);
+  }, [rows, query, sortKey, language]);
 
   const columns: ColumnsType<ProcessInfo> = [
     {
-      title: "进程",
+      title: t("进程"),
       dataIndex: "name",
       key: "name",
       render: (_, process) => (
@@ -108,7 +114,7 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
       render: (pid: number) => <span className="mono">{pid}</span>,
     },
     {
-      title: "用户",
+      title: t("用户"),
       dataIndex: "user",
       key: "user",
       width: 150,
@@ -127,17 +133,17 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
       ),
     },
     {
-      title: "内存",
+      title: t("内存"),
       dataIndex: "memory",
       key: "memory",
       width: 120,
       render: (memory: number) => <span className="mono">{formatBytes(memory)}</span>,
     },
     {
-      title: "状态",
+      title: t("状态"),
       dataIndex: "status",
       key: "status",
-      width: 96,
+      width: 110,
       render: (status: string) => {
         const tone =
           status === "运行中"
@@ -150,26 +156,30 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
         return (
           <Tag bordered={false} className="status-tag">
             <i className={`status-dot ${tone}`} />
-            {status}
+            {t(status)}
           </Tag>
         );
       },
     },
     {
-      title: "操作",
+      title: t("操作"),
       key: "action",
       width: 92,
       align: "right",
       render: (_, process) => (
         <Popconfirm
-          title="结束进程"
+          title={t("结束进程")}
           description={
             <span className="popover-desc">
-              将结束 <b>{process.name}</b> (PID {process.pid})。未保存的数据可能丢失。
+              {language === "en-US" ? (
+                <>Will terminate <b>{process.name}</b> (PID {process.pid}). Unsaved data may be lost.</>
+              ) : (
+                <>将结束 <b>{process.name}</b> (PID {process.pid})。未保存的数据可能丢失。</>
+              )}
             </span>
           }
-          okText="结束进程"
-          cancelText="取消"
+          okText={t("结束进程")}
+          cancelText={t("取消")}
           okButtonProps={{ danger: true }}
           onConfirm={() => handleKill(process)}
         >
@@ -180,7 +190,7 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
             icon={<DeleteOutlined />}
             loading={killing === process.pid}
           >
-            结束
+            {t("结束")}
           </Button>
         </Popconfirm>
       ),
@@ -192,16 +202,18 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
       <section className="panel">
         <div className="panel-head">
           <div>
-            <h3>进程列表</h3>
+            <h3>{t("进程列表")}</h3>
             <p>
-              共 {rows.length} 个进程，当前显示 {visible.length} 个
+              {language === "en-US"
+                ? `Total ${rows.length} processes, showing ${visible.length}`
+                : `共 ${rows.length} 个进程，当前显示 ${visible.length} 个`}
             </p>
           </div>
           <div className="toolbar">
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="搜索名称、PID 或用户"
+              placeholder={t("搜索名称、PID 或用户")}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="toolbar-search"
@@ -210,23 +222,23 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
               value={sortKey}
               onChange={(value) => setSortKey(value as SortKey)}
               options={[
-                { label: "内存", value: "memory" },
+                { label: t("内存"), value: "memory" },
                 { label: "CPU", value: "cpu" },
-                { label: "名称", value: "name" },
+                { label: t("名称"), value: "name" },
               ]}
             />
-            <Tooltip title={`每 ${refreshInterval} 秒自动刷新`}>
+            <Tooltip title={language === "en-US" ? `Auto-refresh every ${refreshInterval}s` : `每 ${refreshInterval} 秒自动刷新`}>
               <span className="switch-label">
-                自动 <Switch size="small" checked={autoRefresh} onChange={setAutoRefresh} />
+                {t("自动")} <Switch size="small" checked={autoRefresh} onChange={setAutoRefresh} />
               </span>
             </Tooltip>
-            <Tooltip title="跳过正常退出流程，直接终止进程">
+            <Tooltip title={t("跳过正常退出流程，直接终止进程")}>
               <span className="switch-label">
-                强制 <Switch size="small" checked={forceKill} onChange={setForceKill} />
+                {t("强制")} <Switch size="small" checked={forceKill} onChange={setForceKill} />
               </span>
             </Tooltip>
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading && rows.length === 0}>
-              刷新
+              {t("刷新")}
             </Button>
           </div>
         </div>
@@ -235,7 +247,7 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
           <Alert
             type="error"
             showIcon
-            message="无法读取进程列表"
+            message={t("无法读取进程列表")}
             description={error}
             className="panel-alert"
           />
@@ -248,12 +260,16 @@ export default function ProcessesPage({ refreshInterval }: ProcessesProps) {
           columns={columns}
           dataSource={visible}
           loading={loading}
-          pagination={{ pageSize: 12, showSizeChanger: false, showTotal: (total) => `共 ${total} 条` }}
+          pagination={{
+            pageSize: 12,
+            showSizeChanger: false,
+            showTotal: (total) => (language === "en-US" ? `Total ${total} items` : `共 ${total} 条`),
+          }}
           scroll={{ x: 880 }}
         />
 
         <div className="table-note">
-          <ThunderboltOutlined /> 结束系统关键进程可能导致系统不稳定；青衫工具箱会拦截对自身进程的操作。
+          <ThunderboltOutlined /> {t("结束系统关键进程可能导致系统不稳定；青衫工具箱会拦截对自身进程的操作。")}
         </div>
       </section>
     </div>

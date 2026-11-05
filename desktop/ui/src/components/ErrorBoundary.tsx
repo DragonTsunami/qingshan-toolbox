@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "antd";
+import { loadLanguage } from "../i18n";
 
 interface Props {
   children: ReactNode;
@@ -22,25 +23,28 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("青衫工具箱 UI crashed", error, info.componentStack);
+    console.error("Qingshan Toolbox UI crashed", error, info.componentStack);
   }
 
   render() {
     const { error } = this.state;
     if (!error) return this.props.children;
+    const isEn = loadLanguage() === "en-US";
 
     return (
       <div className="fatal-screen">
         <div className="fatal-card">
           <div className="fatal-mark">&gt;_</div>
           <div className="fatal-eyebrow">QINGSHAN TOOLBOX / UI FAULT</div>
-          <h1>界面遇到异常</h1>
+          <h1>{isEn ? "UI Fault Encountered" : "界面遇到异常"}</h1>
           <p>
-            界面层已停止渲染，系统数据未被修改。请重新加载；若问题持续，请保留控制台信息并联系维护者。
+            {isEn
+              ? "The UI layer stopped rendering. System data has not been modified. Please reload; if the problem persists, report with console logs."
+              : "界面层已停止渲染，系统数据未被修改。请重新加载；若问题持续，请保留控制台信息并联系维护者。"}
           </p>
           <pre>{error.message}</pre>
           <Button type="primary" onClick={() => window.location.reload()}>
-            重新加载
+            {isEn ? "Reload Interface" : "重新加载"}
           </Button>
         </div>
       </div>

@@ -9,36 +9,38 @@ import { Alert, App, Button, Input, Segmented, Table, Tag, Tooltip } from "antd"
 import type { ColumnsType } from "antd/es/table";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { applyServiceAction, listServices } from "../api";
+import { useI18n } from "../i18n";
 import type { ServiceAction, ServiceInfo, ServiceStatus } from "../types";
-
-const STATUS_META: Record<ServiceStatus, { label: string; color: string }> = {
-  running: { label: "运行中", color: "success" },
-  stopped: { label: "已停止", color: "default" },
-  startpending: { label: "启动中", color: "processing" },
-  stoppending: { label: "停止中", color: "processing" },
-  paused: { label: "已暂停", color: "warning" },
-  pausepending: { label: "暂停中", color: "processing" },
-  continuepending: { label: "恢复中", color: "processing" },
-  unknown: { label: "未知", color: "default" },
-};
-
-const START_TYPE_LABEL: Record<string, string> = {
-  auto: "自动",
-  manual: "手动",
-  disabled: "禁用",
-  boot: "引导",
-  system: "系统",
-  unknown: "—",
-};
 
 export default function ServicesPage({ elevated }: { elevated: boolean }) {
   const { message, modal } = App.useApp();
+  const { t, language } = useI18n();
   const [rows, setRows] = useState<ServiceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "running" | "stopped">("all");
   const [acting, setActing] = useState<string | null>(null);
+
+  const statusMeta: Record<ServiceStatus, { label: string; color: string }> = useMemo(() => ({
+    running: { label: t("运行中"), color: "success" },
+    stopped: { label: t("已停止"), color: "default" },
+    startpending: { label: t("启动中"), color: "processing" },
+    stoppending: { label: t("停止中"), color: "processing" },
+    paused: { label: t("已暂停"), color: "warning" },
+    pausepending: { label: t("暂停中"), color: "processing" },
+    continuepending: { label: t("恢复中"), color: "processing" },
+    unknown: { label: t("未知"), color: "default" },
+  }), [t]);
+
+  const startTypeLabel: Record<string, string> = useMemo(() => ({
+    auto: t("自动"),
+    manual: t("手动"),
+    disabled: t("禁用"),
+    boot: t("引导"),
+    system: t("系统"),
+    unknown: "—",
+  }), [t]);
 
   const load = useCallback(async () => {
     try {
@@ -57,12 +59,16 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
   }, [load]);
 
   const runAction = (service: ServiceInfo, action: ServiceAction) => {
-    const verb = action === "start" ? "启动" : action === "stop" ? "停止" : "重启";
+    const verb = action === "start" ? t("启动") : action === "stop" ? t("停止") : t("重启");
     const perform = async () => {
       setActing(`${service.name}:${action}`);
       try {
         await applyServiceAction(service.name, action);
-        message.success(`${service.displayName || service.name} 已${verb}`);
+        message.success(
+          language === "en-US"
+            ? `${service.displayName || service.name} ${action}ed`
+            : `${service.displayName || service.name} 已${verb}`
+        );
         await load();
       } catch (actionError) {
         message.error(String(actionError));
@@ -73,11 +79,11 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
 
     if (action === "stop") {
       modal.confirm({
-        title: `停止 ${service.displayName || service.name}？`,
-        content: "依赖该服务的应用可能立即中断，请确认当前不在关键运维窗口。",
-        okText: "停止服务",
+        title: language === "en-US" ? `Stop ${service.displayName || service.name}?` : `停止 ${service.displayName || service.name}？`,
+        content: t("依赖该服务的应用可能立即中断，请确认当前不在关键运维窗口。"),
+        okText: t("停止服务"),
         okButtonProps: { danger: true },
-        cancelText: "取消",
+        cancelText: t("取消"),
         onOk: perform,
       });
       return;
@@ -108,7 +114,7 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
 
   const columns: ColumnsType<ServiceInfo> = [
     {
-      title: "服务",
+      title: t("服务"),
       dataIndex: "displayName",
       key: "displayName",
       render: (_, service) => (
@@ -119,12 +125,12 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
       ),
     },
     {
-      title: "状态",
+      title: t("状态"),
       dataIndex: "status",
       key: "status",
       width: 110,
       render: (status: ServiceStatus) => {
-        const meta = STATUS_META[status] ?? STATUS_META.unknown;
+        const meta = statusMeta[status] ?? statusMeta.unknown;
         return (
           <Tag bordered={false} color={meta.color} className="status-tag">
             <i className={`status-dot ${status}`} />
@@ -134,13 +140,13 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
       },
     },
     {
-      title: "启动类型",
+      title: t("启动类型"),
       dataIndex: "startType",
       key: "startType",
       width: 110,
       render: (startType: string) => (
         <Tag bordered={false} className="start-type-tag">
-          {START_TYPE_LABEL[startType] ?? startType}
+          {startTypeLabel[startType] ?? startType}
         </Tag>
       ),
     },
@@ -152,7 +158,7 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
       render: (pid: number) => <span className="mono muted">{pid || "—"}</span>,
     },
     {
-      title: "操作",
+      title: t("操作"),
       key: "action",
       width: 210,
       align: "right",
@@ -161,7 +167,7 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
         const stopped = service.status === "stopped";
         return (
           <div className="service-actions">
-            <Tooltip title={elevated ? "启动服务" : "需要管理员权限"}>
+            <Tooltip title={elevated ? t("启动服务") : t("需要管理员权限")}>
               <Button
                 size="small"
                 icon={<CaretRightOutlined />}
@@ -169,10 +175,10 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
                 loading={acting === `${service.name}:start`}
                 onClick={() => runAction(service, "start")}
               >
-                启动
+                {t("启动")}
               </Button>
             </Tooltip>
-            <Tooltip title={elevated ? "停止服务" : "需要管理员权限"}>
+            <Tooltip title={elevated ? t("停止服务") : t("需要管理员权限")}>
               <Button
                 size="small"
                 icon={<PauseOutlined />}
@@ -180,10 +186,10 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
                 loading={acting === `${service.name}:stop`}
                 onClick={() => runAction(service, "stop")}
               >
-                停止
+                {t("停止")}
               </Button>
             </Tooltip>
-            <Tooltip title={elevated ? "重启服务" : "需要管理员权限"}>
+            <Tooltip title={elevated ? t("重启服务") : t("需要管理员权限")}>
               <Button
                 size="small"
                 type="primary"
@@ -192,7 +198,7 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
                 loading={acting === `${service.name}:restart`}
                 onClick={() => runAction(service, "restart")}
               >
-                重启
+                {t("重启")}
               </Button>
             </Tooltip>
           </div>
@@ -206,16 +212,18 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
       <section className="panel">
         <div className="panel-head">
           <div>
-            <h3>系统服务</h3>
+            <h3>{t("系统服务")}</h3>
             <p>
-              {counts.running} 个运行中 · {counts.stopped} 个已停止 · 共 {rows.length} 个服务
+              {language === "en-US"
+                ? `${counts.running} running · ${counts.stopped} stopped · Total ${rows.length} services`
+                : `${counts.running} 个运行中 · ${counts.stopped} 个已停止 · 共 ${rows.length} 个服务`}
             </p>
           </div>
           <div className="toolbar">
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="搜索服务名称"
+              placeholder={t("搜索服务名称")}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="toolbar-search"
@@ -224,13 +232,13 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
               value={filter}
               onChange={(value) => setFilter(value as typeof filter)}
               options={[
-                { label: "全部", value: "all" },
-                { label: "运行中", value: "running" },
-                { label: "已停止", value: "stopped" },
+                { label: t("全部"), value: "all" },
+                { label: t("运行中"), value: "running" },
+                { label: t("已停止"), value: "stopped" },
               ]}
             />
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading && rows.length === 0}>
-              刷新
+              {t("刷新")}
             </Button>
           </div>
         </div>
@@ -240,8 +248,8 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
             type="warning"
             showIcon
             icon={<SafetyCertificateOutlined />}
-            message="当前为标准用户"
-            description="启动、停止和重启系统服务需要管理员权限。请从左侧重新以管理员身份启动青衫工具箱。"
+            message={t("当前为标准用户")}
+            description={t("启动、停止和重启系统服务需要管理员权限。请从左侧重新以管理员身份启动青衫工具箱。")}
             className="panel-alert"
           />
         )}
@@ -249,7 +257,7 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
           <Alert
             type="error"
             showIcon
-            message="无法读取系统服务"
+            message={t("无法读取系统服务")}
             description={error}
             className="panel-alert"
           />
@@ -262,12 +270,16 @@ export default function ServicesPage({ elevated }: { elevated: boolean }) {
           columns={columns}
           dataSource={visible}
           loading={loading}
-          pagination={{ pageSize: 14, showSizeChanger: false, showTotal: (total) => `共 ${total} 条` }}
+          pagination={{
+            pageSize: 14,
+            showSizeChanger: false,
+            showTotal: (total) => (language === "en-US" ? `Total ${total} items` : `共 ${total} 条`),
+          }}
           scroll={{ x: 860 }}
         />
 
         <div className="table-note">
-          <SafetyCertificateOutlined /> 服务操作会等待状态变更完成（最长 20 秒），请勿重复点击。
+          <SafetyCertificateOutlined /> {t("服务操作会等待状态变更完成（最长 20 秒），请勿重复点击。")}
         </div>
       </section>
     </div>

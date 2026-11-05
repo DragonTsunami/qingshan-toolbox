@@ -8,18 +8,13 @@ import {
   setTaskEnabled,
   startupItems,
 } from "../api";
+import { useI18n } from "../i18n";
 import type { ScheduledTask, StartupItem } from "../types";
 import "../maintenance.css";
 
-const LOCATION_LABELS: Record<StartupItem["location"], string> = {
-  registryrun: "注册表 Run",
-  startupfolder: "启动文件夹",
-};
-
-const SCOPE_LABELS = { user: "当前用户", machine: "所有用户" } as const;
-
 export default function StartupPage() {
   const { message } = App.useApp();
+  const { t, language } = useI18n();
   const [tab, setTab] = useState("startup");
   const [items, setItems] = useState<StartupItem[]>([]);
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
@@ -27,6 +22,16 @@ export default function StartupPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+
+  const locationLabels: Record<StartupItem["location"], string> = useMemo(() => ({
+    registryrun: language === "en-US" ? "Registry Run" : "注册表 Run",
+    startupfolder: language === "en-US" ? "Startup Folder" : "启动文件夹",
+  }), [language]);
+
+  const scopeLabels = useMemo(() => ({
+    user: language === "en-US" ? "Current User" : "当前用户",
+    machine: language === "en-US" ? "All Users" : "所有用户",
+  }), [language]);
 
   const load = async () => {
     setLoading(true);
@@ -50,7 +55,11 @@ export default function StartupPage() {
     setBusy(item.id);
     try {
       setItems(await setStartupEnabled(item.id, enabled));
-      message.success(enabled ? `已启用 ${item.name}` : `已禁用 ${item.name}`);
+      message.success(
+        enabled
+          ? (language === "en-US" ? `Enabled ${item.name}` : `已启用 ${item.name}`)
+          : (language === "en-US" ? `Disabled ${item.name}` : `已禁用 ${item.name}`)
+      );
     } catch (cause) {
       message.error(String(cause));
     } finally {
@@ -62,7 +71,11 @@ export default function StartupPage() {
     setBusy(task.id);
     try {
       setTasks(await setTaskEnabled(task.id, enabled));
-      message.success(enabled ? `已启用 ${task.name}` : `已禁用 ${task.name}`);
+      message.success(
+        enabled
+          ? (language === "en-US" ? `Enabled ${task.name}` : `已启用 ${task.name}`)
+          : (language === "en-US" ? `Disabled ${task.name}` : `已禁用 ${task.name}`)
+      );
     } catch (cause) {
       message.error(String(cause));
     } finally {
@@ -95,7 +108,7 @@ export default function StartupPage() {
 
   const startupColumns: ColumnsType<StartupItem> = [
     {
-      title: "启动项",
+      title: t("启动项"),
       dataIndex: "name",
       render: (_, item) => (
         <div className="maint-primary">
@@ -105,34 +118,34 @@ export default function StartupPage() {
       ),
     },
     {
-      title: "位置",
+      title: t("位置"),
       dataIndex: "location",
       width: 140,
       render: (value: StartupItem["location"]) => (
-        <Tag bordered={false}>{LOCATION_LABELS[value]}</Tag>
+        <Tag bordered={false}>{locationLabels[value]}</Tag>
       ),
     },
     {
-      title: "范围",
+      title: t("范围"),
       dataIndex: "scope",
       width: 110,
       render: (value: StartupItem["scope"]) => (
-        <span className="maint-muted">{SCOPE_LABELS[value]}</span>
+        <span className="maint-muted">{scopeLabels[value]}</span>
       ),
     },
     {
-      title: "状态",
+      title: t("状态"),
       dataIndex: "enabled",
-      width: 90,
+      width: 110,
       render: (enabled: boolean) => (
         <span className={`maint-state ${enabled ? "on" : "off"}`}>
           <i />
-          {enabled ? "已启用" : "已禁用"}
+          {enabled ? (language === "en-US" ? "Enabled" : "已启用") : (language === "en-US" ? "Disabled" : "已禁用")}
         </span>
       ),
     },
     {
-      title: "启用",
+      title: t("启用"),
       dataIndex: "enabled",
       width: 90,
       align: "right",
@@ -150,7 +163,7 @@ export default function StartupPage() {
 
   const taskColumns: ColumnsType<ScheduledTask> = [
     {
-      title: "任务",
+      title: language === "en-US" ? "Task" : "任务",
       dataIndex: "name",
       render: (_, task) => (
         <div className="maint-primary">
@@ -160,24 +173,24 @@ export default function StartupPage() {
       ),
     },
     {
-      title: "说明",
+      title: language === "en-US" ? "Description" : "说明",
       dataIndex: "description",
       render: (value: string) => <span className="maint-muted">{value || "—"}</span>,
     },
     {
-      title: "作者",
+      title: language === "en-US" ? "Author" : "作者",
       dataIndex: "author",
       width: 140,
       render: (value: string) => <span className="maint-muted">{value || "—"}</span>,
     },
     {
-      title: "状态",
+      title: t("状态"),
       dataIndex: "state",
       width: 100,
-      render: (value: string) => <Tag bordered={false}>{value}</Tag>,
+      render: (value: string) => <Tag bordered={false}>{t(value)}</Tag>,
     },
     {
-      title: "启用",
+      title: t("启用"),
       dataIndex: "enabled",
       width: 90,
       align: "right",
@@ -192,7 +205,13 @@ export default function StartupPage() {
             onChange={(checked) => void toggleTask(task, checked)}
           />
         );
-        return protectedTask ? <Tooltip title="Windows 系统任务受保护">{control}</Tooltip> : control;
+        return protectedTask ? (
+          <Tooltip title={language === "en-US" ? "Windows system tasks are protected" : "Windows 系统任务受保护"}>
+            {control}
+          </Tooltip>
+        ) : (
+          control
+        );
       },
     },
   ];
@@ -202,25 +221,29 @@ export default function StartupPage() {
       <section className="panel">
         <div className="panel-head">
           <div>
-            <h2>启动项与计划任务</h2>
-            <p>查看并控制开机启动项和 Windows 计划任务；系统关键任务保持锁定。</p>
+            <h2>{language === "en-US" ? "Startup Apps & Scheduled Tasks" : "启动项与计划任务"}</h2>
+            <p>
+              {language === "en-US"
+                ? "Inspect and control boot startup items and Windows scheduled tasks; system tasks remain protected."
+                : "查看并控制开机启动项和 Windows 计划任务；系统关键任务保持锁定。"}
+            </p>
           </div>
           <div className="panel-actions">
             <Input
               allowClear
               prefix={<SearchOutlined />}
-              placeholder="搜索名称或命令"
+              placeholder={language === "en-US" ? "Search name or command" : "搜索名称或命令"}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               style={{ width: 240 }}
             />
             <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-              刷新
+              {t("刷新")}
             </Button>
           </div>
         </div>
 
-        {error && <Alert type="error" showIcon message="读取失败" description={error} />}
+        {error && <Alert type="error" showIcon message={language === "en-US" ? "Read Failed" : "读取失败"} description={error} />}
 
         <Tabs
           activeKey={tab}
@@ -228,7 +251,7 @@ export default function StartupPage() {
           items={[
             {
               key: "startup",
-              label: `启动项 ${filteredItems.length}`,
+              label: language === "en-US" ? `Startup Items (${filteredItems.length})` : `启动项 ${filteredItems.length}`,
               children: loading ? (
                 <Skeleton active paragraph={{ rows: 5 }} />
               ) : (
@@ -244,7 +267,7 @@ export default function StartupPage() {
             },
             {
               key: "tasks",
-              label: `计划任务 ${filteredTasks.length}`,
+              label: language === "en-US" ? `Scheduled Tasks (${filteredTasks.length})` : `计划任务 ${filteredTasks.length}`,
               children: loading ? (
                 <Skeleton active paragraph={{ rows: 5 }} />
               ) : (
@@ -262,7 +285,9 @@ export default function StartupPage() {
         />
 
         <div className="maint-footnote">
-          启动项通过 StartupApproved 注册表状态启停；计划任务通过任务计划服务读取、schtasks 修改。受限会话可能只能查看部分任务，更改系统级项目需要管理员权限。
+          {language === "en-US"
+            ? "Startup items are managed via StartupApproved registry entries; tasks are queried via Task Scheduler service. Elevated session required to edit machine-wide tasks."
+            : "启动项通过 StartupApproved 注册表状态启停；计划任务通过任务计划服务读取、schtasks 修改。受限会话可能只能查看部分任务，更改系统级项目需要管理员权限。"}
         </div>
       </section>
     </div>

@@ -12,10 +12,12 @@ import { App, Button, Input, InputNumber, Tag } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { checkPort, listInterfaces, resolveHost } from "../api";
 import { formatBytes } from "../format";
+import { useI18n } from "../i18n";
 import type { DnsLookupResult, NetworkInterface, PortCheckResult } from "../types";
 
 export default function NetworkPage() {
   const { message } = App.useApp();
+  const { t, language } = useI18n();
   const [interfaces, setInterfaces] = useState<NetworkInterface[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +46,7 @@ export default function NetworkPage() {
 
   const runPortCheck = async () => {
     if (!host.trim()) {
-      message.warning("请输入主机地址");
+      message.warning(language === "en-US" ? "Please enter a host or IP" : "请输入主机地址");
       return;
     }
     setChecking(true);
@@ -59,7 +61,7 @@ export default function NetworkPage() {
 
   const runResolve = async () => {
     if (!dnsHost.trim()) {
-      message.warning("请输入域名");
+      message.warning(language === "en-US" ? "Please enter a domain" : "请输入域名");
       return;
     }
     setResolving(true);
@@ -77,11 +79,15 @@ export default function NetworkPage() {
       <section className="panel">
         <div className="panel-head">
           <div>
-            <h3>网络接口</h3>
-            <p>{interfaces.length} 个活动接口 · 不含回环设备</p>
+            <h3>{t("网络接口")}</h3>
+            <p>
+              {language === "en-US"
+                ? `${interfaces.length} active interfaces · excluding loopback`
+                : `${interfaces.length} 个活动接口 · 不含回环设备`}
+            </p>
           </div>
           <Button icon={<ReloadOutlined />} onClick={() => void loadInterfaces()} loading={loading}>
-            重新扫描
+            {t("重新扫描")}
           </Button>
         </div>
 
@@ -112,17 +118,17 @@ export default function NetworkPage() {
                   </span>
                 ))}
                 {item.ipv4.length === 0 && item.ipv6.length === 0 && (
-                  <span className="muted">未分配 IP 地址</span>
+                  <span className="muted">{t("未分配 IP 地址")}</span>
                 )}
               </div>
               <div className="interface-traffic">
-                <span>接收 {formatBytes(item.totalReceived)}</span>
-                <span>发送 {formatBytes(item.totalTransmitted)}</span>
+                <span>{t("接收")} {formatBytes(item.totalReceived)}</span>
+                <span>{t("发送")} {formatBytes(item.totalTransmitted)}</span>
               </div>
             </article>
           ))}
           {!loading && interfaces.length === 0 && (
-            <div className="empty-state">未发现可用的网络接口</div>
+            <div className="empty-state">{t("未发现可用的网络接口")}</div>
           )}
         </div>
       </section>
@@ -131,8 +137,8 @@ export default function NetworkPage() {
         <section className="panel">
           <div className="panel-head">
             <div>
-              <h3>端口连通性</h3>
-              <p>TCP 握手检测，适用于数据库、SSH、Web 服务</p>
+              <h3>{t("端口连通性")}</h3>
+              <p>{t("TCP 握手检测，适用于数据库、SSH、Web 服务")}</p>
             </div>
             <ThunderboltOutlined className="panel-icon" />
           </div>
@@ -141,7 +147,7 @@ export default function NetworkPage() {
             <Input
               value={host}
               onChange={(event) => setHost(event.target.value)}
-              placeholder="主机或域名"
+              placeholder={t("主机或域名")}
               prefix={<CompassOutlined />}
               onPressEnter={() => void runPortCheck()}
             />
@@ -153,16 +159,16 @@ export default function NetworkPage() {
               className="port-input"
             />
             <Button type="primary" loading={checking} onClick={() => void runPortCheck()}>
-              检测
+              {t("检测")}
             </Button>
           </div>
 
           <div className="quick-targets">
             {[
-              { label: "本机 443", host: "127.0.0.1", port: 443 },
-              { label: "本机 3389", host: "127.0.0.1", port: 3389 },
+              { label: language === "en-US" ? "Localhost 443" : "本机 443", host: "127.0.0.1", port: 443 },
+              { label: language === "en-US" ? "Localhost 3389" : "本机 3389", host: "127.0.0.1", port: 3389 },
               { label: "github.com:443", host: "github.com", port: 443 },
-              { label: "内网数据库", host: "192.168.10.42", port: 5432 },
+              { label: language === "en-US" ? "Internal DB" : "内网数据库", host: "192.168.10.42", port: 5432 },
             ].map((target) => (
               <button
                 type="button"
@@ -182,7 +188,7 @@ export default function NetworkPage() {
             <div className={`result-card${portResult.open ? " success" : " failure"}`}>
               <div className="result-head">
                 <span className="result-status">
-                  {portResult.open ? "端口开放" : "端口不可达"}
+                  {portResult.open ? t("端口开放") : t("端口不可达")}
                 </span>
                 <span className="mono">
                   {portResult.host}:{portResult.port}
@@ -190,8 +196,10 @@ export default function NetworkPage() {
               </div>
               <p>
                 {portResult.open
-                  ? `TCP 握手成功，耗时 ${portResult.latencyMs} ms。`
-                  : portResult.error ?? "连接失败"}
+                  ? (language === "en-US"
+                    ? `TCP handshake succeeded in ${portResult.latencyMs} ms.`
+                    : `TCP 握手成功，耗时 ${portResult.latencyMs} ms。`)
+                  : portResult.error ?? (language === "en-US" ? "Connection failed" : "连接失败")}
               </p>
             </div>
           )}
@@ -200,8 +208,8 @@ export default function NetworkPage() {
         <section className="panel">
           <div className="panel-head">
             <div>
-              <h3>DNS 解析</h3>
-              <p>验证域名在本机的解析结果</p>
+              <h3>{t("DNS 解析")}</h3>
+              <p>{t("验证域名在本机的解析结果")}</p>
             </div>
             <ApiOutlined className="panel-icon" />
           </div>
@@ -215,14 +223,14 @@ export default function NetworkPage() {
               onPressEnter={() => void runResolve()}
             />
             <Button loading={resolving} onClick={() => void runResolve()}>
-              解析
+              {t("解析")}
             </Button>
           </div>
 
           {dnsResult && (
             <div className={`result-card${dnsResult.error ? " failure" : " success"}`}>
               <div className="result-head">
-                <span className="result-status">{dnsResult.error ? "解析失败" : "解析成功"}</span>
+                <span className="result-status">{dnsResult.error ? t("解析失败") : t("解析成功")}</span>
                 <span className="mono">{dnsResult.latencyMs} ms</span>
               </div>
               {dnsResult.error ? (
@@ -240,7 +248,7 @@ export default function NetworkPage() {
           )}
 
           <div className="table-note">
-            <ApiOutlined /> 使用系统解析器（DNS Client / hosts），结果反映本机真实访问路径。
+            <ApiOutlined /> {t("使用系统解析器（DNS Client / hosts），结果反映本机真实访问路径。")}
           </div>
         </section>
       </div>
