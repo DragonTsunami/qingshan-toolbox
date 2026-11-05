@@ -23,9 +23,14 @@ import {
   CopyOutlined,
   ToolOutlined,
   CloseCircleOutlined,
+  LinkOutlined,
+  SafetyCertificateOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import {
+  Alert,
   Button,
+  Checkbox,
   Empty,
   Form,
   Input,
@@ -33,6 +38,8 @@ import {
   Popconfirm,
   Radio,
   Select,
+  Space,
+  Tabs,
   Tag,
   Tooltip,
   message,
@@ -118,6 +125,15 @@ export default function KnowledgePage() {
     updatedAt: string;
     items: TroubleshootingItem[];
   } | null>(null);
+
+  // 贡献上传模态框与运维通道控制
+  const [showContribModal, setShowContribModal] = useState(false);
+  const [contribToken, setContribToken] = useState<string>(() => localStorage.getItem("qs_gh_pat") || "");
+  const [rememberToken, setRememberToken] = useState(true);
+  const [selectedContribIds, setSelectedContribIds] = useState<string[]>([]);
+  const [contribLoading, setContribLoading] = useState(false);
+  const [contribSuccessUrl, setContribSuccessUrl] = useState<string | null>(null);
+  const [includeAllLocalForContrib, setIncludeAllLocalForContrib] = useState(false);
 
   const [addForm] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -462,25 +478,121 @@ export default function KnowledgePage() {
     setRemoteData(null);
   };
 
-  // 4. 用户把本地新增的问题上传贡献至 GitHub
+  // 4. 用户/企业运维把问题上传贡献至 GitHub（打开向导与多通道上传模态框）
   const handleUploadContributionToGitHub = () => {
-    const onlyCustom = customItems.filter((i) => i.isCustom);
-    if (onlyCustom.length === 0) {
-      message.warning("您本地暂未添加自定义问题记录。若要贡献，请先点击【➕ 新增问题记录】。");
+    if (customItems.length > 0) {
+      setSelectedContribIds(customItems.map((i) => i.id));
+      setIncludeAllLocalForContrib(false);
+    } else {
+      setSelectedContribIds(allItems.slice(0, 3).map((i) => i.id));
+      setIncludeAllLocalForContrib(true);
+    }
+    setContribSuccessUrl(null);
+    setShowContribModal(true);
+  };
+
+  // 4.1 企业运维通道：直接调用 GitHub API 提交 Issue
+  const handleDirectApiSubmit = async () => {
+    if (!contribToken.trim()) {
+      message.warning("请输入您的 GitHub Personal Access Token (PAT)");
+      return;
+    }
+    const candidatePool = includeAllLocalForContrib ? allItems : (customItems.length > 0 ? customItems : allItems);
+    const itemsToSubmit = candidatePool.filter((i) => selectedContribIds.includes(i.id));
+    if (itemsToSubmit.length === 0) {
+      message.warning("请至少勾选 1 条待贡献的问题记录");
       return;
     }
 
-    const jsonStr = JSON.stringify(onlyCustom, null, 2);
-    const issueTitle = encodeURIComponent(`[Knowledge-Contrib] 用户贡献了 ${onlyCustom.length} 条新问题`);
-    const issueBody = encodeURIComponent(
-      `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n**环境信息：** 青衫工具箱 v1.0.6\n感谢为社区运维资料库做出贡献！`
-    );
-    const githubIssueUrl = `https://github.com/DragonTsunami/qingshan-toolbox/issues/new?title=${issueTitle}&body=${issueBody}`;
+    setContribLoading(true);
+    try {
+      const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
+      const title = `[知识库贡献] 运维提交 ${itemsToSubmit.length} 条新运维问题指南`;
+      const body = `### 运维贡献数据包\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.10)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
 
-    // 复制并打开浏览器
-    void navigator.clipboard.writeText(jsonStr);
-    message.success("已复制待提交数据，正在为您打开 GitHub Issue 页面...");
-    void openExternalUrl(githubIssueUrl);
+      const res = await fetch("https://api.github.com/repos/DragonTsunami/qingshan-toolbox/issues", {
+        method: "POST",
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "Authorization": `Bearer ${contribToken.trim()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          body,
+          labels: ["knowledge-contrib"],
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (rememberToken) {
+        localStorage.setItem("qs_gh_pat", contribToken.trim());
+      } else {
+        localStorage.removeItem("qs_gh_pat");
+      }
+      setContribSuccessUrl(data.html_url);
+      message.success("🎉 提交成功！GitHub Issue 已创建！");
+    } catch (err) {
+      message.error(`提交失败: ${String(err)}`);
+    } finally {
+      setContribLoading(false);
+    }
+  };
+
+  // 4.2 免 Token 通道：复制标准化 Markdown 并打开安全短链接
+  const handleOpenBrowserIssue = async () => {
+    const candidatePool = includeAllLocalForContrib ? allItems : (customItems.length > 0 ? customItems : allItems);
+    const itemsToSubmit = candidatePool.filter((i) => selectedContribIds.includes(i.id));
+    if (itemsToSubmit.length === 0) {
+      message.warning("请至少勾选 1 条待贡献的问题记录");
+      return;
+    }
+    const count = itemsToSubmit.length;
+    const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
+    const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.10)\n- **案例数量：** ${count} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+
+    try {
+      await navigator.clipboard.writeText(issueBody);
+      message.success("📋 已复制标准化数据包！正在打开 GitHub 提交页，按 Ctrl+V 粘贴即可...");
+    } catch {
+      message.info("正在打开 GitHub 提交页...");
+    }
+
+    const titleParam = encodeURIComponent(`[知识库贡献] 提交 ${count} 条问题记录`);
+    const shortUrl = `https://github.com/DragonTsunami/qingshan-toolbox/issues/new?title=${titleParam}`;
+    void openExternalUrl(shortUrl);
+  };
+
+  // 4.3 离线文件导出通道
+  const handleExportSelectedContrib = () => {
+    const candidatePool = includeAllLocalForContrib ? allItems : (customItems.length > 0 ? customItems : allItems);
+    const itemsToSubmit = candidatePool.filter((i) => selectedContribIds.includes(i.id));
+    if (itemsToSubmit.length === 0) {
+      message.warning("请至少勾选 1 条待导出的案例");
+      return;
+    }
+    const exportData = {
+      version: "1.0.10",
+      exportTime: new Date().toISOString(),
+      type: "qingshan-knowledge-contribution",
+      total: itemsToSubmit.length,
+      items: itemsToSubmit,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qingshan-knowledge-contrib-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    message.success(`已导出 ${itemsToSubmit.length} 条待审核贡献文件！`);
   };
 
   return (
@@ -927,6 +1039,317 @@ export default function KnowledgePage() {
               </Button>
             </Popconfirm>
           </div>
+        </div>
+      </Modal>
+
+      {/* 5. GitHub 资料库贡献与上传中心向导 Modal */}
+      <Modal
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <CloudUploadOutlined style={{ color: "#52c41a", fontSize: 18 }} />
+            <span>向 GitHub 官方资料库贡献与上传问题记录</span>
+          </div>
+        }
+        open={showContribModal}
+        onCancel={() => setShowContribModal(false)}
+        footer={[
+          <Button key="close" onClick={() => setShowContribModal(false)}>
+            关闭向导
+          </Button>,
+        ]}
+        width={720}
+        zIndex={1400}
+        destroyOnClose
+      >
+        <div style={{ marginTop: 12 }}>
+          {customItems.length === 0 ? (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 14 }}
+              message="本地当前为纯净的初始故障库（共 30 条）"
+              description={
+                <div>
+                  您当前尚未在本地录入未收录的罕见故障。若您在办公运维中遇到了新问题，可以点击下方按钮进行录入；或者勾选本地已有条目进行提交流程测试。
+                  <div style={{ marginTop: 8 }}>
+                    <Button
+                      size="small"
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => {
+                        setShowContribModal(false);
+                        setShowSyncModal(false);
+                        setShowAddModal(true);
+                      }}
+                    >
+                      ➕ 立即录入新遇到的故障记录
+                    </Button>
+                  </div>
+                </div>
+              }
+            />
+          ) : (
+            <Alert
+              type="success"
+              showIcon
+              style={{ marginBottom: 14 }}
+              message={`检测到本地有 ${customItems.length} 条已录入/自建条目`}
+              description="您可以勾选想要提交到云端仓库的条目。审核合并后将收录进开源知识库，帮助更多企业员工自愈排障！"
+            />
+          )}
+
+          {/* 待提交条目勾选区 */}
+          <div
+            style={{
+              maxHeight: 140,
+              overflowY: "auto",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 16,
+              background: "var(--bg-soft)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+                paddingBottom: 4,
+                borderBottom: "1px dashed var(--border)",
+              }}
+            >
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>
+                选择待提交的问题记录（已勾选 {selectedContribIds.length} 条）：
+              </span>
+              <Space size="middle">
+                <Checkbox
+                  checked={includeAllLocalForContrib}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIncludeAllLocalForContrib(checked);
+                    if (checked) {
+                      setSelectedContribIds(allItems.map((i) => i.id));
+                    } else {
+                      setSelectedContribIds(customItems.map((i) => i.id));
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: 12 }}>显示全部条目</span>
+                </Checkbox>
+                <a
+                  style={{ fontSize: 12 }}
+                  onClick={() =>
+                    setSelectedContribIds(
+                      (includeAllLocalForContrib
+                        ? allItems
+                        : customItems.length > 0
+                        ? customItems
+                        : allItems
+                      ).map((i) => i.id)
+                    )
+                  }
+                >
+                  全选
+                </a>
+                <a style={{ fontSize: 12 }} onClick={() => setSelectedContribIds([])}>
+                  清空
+                </a>
+              </Space>
+            </div>
+            {(includeAllLocalForContrib
+              ? allItems
+              : customItems.length > 0
+              ? customItems
+              : allItems
+            ).map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "4px 0",
+                  fontSize: 12.5,
+                }}
+              >
+                <Checkbox
+                  checked={selectedContribIds.includes(item.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedContribIds([...selectedContribIds, item.id]);
+                    } else {
+                      setSelectedContribIds(selectedContribIds.filter((id) => id !== item.id));
+                    }
+                  }}
+                >
+                  <span style={{ fontWeight: 500, color: "var(--text)" }}>{item.title}</span>
+                </Checkbox>
+                <Space size="small">
+                  <Tag style={{ margin: 0, fontSize: 11 }}>{item.category}</Tag>
+                  <Tag
+                    color={SEVERITY_CONFIG[item.severity].tagColor}
+                    style={{ margin: 0, fontSize: 11 }}
+                  >
+                    {SEVERITY_CONFIG[item.severity].label}
+                  </Tag>
+                </Space>
+              </div>
+            ))}
+          </div>
+
+          {/* 上传通道 Tabs */}
+          <Tabs
+            defaultActiveKey="api"
+            items={[
+              {
+                key: "api",
+                label: (
+                  <span>
+                    <SafetyCertificateOutlined style={{ marginRight: 4 }} />
+                    通道一：企业运维 / Token 一键直传
+                  </span>
+                ),
+                children: (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 0" }}>
+                    <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>
+                      适合企业 IT 运维工程师或专业人士。输入您的 GitHub Personal Access Token (PAT)，直接在后台调用 REST API 极速提交 Issue，无需跳转外部浏览器。
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 4, color: "var(--text)" }}>
+                        GitHub Personal Access Token (PAT)：
+                      </div>
+                      <Input.Password
+                        placeholder="请输入您的 GitHub Token (例如 ghp_...)"
+                        value={contribToken}
+                        onChange={(e) => setContribToken(e.target.value)}
+                        style={{ height: 38 }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <Checkbox
+                        checked={rememberToken}
+                        onChange={(e) => setRememberToken(e.target.checked)}
+                      >
+                        <span style={{ fontSize: 12, color: "var(--text-2)" }}>
+                          记住 Token（仅保存在本机 localStorage，绝不泄露）
+                        </span>
+                      </Checkbox>
+                      <a
+                        style={{ fontSize: 12 }}
+                        onClick={() =>
+                          openExternalUrl(
+                            "https://github.com/settings/tokens/new?scopes=public_repo&description=QingshanToolboxContrib"
+                          )
+                        }
+                      >
+                        <LinkOutlined /> 点此前往 GitHub 生成 Token (仅需勾选 public_repo)
+                      </a>
+                    </div>
+
+                    {contribSuccessUrl && (
+                      <Alert
+                        type="success"
+                        showIcon
+                        message="🎉 提交成功！Issue 已自动创建"
+                        description={
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                            <span style={{ fontSize: 12, wordBreak: "break-all" }}>{contribSuccessUrl}</span>
+                            <Button size="small" type="primary" onClick={() => openExternalUrl(contribSuccessUrl)}>
+                              立即查看
+                            </Button>
+                          </div>
+                        }
+                      />
+                    )}
+
+                    <Button
+                      type="primary"
+                      loading={contribLoading}
+                      icon={<ThunderboltOutlined />}
+                      onClick={handleDirectApiSubmit}
+                      style={{ height: 40, marginTop: 4 }}
+                    >
+                      ⚡ 立即一键直传提交至 GitHub Issue ({selectedContribIds.length} 条)
+                    </Button>
+                  </div>
+                ),
+              },
+              {
+                key: "browser",
+                label: (
+                  <span>
+                    <GlobalOutlined style={{ marginRight: 4 }} />
+                    通道二：网页提交 (免 Token)
+                  </span>
+                ),
+                children: (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "4px 0" }}>
+                    <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>
+                      适合没有配置 Token 的用户或运维。工具箱将自动为您复制标准化 Markdown 数据包，并拉起浏览器打开 GitHub Issue 页面，按 <strong>Ctrl + V</strong> 粘贴即可完成提交！
+                    </div>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <Button
+                        style={{ flex: 1, height: 40 }}
+                        icon={<CopyOutlined />}
+                        onClick={async () => {
+                          const candidatePool = includeAllLocalForContrib
+                            ? allItems
+                            : customItems.length > 0
+                            ? customItems
+                            : allItems;
+                          const itemsToSubmit = candidatePool.filter((i) =>
+                            selectedContribIds.includes(i.id)
+                          );
+                          const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
+                          const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.10)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+                          await navigator.clipboard.writeText(issueBody);
+                          message.success(
+                            "已复制标准化贡献数据包！可在打开的 GitHub Issue 页面按 Ctrl+V 粘贴！"
+                          );
+                        }}
+                      >
+                        📋 仅复制数据包 ({selectedContribIds.length} 条)
+                      </Button>
+                      <Button
+                        type="primary"
+                        style={{ flex: 1.2, height: 40 }}
+                        icon={<GlobalOutlined />}
+                        onClick={handleOpenBrowserIssue}
+                      >
+                        🚀 复制并打开 GitHub Issue 页面
+                      </Button>
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: "offline",
+                label: (
+                  <span>
+                    <DownloadOutlined style={{ marginRight: 4 }} />
+                    通道三：离线导出 (交付企业运维)
+                  </span>
+                ),
+                children: (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "4px 0" }}>
+                    <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>
+                      适合公司内网等无法直连外网 GitHub 的受限办公环境。将选中的问题记录导出为标准的 <code>.json</code> 文件，直接通过企业微信、邮件或工单发送给您公司的企业 IT 运维工程师审核。
+                    </div>
+                    <Button
+                      type="default"
+                      icon={<DownloadOutlined />}
+                      onClick={handleExportSelectedContrib}
+                      style={{ height: 40 }}
+                    >
+                      📥 导出选中的案例为离线文件 (.json)
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       </Modal>
 

@@ -393,7 +393,7 @@ pub fn plugin_open_directory(state: State<'_, AppState>) -> Result<String, Strin
 #[tauri::command]
 pub fn open_external_url(url: String) -> Result<(), String> {
     let url = url.trim();
-    if url.len() > 2048
+    if url.len() > 4096
         || !(url.starts_with("https://") || url.starts_with("http://"))
         || url.chars().any(|c| c.is_whitespace() || c.is_control())
     {
