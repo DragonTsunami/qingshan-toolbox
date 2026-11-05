@@ -298,7 +298,7 @@ export default function KnowledgePage() {
   const handleExportKnowledge = () => {
     try {
       const exportPayload = {
-        version: "1.0.6",
+        version: "1.1.0",
         exportDate: new Date().toISOString(),
         total: allItems.length,
         items: allItems,
@@ -309,7 +309,7 @@ export default function KnowledgePage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `qingshan-knowledge-v1.0.6-${new Date()
+      link.download = `qingshan-knowledge-v1.1.0-${new Date()
         .toISOString()
         .slice(0, 10)}.json`;
       document.body.appendChild(link);
@@ -419,7 +419,7 @@ export default function KnowledgePage() {
 
           if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
             const candidate = {
-              version: parsed.version || "1.0.9",
+              version: parsed.version || "1.1.0",
               updatedAt: parsed.updatedAt || "近期",
               items: parsed.items as TroubleshootingItem[],
             };
@@ -510,7 +510,7 @@ export default function KnowledgePage() {
     try {
       const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
       const title = `[知识库贡献] 运维提交 ${itemsToSubmit.length} 条新运维问题指南`;
-      const body = `### 运维贡献数据包\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.11)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+      const body = `### 运维贡献数据包\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.1.0)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
 
       const res = await fetch("https://api.github.com/repos/DragonTsunami/qingshan-toolbox/issues", {
         method: "POST",
@@ -560,7 +560,7 @@ export default function KnowledgePage() {
     // 1. 导出并触发浏览器下载 JSON 格式文件
     try {
       const exportData = {
-        version: "1.0.11",
+        version: "1.1.0",
         exportTime: new Date().toISOString(),
         type: "qingshan-knowledge-contribution",
         total: count,
@@ -580,7 +580,7 @@ export default function KnowledgePage() {
     }
 
     // 2. 复制标准化格式到剪贴板
-    const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.11)\n- **案例数量：** ${count} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+    const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.1.0)\n- **案例数量：** ${count} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
     try {
       await navigator.clipboard.writeText(issueBody);
     } catch (e) {
@@ -607,7 +607,7 @@ export default function KnowledgePage() {
       return;
     }
     const exportData = {
-      version: "1.0.10",
+      version: "1.1.0",
       exportTime: new Date().toISOString(),
       type: "qingshan-knowledge-contribution",
       total: itemsToSubmit.length,
@@ -1396,7 +1396,7 @@ export default function KnowledgePage() {
                             selectedContribIds.includes(i.id)
                           );
                           const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
-                          const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.11)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+                          const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.1.0)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
                           await navigator.clipboard.writeText(issueBody);
                           message.success(
                             "已复制标准化贡献数据包！可在 GitHub Issue 页面按 Ctrl+V 粘贴！"
