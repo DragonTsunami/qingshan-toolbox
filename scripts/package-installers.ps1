@@ -47,5 +47,5 @@ function Build-Installer($dir, $sourceDir, $outputName) {
     Write-Host "[OK] 已成功生成: $outPath" -ForegroundColor Green
 }
 
-Build-Installer 'D:\Archive\安装包\青衫工具箱_方案二_双栏工坊' 'QingshanToolbox' '青衫工具箱_方案二_安装程序_v1.1.0.exe'
-Build-Installer 'D:\Archive\安装包\青衫工具箱_方案三_极光流体' 'demo' '青衫工具箱_方案三_安装程序_v1.1.0.exe'
+Build-Installer 'D:\Archive\安装包\青衫工具箱_方案二_双栏工坊' 'QingshanToolbox' '青衫工具箱_方案二_安装程序_v1.1.1.exe'
+Build-Installer 'D:\Archive\安装包\青衫工具箱_方案三_极光流体' 'demo' '青衫工具箱_方案三_安装程序_v1.1.1.exe'

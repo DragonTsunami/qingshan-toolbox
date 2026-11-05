@@ -3,6 +3,7 @@ import { Button, Select, Tooltip } from "antd";
 import { useEffect, useState } from "react";
 import { REFRESH_INTERVALS } from "../preferences";
 import type { SystemSnapshot } from "../types";
+import { useI18n } from "../i18n";
 
 interface TopBarProps {
   title: string;
@@ -23,6 +24,7 @@ export default function TopBar({
   onRefreshIntervalChange,
   onRefresh,
 }: TopBarProps) {
+  const { t, language } = useI18n();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -42,35 +44,35 @@ export default function TopBar({
         <div className="host-pill">
           <span className="host-dot" />
           <DesktopOutlined />
-          <span className="host-name">{snapshot?.hostname ?? "正在连接本机"}</span>
+          <span className="host-name">{snapshot?.hostname ?? t("topbar.connecting")}</span>
           <span className="host-time">
-            {now.toLocaleTimeString("zh-CN", { hour12: false, hour: "2-digit", minute: "2-digit" })}
+            {now.toLocaleTimeString(language, { hour12: false, hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
-        <Tooltip title="概览与进程页的自动刷新间隔">
+        <Tooltip title={t("topbar.refreshInterval")}>
           <div className="refresh-interval">
             <ClockCircleOutlined />
             <Select
-              aria-label="自动刷新间隔"
+              aria-label={t("topbar.refreshInterval")}
               variant="borderless"
               value={refreshInterval}
               onChange={onRefreshIntervalChange}
               options={REFRESH_INTERVALS.map((seconds) => ({
                 value: seconds,
-                label: `${seconds} 秒`,
+                label: `${seconds} ${t("topbar.seconds")}`,
               }))}
               popupMatchSelectWidth={false}
             />
           </div>
         </Tooltip>
-        <Tooltip title="重新采集本机数据">
+        <Tooltip title={t("topbar.refreshTooltip")}>
           <Button
             className="refresh-button"
             icon={<ReloadOutlined spin={refreshing} />}
             onClick={onRefresh}
             loading={false}
           >
-            刷新
+            {t("topbar.refresh")}
           </Button>
         </Tooltip>
       </div>

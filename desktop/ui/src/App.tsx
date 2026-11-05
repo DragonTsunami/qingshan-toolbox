@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfigProvider, App as AntApp, theme as antdTheme } from "antd";
 import zhCN from "antd/locale/zh_CN";
+import enUS from "antd/locale/en_US";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import PluginsPage from "./pages/Plugins";
@@ -17,6 +18,13 @@ import SoftwarePage from "./pages/Software";
 import SettingsPage from "./pages/Settings";
 import { appInfo, relaunchAsAdmin, setWindowTheme, systemSnapshot } from "./api";
 import {
+  I18nProvider,
+  loadLanguage,
+  saveLanguage,
+  type Language,
+  translations,
+} from "./i18n";
+import {
   loadRefreshInterval,
   normalizeRefreshInterval,
   saveRefreshInterval,
@@ -24,27 +32,25 @@ import {
 } from "./preferences";
 import type { AppInfo, PageKey, SystemSnapshot } from "./types";
 
-const PAGE_META: Record<PageKey, { title: string; subtitle: string }> = {
-  plugins: { title: "插件", subtitle: "声明式扩展工作台能力" },
-  knowledge: { title: "资料库", subtitle: "运维日常高频故障排查链与权威解决方案" },
-  overview: { title: "概览", subtitle: "本机健康状态与关键指标" },
-  diagnostics: { title: "健康诊断", subtitle: "电池、磁盘、显卡与快速修复" },
-  processes: { title: "进程管理", subtitle: "查看资源占用并安全地结束进程" },
-  services: { title: "服务管理", subtitle: "控制系统服务的启动、停止与重启" },
-  network: { title: "网络诊断", subtitle: "接口、端口连通性与 DNS 解析" },
-  logs: { title: "日志中心", subtitle: "最近 3 天事件日志的检索、详情与清理" },
-  cleanup: { title: "磁盘清理", subtitle: "扫描并释放可安全删除的临时文件" },
-  startup: { title: "启动项", subtitle: "管理开机启动项与计划任务" },
-  software: { title: "软件清单", subtitle: "已安装程序、版本与安装信息" },
-  settings: { title: "设置", subtitle: "应用信息、权限与后续能力" },
-};
-
-const PAGE_KEYS = Object.keys(PAGE_META) as PageKey[];
+const ALL_PAGES: PageKey[] = [
+  "plugins",
+  "knowledge",
+  "overview",
+  "diagnostics",
+  "processes",
+  "services",
+  "network",
+  "logs",
+  "cleanup",
+  "startup",
+  "software",
+  "settings",
+];
 
 function pageFromHash(): PageKey {
   if (typeof window === "undefined") return "overview";
   const key = window.location.hash.replace(/^#\/?/, "") as PageKey;
-  return PAGE_KEYS.includes(key) ? key : "overview";
+  return ALL_PAGES.includes(key) ? key : "overview";
 }
 
 function initialDark(): boolean {
@@ -60,6 +66,7 @@ function initialDark(): boolean {
 function App() {
   const [page, setPage] = useState<PageKey>(pageFromHash);
   const [dark, setDark] = useState(initialDark);
+  const [language, setLanguage] = useState<Language>(loadLanguage);
   const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(loadRefreshInterval);
   const [snapshot, setSnapshot] = useState<SystemSnapshot | null>(null);
   const [info, setInfo] = useState<AppInfo | null>(null);
@@ -83,6 +90,11 @@ function App() {
     localStorage.setItem("opsdeck.theme", dark ? "dark" : "light");
     void setWindowTheme(dark).catch(() => undefined);
   }, [dark]);
+
+  useEffect(() => {
+    saveLanguage(language);
+    document.documentElement.lang = language === "en-US" ? "en" : "zh-CN";
+  }, [language]);
 
   useEffect(() => {
     saveRefreshInterval(refreshInterval);
@@ -119,6 +131,60 @@ function App() {
       alert(String(error));
     }
   };
+
+  const pageMeta = useMemo(() => {
+    const dict = translations[language] || translations["zh-CN"];
+    return {
+      plugins: {
+        title: dict["page.plugins.title"] ?? "插件",
+        subtitle: dict["page.plugins.subtitle"] ?? "声明式扩展工作台能力",
+      },
+      knowledge: {
+        title: dict["page.knowledge.title"] ?? "资料库",
+        subtitle: dict["page.knowledge.subtitle"] ?? "运维日常高频故障排查链与权威解决方案",
+      },
+      overview: {
+        title: dict["page.overview.title"] ?? "概览",
+        subtitle: dict["page.overview.subtitle"] ?? "本机健康状态与关键指标",
+      },
+      diagnostics: {
+        title: dict["page.diagnostics.title"] ?? "健康诊断",
+        subtitle: dict["page.diagnostics.subtitle"] ?? "电池、磁盘、显卡与快速修复",
+      },
+      processes: {
+        title: dict["page.processes.title"] ?? "进程管理",
+        subtitle: dict["page.processes.subtitle"] ?? "查看资源占用并安全地结束进程",
+      },
+      services: {
+        title: dict["page.services.title"] ?? "服务管理",
+        subtitle: dict["page.services.subtitle"] ?? "控制系统服务的启动、停止与重启",
+      },
+      network: {
+        title: dict["page.network.title"] ?? "网络诊断",
+        subtitle: dict["page.network.subtitle"] ?? "接口、端口连通性与 DNS 解析",
+      },
+      logs: {
+        title: dict["page.logs.title"] ?? "日志中心",
+        subtitle: dict["page.logs.subtitle"] ?? "最近 3 天事件日志的检索、详情与清理",
+      },
+      cleanup: {
+        title: dict["page.cleanup.title"] ?? "磁盘清理",
+        subtitle: dict["page.cleanup.subtitle"] ?? "扫描并释放可安全删除的临时文件",
+      },
+      startup: {
+        title: dict["page.startup.title"] ?? "启动项",
+        subtitle: dict["page.startup.subtitle"] ?? "管理开机启动项与计划任务",
+      },
+      software: {
+        title: dict["page.software.title"] ?? "软件清单",
+        subtitle: dict["page.software.subtitle"] ?? "已安装程序、版本与安装信息",
+      },
+      settings: {
+        title: dict["page.settings.title"] ?? "设置",
+        subtitle: dict["page.settings.subtitle"] ?? "应用信息、权限与后续能力",
+      },
+    } satisfies Record<PageKey, { title: string; subtitle: string }>;
+  }, [language]);
 
   const pageContent = useMemo(() => {
     switch (page) {
@@ -158,6 +224,8 @@ function App() {
             info={info}
             snapshot={snapshot}
             dark={dark}
+            language={language}
+            onLanguageChange={setLanguage}
             onToggleTheme={() => setDark((value) => !value)}
             onElevate={elevate}
           />
@@ -173,7 +241,7 @@ function App() {
           />
         );
     }
-  }, [page, snapshot, info, dark, refreshing, refresh, refreshInterval]);
+  }, [page, snapshot, info, dark, language, refreshing, refresh, refreshInterval]);
 
   const ink = dark ? "#f9fafb" : "#0f1115";
   const onInk = dark ? "#353638" : "#ffffff";
@@ -182,7 +250,7 @@ function App() {
 
   return (
     <ConfigProvider
-      locale={zhCN}
+      locale={language === "en-US" ? enUS : zhCN}
       theme={{
         algorithm: dark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
         token: {
@@ -268,33 +336,35 @@ function App() {
         },
       }}
     >
-      <AntApp>
-        <div className="app-shell">
-          <Sidebar
-            page={page}
-            onNavigate={setPage}
-            snapshot={snapshot}
-            info={info}
-            onElevate={elevate}
-          />
-          <div className="app-main">
-            {page !== "plugins" && (
-              <TopBar
-                title={PAGE_META[page].title}
-                subtitle={PAGE_META[page].subtitle}
-                snapshot={snapshot}
-                refreshing={refreshing}
-                refreshInterval={refreshInterval}
-                onRefreshIntervalChange={(seconds) =>
-                  setRefreshInterval(normalizeRefreshInterval(seconds))
-                }
-                onRefresh={refresh}
-              />
-            )}
-            <main className="app-content">{pageContent}</main>
+      <I18nProvider language={language} onLanguageChange={setLanguage}>
+        <AntApp>
+          <div className="app-shell">
+            <Sidebar
+              page={page}
+              onNavigate={setPage}
+              snapshot={snapshot}
+              info={info}
+              onElevate={elevate}
+            />
+            <div className="app-main">
+              {page !== "plugins" && (
+                <TopBar
+                  title={pageMeta[page].title}
+                  subtitle={pageMeta[page].subtitle}
+                  snapshot={snapshot}
+                  refreshing={refreshing}
+                  refreshInterval={refreshInterval}
+                  onRefreshIntervalChange={(seconds) =>
+                    setRefreshInterval(normalizeRefreshInterval(seconds))
+                  }
+                  onRefresh={refresh}
+                />
+              )}
+              <main className="app-content">{pageContent}</main>
+            </div>
           </div>
-        </div>
-      </AntApp>
+        </AntApp>
+      </I18nProvider>
     </ConfigProvider>
   );
 }
