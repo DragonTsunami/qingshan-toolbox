@@ -253,11 +253,22 @@ export async function openPluginDirectory(): Promise<string> {
 }
 
 export async function openExternalUrl(url: string): Promise<void> {
-  if (!isDesktopRuntime) {
-    window.open(url, "_blank", "noopener,noreferrer");
-    return;
+  let ok = false;
+  if (isDesktopRuntime) {
+    try {
+      await call<void>("open_external_url", { url });
+      ok = true;
+    } catch (e) {
+      console.warn("Backend open_external_url failed, falling back to window.open", e);
+    }
   }
-  await call<void>("open_external_url", { url });
+  if (!ok) {
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("window.open failed:", err);
+    }
+  }
 }
 
 export async function diagnosticsRead(): Promise<SystemDiagnostics> {

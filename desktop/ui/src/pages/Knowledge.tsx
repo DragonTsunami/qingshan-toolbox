@@ -133,6 +133,7 @@ export default function KnowledgePage() {
   const [selectedContribIds, setSelectedContribIds] = useState<string[]>([]);
   const [contribLoading, setContribLoading] = useState(false);
   const [contribSuccessUrl, setContribSuccessUrl] = useState<string | null>(null);
+  const [browserIssueUrl, setBrowserIssueUrl] = useState<string | null>(null);
   const [includeAllLocalForContrib, setIncludeAllLocalForContrib] = useState(false);
 
   const [addForm] = Form.useForm();
@@ -488,6 +489,7 @@ export default function KnowledgePage() {
       setIncludeAllLocalForContrib(true);
     }
     setContribSuccessUrl(null);
+    setBrowserIssueUrl(null);
     setShowContribModal(true);
   };
 
@@ -508,7 +510,7 @@ export default function KnowledgePage() {
     try {
       const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
       const title = `[知识库贡献] 运维提交 ${itemsToSubmit.length} 条新运维问题指南`;
-      const body = `### 运维贡献数据包\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.10)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+      const body = `### 运维贡献数据包\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.11)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
 
       const res = await fetch("https://api.github.com/repos/DragonTsunami/qingshan-toolbox/issues", {
         method: "POST",
@@ -544,8 +546,8 @@ export default function KnowledgePage() {
     }
   };
 
-  // 4.2 免 Token 通道：复制标准化 Markdown 并打开安全短链接
-  const handleOpenBrowserIssue = async () => {
+  // 4.2 通道二核心：一键导出贡献文件并拉起 GitHub Issue 提交页
+  const handleExportAndOpenIssue = async () => {
     const candidatePool = includeAllLocalForContrib ? allItems : (customItems.length > 0 ? customItems : allItems);
     const itemsToSubmit = candidatePool.filter((i) => selectedContribIds.includes(i.id));
     if (itemsToSubmit.length === 0) {
@@ -554,18 +556,46 @@ export default function KnowledgePage() {
     }
     const count = itemsToSubmit.length;
     const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
-    const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.10)\n- **案例数量：** ${count} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
 
+    // 1. 导出并触发浏览器下载 JSON 格式文件
     try {
-      await navigator.clipboard.writeText(issueBody);
-      message.success("📋 已复制标准化数据包！正在打开 GitHub 提交页，按 Ctrl+V 粘贴即可...");
-    } catch {
-      message.info("正在打开 GitHub 提交页...");
+      const exportData = {
+        version: "1.0.11",
+        exportTime: new Date().toISOString(),
+        type: "qingshan-knowledge-contribution",
+        total: count,
+        items: itemsToSubmit,
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `qingshan-knowledge-contrib-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      console.warn("Export download error:", e);
     }
 
-    const titleParam = encodeURIComponent(`[知识库贡献] 提交 ${count} 条问题记录`);
+    // 2. 复制标准化格式到剪贴板
+    const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.11)\n- **案例数量：** ${count} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+    try {
+      await navigator.clipboard.writeText(issueBody);
+    } catch (e) {
+      console.warn("Clipboard copy fallback:", e);
+    }
+
+    // 3. 构建安全可执行的 Issue URL
+    const titleParam = encodeURIComponent(`[知识库贡献] 提交 ${count} 条新问题案例`);
     const shortUrl = `https://github.com/DragonTsunami/qingshan-toolbox/issues/new?title=${titleParam}`;
-    void openExternalUrl(shortUrl);
+    setBrowserIssueUrl(shortUrl);
+
+    message.success(`已导出 ${count} 条案例文件并复制到剪贴板！正在为您拉起 GitHub Issue 提交页面...`);
+
+    // 4. 打开 GitHub Issue 页面
+    await openExternalUrl(shortUrl);
   };
 
   // 4.3 离线文件导出通道
@@ -1281,17 +1311,80 @@ export default function KnowledgePage() {
                 label: (
                   <span>
                     <GlobalOutlined style={{ marginRight: 4 }} />
-                    通道二：网页提交 (免 Token)
+                    通道二：导出文件并打开 Issue (免 Token)
                   </span>
                 ),
                 children: (
                   <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "4px 0" }}>
                     <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6 }}>
-                      适合没有配置 Token 的用户或运维。工具箱将自动为您复制标准化 Markdown 数据包，并拉起浏览器打开 GitHub Issue 页面，按 <strong>Ctrl + V</strong> 粘贴即可完成提交！
+                      适合没有配置 Token 的普通用户或运维人员。点击下方主按钮，工具箱将<strong>全自动为您导出 <code>.json</code> 数据文件、复制标准化数据包到剪贴板，并自动在浏览器中打开 GitHub Issue 页面</strong>！
                     </div>
-                    <div style={{ display: "flex", gap: 12 }}>
+
+                    <Button
+                      type="primary"
+                      style={{ height: 44, fontSize: 13.5, fontWeight: 600 }}
+                      icon={<ThunderboltOutlined />}
+                      onClick={handleExportAndOpenIssue}
+                    >
+                      🚀 一键导出数据文件并打开 GitHub Issue ({selectedContribIds.length} 条)
+                    </Button>
+
+                    {browserIssueUrl && (
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="GitHub Issue 提交页面已触发打开"
+                        description={
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                            <div style={{ fontSize: 12 }}>
+                              若默认浏览器未自动弹出，可直接点击下方链接或按钮手动打开：
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <a
+                                style={{ fontSize: 12, wordBreak: "break-all", fontWeight: 600 }}
+                                onClick={() => openExternalUrl(browserIssueUrl)}
+                              >
+                                👉 {browserIssueUrl}
+                              </a>
+                              <Button
+                                size="small"
+                                type="primary"
+                                onClick={() => openExternalUrl(browserIssueUrl)}
+                              >
+                                打开网页
+                              </Button>
+                            </div>
+                          </div>
+                        }
+                      />
+                    )}
+
+                    <div
+                      style={{
+                        padding: "10px 12px",
+                        background: "var(--bg-soft)",
+                        borderRadius: 6,
+                        border: "1px dashed var(--border)",
+                        fontSize: 12,
+                        color: "var(--text-2)",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4, color: "var(--text)" }}>
+                        💡 在打开的 GitHub 网页中如何提交：
+                      </div>
+                      <div>
+                        • <strong>方式 1（粘贴快捷提交）：</strong>直接在 Issue 内容框中按 <code>Ctrl + V</code> 粘贴刚才复制好的内容。
+                      </div>
+                      <div>
+                        • <strong>方式 2（上传附件提交）：</strong>直接将刚才下载导出的 <code>.json</code> 文件拖入 Issue 框中作为附件。
+                      </div>
+                      <div>• 最后点击右下角绿色 <strong>【Submit new issue】</strong> 按钮即可！</div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10 }}>
                       <Button
-                        style={{ flex: 1, height: 40 }}
+                        style={{ flex: 1 }}
                         icon={<CopyOutlined />}
                         onClick={async () => {
                           const candidatePool = includeAllLocalForContrib
@@ -1303,22 +1396,35 @@ export default function KnowledgePage() {
                             selectedContribIds.includes(i.id)
                           );
                           const jsonStr = JSON.stringify(itemsToSubmit, null, 2);
-                          const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.10)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
+                          const issueBody = `### 贡献者提交的新问题记录\n\n\`\`\`json\n${jsonStr}\n\`\`\`\n\n- **提交来源：** 青衫工具箱客户端 (v1.0.11)\n- **案例数量：** ${itemsToSubmit.length} 条\n- **提交时间：** ${new Date().toLocaleString()}\n\n感谢为开源桌面运维与IT支持资料库做出贡献！`;
                           await navigator.clipboard.writeText(issueBody);
                           message.success(
-                            "已复制标准化贡献数据包！可在打开的 GitHub Issue 页面按 Ctrl+V 粘贴！"
+                            "已复制标准化贡献数据包！可在 GitHub Issue 页面按 Ctrl+V 粘贴！"
                           );
                         }}
                       >
-                        📋 仅复制数据包 ({selectedContribIds.length} 条)
+                        📋 仅复制数据包
                       </Button>
                       <Button
-                        type="primary"
-                        style={{ flex: 1.2, height: 40 }}
-                        icon={<GlobalOutlined />}
-                        onClick={handleOpenBrowserIssue}
+                        style={{ flex: 1 }}
+                        icon={<DownloadOutlined />}
+                        onClick={handleExportSelectedContrib}
                       >
-                        🚀 复制并打开 GitHub Issue 页面
+                        📥 仅导出数据文件 (.json)
+                      </Button>
+                      <Button
+                        style={{ flex: 1 }}
+                        icon={<GlobalOutlined />}
+                        onClick={() => {
+                          const titleParam = encodeURIComponent(
+                            `[知识库贡献] 提交 ${selectedContribIds.length} 条新问题案例`
+                          );
+                          const shortUrl = `https://github.com/DragonTsunami/qingshan-toolbox/issues/new?title=${titleParam}`;
+                          setBrowserIssueUrl(shortUrl);
+                          void openExternalUrl(shortUrl);
+                        }}
+                      >
+                        🌐 仅打开网页
                       </Button>
                     </div>
                   </div>

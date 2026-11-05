@@ -409,11 +409,35 @@ fn open_path(path: &Path) -> Result<(), String> {
 
 fn open_target(target: &str) -> Result<(), String> {
     #[cfg(windows)]
-    let mut command = Command::new("explorer.exe");
-    #[cfg(not(windows))]
-    let mut command = Command::new("xdg-open");
+    {
+        use std::os::windows::process::CommandExt;
+        if target.starts_with("http://") || target.starts_with("https://") {
+            let mut cmd = Command::new("cmd.exe");
+            cmd.args(["/c", "start", "", target]);
+            cmd.creation_flags(0x0800_0000);
+            if let Ok(mut child) = cmd.spawn() {
+                let _ = child.wait();
+                return Ok(());
+            }
 
-    command.arg(target).spawn().map(|_| ()).map_err(to_message)
+            let mut rundll = Command::new("rundll32.exe");
+            rundll.args(["url.dll,FileProtocolHandler", target]);
+            rundll.creation_flags(0x0800_0000);
+            if let Ok(mut child) = rundll.spawn() {
+                let _ = child.wait();
+                return Ok(());
+            }
+        }
+        let mut command = Command::new("explorer.exe");
+        command.arg(target);
+        command.creation_flags(0x0800_0000);
+        command.spawn().map(|_| ()).map_err(to_message)
+    }
+    #[cfg(not(windows))]
+    {
+        let mut command = Command::new("xdg-open");
+        command.arg(target).spawn().map(|_| ()).map_err(to_message)
+    }
 }
 
 #[tauri::command]
